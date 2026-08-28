@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nordlicht Studio - Start</title>
+  <meta name="description" content="Nordlicht Studio ist eine Test-Website, die moderne Webentwicklung, klare Gestaltung und verlässlichen Support präsentiert.">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <a href="index.html" class="logo">Nordlicht<span>Studio</span></a>
+
+      <button type="button" class="nav-toggle" id="nav-toggle" aria-expanded="false" aria-controls="primary-nav">
+        <span class="sr-only">Menü öffnen</span>
+        <span class="hamburger" aria-hidden="true"></span>
+      </button>
+
+      <nav class="primary-nav" id="primary-nav" aria-label="Hauptnavigation">
+        <ul>
+          <li><a href="index.html" aria-current="page">Start</a></li>
+          <li class="has-dropdown">
+            <button type="button" class="dropdown-toggle" id="dropdown-toggle" aria-expanded="false" aria-controls="dropdown-menu">
+              Leistungen
+              <span class="dropdown-arrow" aria-hidden="true">&#9662;</span>
+            </button>
+            <ul class="dropdown-menu" id="dropdown-menu">
+              <li><a href="leistungen.html#webdesign">Webdesign</a></li>
+              <li><a href="leistungen.html#beratung">Beratung</a></li>
+              <li><a href="leistungen.html#support">Support</a></li>
+            </ul>
+          </li>
+          <li><a href="kontakt.html">Kontakt</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main-content">
+    <section class="hero">
+      <div class="hero-inner">
+        <h1>Digitale Ideen, klar umgesetzt</h1>
+        <p class="hero-text">
+          Wir gestalten Websites, die einfach funktionieren: schnell, verständlich
+          und auf jedem Bildschirm zuhause. Diese Seite dient als kleines
+          Testprojekt für moderne, responsive Webentwicklung.
+        </p>
+        <a href="kontakt.html" class="btn btn-primary">Jetzt Kontakt aufnehmen</a>
+      </div>
+    </section>
+
+    <section class="intro">
+      <h2>Kurz vorgestellt</h2>
+      <p>
+        Nordlicht Studio steht für schlichtes, gut lesbares Design und
+        sauberen Code ohne unnötigen Ballast. Ob Webdesign, Beratung oder
+        laufender Support &ndash; wir begleiten Projekte von der ersten Idee
+        bis zum fertigen Ergebnis.
+      </p>
+    </section>
+
+    <section class="features">
+      <h2>Warum Nordlicht Studio?</h2>
+      <div class="card-grid">
+        <article class="card">
+          <h3>Schnell</h3>
+          <p>Schlanker Code ohne unnötige Abhängigkeiten sorgt für kurze Ladezeiten.</p>
+        </article>
+        <article class="card">
+          <h3>Responsive</h3>
+          <p>Ob Smartphone, Tablet oder Desktop &ndash; die Darstellung passt sich an.</p>
+        </article>
+        <article class="card">
+          <h3>Barrierefrei</h3>
+          <p>Semantisches HTML und Tastaturbedienbarkeit für alle Nutzerinnen und Nutzer.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="cta">
+      <h2>Bereit für den nächsten Schritt?</h2>
+      <p>Schreiben Sie uns &ndash; wir melden uns zeitnah zurück.</p>
+      <a href="kontakt.html" class="btn btn-secondary">Zum Kontaktformular</a>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <p>&copy; 2026 Nordlicht Studio &ndash; Testprojekt, kein echtes Unternehmen.</p>
+      <nav aria-label="Fußzeilen-Navigation">
+        <ul>
+          <li><a href="index.html">Start</a></li>
+          <li><a href="leistungen.html">Leistungen</a></li>
+          <li><a href="kontakt.html">Kontakt</a></li>
+        </ul>
+      </nav>
+    </div>
+  </footer>
+
+  <script src="js/script.js"></script>
+</body>
+</html>

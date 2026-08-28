@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nordlicht Studio - Kontakt</title>
+  <meta name="description" content="Kontaktformular von Nordlicht Studio: Name, E-Mail und Nachricht senden (Demo, kein echter Versand).">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <a href="index.html" class="logo">Nordlicht<span>Studio</span></a>
+
+      <button type="button" class="nav-toggle" id="nav-toggle" aria-expanded="false" aria-controls="primary-nav">
+        <span class="sr-only">Menü öffnen</span>
+        <span class="hamburger" aria-hidden="true"></span>
+      </button>
+
+      <nav class="primary-nav" id="primary-nav" aria-label="Hauptnavigation">
+        <ul>
+          <li><a href="index.html">Start</a></li>
+          <li class="has-dropdown">
+            <button type="button" class="dropdown-toggle" id="dropdown-toggle" aria-expanded="false" aria-controls="dropdown-menu">
+              Leistungen
+              <span class="dropdown-arrow" aria-hidden="true">&#9662;</span>
+            </button>
+            <ul class="dropdown-menu" id="dropdown-menu">
+              <li><a href="leistungen.html#webdesign">Webdesign</a></li>
+              <li><a href="leistungen.html#beratung">Beratung</a></li>
+              <li><a href="leistungen.html#support">Support</a></li>
+            </ul>
+          </li>
+          <li><a href="kontakt.html" aria-current="page">Kontakt</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main-content">
+    <section class="page-hero">
+      <h1>Kontakt</h1>
+      <p>
+        Nutzen Sie das Formular für eine unverbindliche Anfrage.
+        <strong>Hinweis:</strong> Dies ist eine Demo &ndash; es findet kein
+        echter Versand statt.
+      </p>
+    </section>
+
+    <section class="contact-section">
+      <form id="contact-form" class="contact-form" novalidate>
+        <div class="form-group">
+          <label for="name">Name <span aria-hidden="true">*</span></label>
+          <input type="text" id="name" name="name" required autocomplete="name">
+          <p class="error-message" id="name-error" role="alert"></p>
+        </div>
+
+        <div class="form-group">
+          <label for="email">E-Mail <span aria-hidden="true">*</span></label>
+          <input type="email" id="email" name="email" required autocomplete="email">
+          <p class="error-message" id="email-error" role="alert"></p>
+        </div>
+
+        <div class="form-group">
+          <label for="message">Nachricht <span aria-hidden="true">*</span></label>
+          <textarea id="message" name="message" rows="6" required></textarea>
+          <p class="error-message" id="message-error" role="alert"></p>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Absenden</button>
+
+        <p class="form-hint">* Pflichtfelder. Demo-Formular, kein echter Versand.</p>
+      </form>
+
+      <div id="form-success" class="form-success" role="status" hidden></div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <p>&copy; 2026 Nordlicht Studio &ndash; Testprojekt, kein echtes Unternehmen.</p>
+      <nav aria-label="Fußzeilen-Navigation">
+        <ul>
+          <li><a href="index.html">Start</a></li>
+          <li><a href="leistungen.html">Leistungen</a></li>
+          <li><a href="kontakt.html">Kontakt</a></li>
+        </ul>
+      </nav>
+    </div>
+  </footer>
+
+  <script src="js/script.js"></script>
+</body>
+</html>
