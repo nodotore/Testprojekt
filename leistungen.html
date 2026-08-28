@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nordlicht Studio - Leistungen</title>
+  <meta name="description" content="Übersicht der Leistungen von Nordlicht Studio: Webdesign, Beratung und Support.">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <a href="index.html" class="logo">Nordlicht<span>Studio</span></a>
+
+      <button type="button" class="nav-toggle" id="nav-toggle" aria-expanded="false" aria-controls="primary-nav">
+        <span class="sr-only">Menü öffnen</span>
+        <span class="hamburger" aria-hidden="true"></span>
+      </button>
+
+      <nav class="primary-nav" id="primary-nav" aria-label="Hauptnavigation">
+        <ul>
+          <li><a href="index.html">Start</a></li>
+          <li class="has-dropdown">
+            <button type="button" class="dropdown-toggle" id="dropdown-toggle" aria-expanded="false" aria-controls="dropdown-menu">
+              Leistungen
+              <span class="dropdown-arrow" aria-hidden="true">&#9662;</span>
+            </button>
+            <ul class="dropdown-menu" id="dropdown-menu">
+              <li><a href="leistungen.html#webdesign">Webdesign</a></li>
+              <li><a href="leistungen.html#beratung">Beratung</a></li>
+              <li><a href="leistungen.html#support">Support</a></li>
+            </ul>
+          </li>
+          <li><a href="kontakt.html">Kontakt</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main-content">
+    <section class="page-hero">
+      <h1>Unsere Leistungen</h1>
+      <p>Drei Bausteine, die zusammen ein rundes Ergebnis ergeben.</p>
+    </section>
+
+    <section class="features">
+      <div class="card-grid">
+        <article class="card" id="webdesign">
+          <h2>Webdesign</h2>
+          <p>
+            Klare Gestaltung, gut lesbare Typografie und responsive Layouts,
+            die auf jedem Gerät funktionieren.
+          </p>
+        </article>
+        <article class="card" id="beratung">
+          <h2>Beratung</h2>
+          <p>
+            Von der Konzeption bis zur Technologiewahl: Wir unterstützen bei
+            fundierten Entscheidungen für Ihr Projekt.
+          </p>
+        </article>
+        <article class="card" id="support">
+          <h2>Support</h2>
+          <p>
+            Auch nach dem Launch sind wir erreichbar &ndash; für Wartung,
+            kleine Anpassungen und Fragen im laufenden Betrieb.
+          </p>
+        </article>
+      </div>
+    </section>
+
+    <section class="cta">
+      <h2>Fragen zu unseren Leistungen?</h2>
+      <p>Wir beraten Sie gerne unverbindlich.</p>
+      <a href="kontakt.html" class="btn btn-primary">Kontakt aufnehmen</a>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <p>&copy; 2026 Nordlicht Studio &ndash; Testprojekt, kein echtes Unternehmen.</p>
+      <nav aria-label="Fußzeilen-Navigation">
+        <ul>
+          <li><a href="index.html">Start</a></li>
+          <li><a href="leistungen.html">Leistungen</a></li>
+          <li><a href="kontakt.html">Kontakt</a></li>
+        </ul>
+      </nav>
+    </div>
+  </footer>
+
+  <script src="js/script.js"></script>
+</body>
+</html>
