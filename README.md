@@ -50,6 +50,27 @@ python -m http.server 8000
 Anschließend im Browser `http://localhost:3000` (bei `serve`) bzw.
 `http://localhost:8000` (bei Python) öffnen.
 
+## Deployment (GitHub Pages)
+
+Jeder Push auf `master` deployt die Seite automatisch über
+`.github/workflows/deploy-pages.yml` nach GitHub Pages. Die Seite ist
+danach unter `https://<benutzername>.github.io/<repo-name>/` erreichbar
+(Fortschritt und URL stehen im Actions-Tab bzw. unter
+*Settings → Pages*).
+
+Beim ersten Deployment aktiviert der Workflow GitHub Pages automatisch
+(Source: *GitHub Actions*). Falls das in den Repository-Einstellungen
+nicht erlaubt ist, einmalig manuell aktivieren: *Settings → Pages →
+Build and deployment → Source → GitHub Actions*, danach den Workflow
+erneut laufen lassen (Tab *Actions* → *Deploy GitHub Pages* → *Run
+workflow*).
+
+Alle Seiten verlinken ausschließlich relative Pfade (`css/…`, `js/…`,
+`icons/…`), funktionieren also unverändert unter dem Pages-Unterpfad.
+Das gilt auch für `use-case-app.html`: Die Interview-App lässt sich auf
+dem iPhone direkt von der Pages-URL aus über Safari → Teilen → "Zum
+Home-Bildschirm" installieren.
+
 ## Hinweise
 
 - Das Kontaktformular in `kontakt.html` ist eine Demo: Es findet **kein**
