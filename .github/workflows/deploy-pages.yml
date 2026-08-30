@@ -25,6 +25,11 @@ jobs:
 
       - name: Pages konfigurieren
         uses: actions/configure-pages@v5
+        with:
+          # Ohne diesen Parameter versucht die Action nicht, eine noch
+          # nicht existierende Pages-Site anzulegen, und bricht beim
+          # ersten Deployment mit "Get Pages site failed" (404) ab.
+          enablement: true
 
       - name: Artefakt hochladen
         uses: actions/upload-pages-artifact@v3
