@@ -1,0 +1,341 @@
+/* ==========================================================================
+   Use-Case-Interview-App
+   Ergänzt style.css um die Bausteine für den mobilen Interview-Wizard.
+   Mobile-first: die App ist in erster Linie für die Nutzung auf dem
+   iPhone (als installierte PWA) gedacht.
+   ========================================================================== */
+
+body.app-body {
+  background-color: var(--color-bg);
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: calc(0.9rem + env(safe-area-inset-top)) 1.25rem 0.9rem;
+  background-color: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.app-back {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: var(--radius);
+  text-decoration: none;
+  color: var(--color-text);
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+
+.app-back:hover {
+  background-color: var(--color-bg);
+}
+
+.app-title {
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+
+.app-main {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 1.5rem 1.25rem 3rem;
+}
+
+.app-screen h1 {
+  font-size: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.app-intro {
+  color: var(--color-text-muted);
+  margin-bottom: 1.5rem;
+}
+
+.app-empty {
+  color: var(--color-text-muted);
+  padding: 1.5rem 0;
+  text-align: center;
+}
+
+/* --------------------------------------------------------------------------
+   Buttons (Ergänzungen zu style.css)
+   -------------------------------------------------------------------------- */
+
+.btn-block {
+  display: block;
+  width: 100%;
+  text-align: center;
+  min-height: 3rem;
+}
+
+.cta .btn-block,
+.app-main .btn-primary {
+  background-color: var(--color-primary);
+  color: #fff;
+}
+
+.btn-ghost {
+  background: none;
+  border: 2px solid var(--color-border);
+  color: var(--color-text);
+}
+
+.btn-ghost:hover {
+  border-color: var(--color-text-muted);
+}
+
+.btn-ghost:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.btn-secondary-outline {
+  background: none;
+  border: 2px solid var(--color-primary);
+  color: var(--color-primary);
+}
+
+.btn-secondary-outline:hover {
+  background-color: var(--color-primary);
+  color: #fff;
+}
+
+.app-link-btn {
+  display: block;
+  margin: 1.5rem auto 0;
+  background: none;
+  border: none;
+  color: var(--color-primary);
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0.5rem;
+  text-decoration: underline;
+}
+
+/* --------------------------------------------------------------------------
+   Verlauf (Startbildschirm)
+   -------------------------------------------------------------------------- */
+
+.history-list {
+  list-style: none;
+  margin: 1.5rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.history-item-btn {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15rem;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 0.9rem 1rem;
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+}
+
+.history-item-btn:hover {
+  border-color: var(--color-primary);
+}
+
+.history-item-id {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  letter-spacing: 0.02em;
+}
+
+.history-item-name {
+  font-weight: 600;
+}
+
+.history-item-date {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+/* --------------------------------------------------------------------------
+   Wizard
+   -------------------------------------------------------------------------- */
+
+.wizard-progress {
+  margin-bottom: 1.5rem;
+}
+
+.wizard-progress-bar {
+  height: 6px;
+  border-radius: 999px;
+  background-color: var(--color-border);
+  overflow: hidden;
+}
+
+.wizard-progress-fill {
+  height: 100%;
+  background-color: var(--color-primary);
+  transition: width 0.2s ease;
+}
+
+.wizard-step-label {
+  margin: 0.5rem 0 0;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.wizard-section {
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--color-secondary);
+  margin: 0 0 0.4rem;
+}
+
+.wizard-label {
+  display: block;
+  font-size: 1.2rem;
+  font-weight: 600;
+  line-height: 1.35;
+  margin-bottom: 1rem;
+}
+
+.wizard-input {
+  width: 100%;
+  padding: 0.8rem 0.9rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  font-family: inherit;
+  font-size: 1rem;
+  background-color: var(--color-surface);
+  resize: vertical;
+}
+
+.wizard-hint {
+  font-size: 0.88rem;
+  color: var(--color-text-muted);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 0.75rem 0.9rem;
+  margin-top: 1rem;
+}
+
+.wizard-choice-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.wizard-choice {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background-color: var(--color-surface);
+  cursor: pointer;
+  min-height: 2.75rem;
+}
+
+.wizard-choice:has(input:checked) {
+  border-color: var(--color-primary);
+  background-color: #eef2ff;
+}
+
+.wizard-choice input {
+  width: 1.15rem;
+  height: 1.15rem;
+  flex-shrink: 0;
+}
+
+.wizard-choice-priority {
+  align-items: flex-start;
+}
+
+.wizard-choice-priority span {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.wizard-choice-priority strong {
+  font-size: 0.95rem;
+}
+
+.wizard-choice-priority small {
+  color: var(--color-text-muted);
+}
+
+.wizard-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+.wizard-actions .btn {
+  flex: 1 1 auto;
+  min-height: 3rem;
+}
+
+#btn-back {
+  flex: 0 1 auto;
+}
+
+/* --------------------------------------------------------------------------
+   Ergebnis
+   -------------------------------------------------------------------------- */
+
+.result-assumptions {
+  margin-bottom: 1rem;
+}
+
+.result-markdown {
+  white-space: pre-wrap;
+  word-break: break-word;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 1rem;
+  font-family: "SFMono-Regular", Menlo, Consolas, monospace;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  max-height: 55vh;
+  overflow-y: auto;
+}
+
+.copy-status {
+  display: block;
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--color-secondary);
+  min-height: 1.2em;
+}
+
+/* --------------------------------------------------------------------------
+   Größere Viewports: App bleibt zentriert und kompakt, keine Desktop-Optimierung nötig
+   -------------------------------------------------------------------------- */
+
+@media (min-width: 601px) {
+  .app-main {
+    padding-top: 2rem;
+  }
+}

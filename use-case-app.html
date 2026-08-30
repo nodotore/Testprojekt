@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Use-Case-Interview - Nordlicht Studio</title>
+  <meta name="description" content="Geführtes Interview zur Erfassung neuer Use Cases, direkt auf dem iPhone nutzbar. Erzeugt fertigen Use-Case-Text zum Kopieren oder für USE_CASES.md.">
+
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#1d4ed8">
+
+  <!-- iOS: als Web-App installierbar machen (Safari -> Teilen -> Zum Home-Bildschirm) -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Use Cases">
+  <link rel="apple-touch-icon" href="icons/icon-180.png">
+  <link rel="icon" href="icons/icon-32.png" sizes="32x32">
+
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body class="app-body">
+  <header class="app-header">
+    <a href="index.html" class="app-back" aria-label="Zurück zur Website">&larr;</a>
+    <span class="app-title">Use-Case-Interview</span>
+  </header>
+
+  <main id="app-main" class="app-main">
+    <!-- Screen: Übersicht / Verlauf -->
+    <section id="screen-home" class="app-screen">
+      <h1>Use Cases</h1>
+      <p class="app-intro">
+        Beantworte ein kurzes, geführtes Interview &ndash; direkt auf dem
+        iPhone. Am Ende steht ein fertig formatierter Use Case, den du
+        kopieren, herunterladen oder in <code>USE_CASES.md</code> deines
+        Projekts einfügen kannst.
+      </p>
+      <button id="btn-new-use-case" class="btn btn-primary btn-block" type="button">+ Neuer Use Case</button>
+
+      <div id="history-empty" class="app-empty" hidden>Noch keine Use Cases erfasst.</div>
+      <ul id="history-list" class="history-list"></ul>
+    </section>
+
+    <!-- Screen: Interview-Wizard -->
+    <section id="screen-wizard" class="app-screen" hidden>
+      <div class="wizard-progress">
+        <div class="wizard-progress-bar"><div id="wizard-progress-fill" class="wizard-progress-fill"></div></div>
+        <p id="wizard-step-label" class="wizard-step-label"></p>
+      </div>
+
+      <form id="wizard-form" novalidate>
+        <div id="wizard-question"></div>
+        <p id="wizard-error" class="error-message" role="alert"></p>
+
+        <div class="wizard-actions">
+          <button type="button" id="btn-back" class="btn btn-ghost">Zurück</button>
+          <button type="button" id="btn-skip" class="btn btn-ghost">Überspringen</button>
+          <button type="submit" id="btn-next" class="btn btn-primary">Weiter</button>
+        </div>
+      </form>
+
+      <button type="button" id="btn-cancel-wizard" class="app-link-btn">Interview abbrechen</button>
+    </section>
+
+    <!-- Screen: Ergebnis -->
+    <section id="screen-result" class="app-screen" hidden>
+      <h1 id="result-title">Use Case erzeugt</h1>
+      <div id="result-assumptions" class="result-assumptions" hidden></div>
+      <pre id="result-markdown" class="result-markdown"></pre>
+      <p id="copy-status" class="copy-status" role="status"></p>
+
+      <div class="wizard-actions">
+        <button type="button" id="btn-copy" class="btn btn-primary">In Zwischenablage kopieren</button>
+        <button type="button" id="btn-download" class="btn btn-secondary-outline">Als .md herunterladen</button>
+      </div>
+      <button type="button" id="btn-delete-entry" class="app-link-btn">Diesen Use Case löschen</button>
+      <button type="button" id="btn-back-home" class="app-link-btn">Zur Übersicht</button>
+    </section>
+  </main>
+
+  <script src="js/use-case-app.js"></script>
+</body>
+</html>

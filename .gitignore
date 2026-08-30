@@ -1,5 +1,6 @@
 ﻿.playwright-mcp/
 *.png
+!icons/*.png
 node_modules/
 .env
 *.log

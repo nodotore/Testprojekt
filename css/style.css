@@ -293,6 +293,13 @@ main section {
   transition: background-color 0.15s ease, color 0.15s ease;
 }
 
+/* .btn setzt display:inline-block und würde damit versehentlich das
+   Standardverhalten des hidden-Attributs überschreiben (Author-Styles
+   gewinnen immer gegen die User-Agent-Regel [hidden] { display: none }). */
+.btn[hidden] {
+  display: none;
+}
+
 .btn-primary {
   background-color: #fff;
   color: var(--color-primary);

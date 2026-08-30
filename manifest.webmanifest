@@ -1,0 +1,17 @@
+{
+  "name": "Use-Case-Interview – Nordlicht Studio",
+  "short_name": "Use Cases",
+  "description": "Geführtes Interview zur Erfassung neuer Use Cases, direkt auf dem iPhone nutzbar – ohne App Store.",
+  "start_url": "./use-case-app.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f7f8fa",
+  "theme_color": "#1d4ed8",
+  "lang": "de",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
