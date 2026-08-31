@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>CD Musikfinder - Nordlicht Studio</title>
+  <meta name="description" content="CD-Hüllen fotografieren, automatisch einsortieren lassen und per Interpret oder Songtitel wiederfinden. Läuft offline, direkt auf dem iPhone installierbar.">
+
+  <link rel="manifest" href="manifest-cd-musikfinder.webmanifest">
+  <meta name="theme-color" content="#0f766e">
+
+  <!-- iOS: als Web-App installierbar machen (Safari -> Teilen -> Zum Home-Bildschirm) -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="CD Musikfinder">
+  <link rel="apple-touch-icon" href="icons/icon-180.png">
+  <link rel="icon" href="icons/icon-32.png" sizes="32x32">
+
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/app.css">
+  <link rel="stylesheet" href="css/cd-musikfinder.css">
+</head>
+<body class="app-body cdmf-body">
+  <header class="app-header">
+    <a href="index.html" class="app-back" aria-label="Zurück zur Website">&larr;</a>
+    <span class="app-title">CD Musikfinder</span>
+  </header>
+
+  <main id="app-main" class="app-main">
+    <!-- Screen: Bibliothek / Suche -->
+    <section id="screen-home" class="app-screen">
+      <h1>Meine CDs</h1>
+      <p class="app-intro">
+        CD-Hülle fotografieren oder Angaben von Hand eingeben &ndash; die App
+        sortiert deine Sammlung automatisch und hilft dir, jede CD schnell
+        wiederzufinden.
+      </p>
+
+      <div class="cdmf-actions">
+        <button type="button" id="btn-capture" class="btn btn-primary btn-block">📷 CD-Hülle fotografieren</button>
+        <button type="button" id="btn-manual" class="btn btn-secondary-outline btn-block">✏️ Manuell eingeben</button>
+      </div>
+      <input type="file" id="camera-input" accept="image/*" capture="environment" hidden>
+
+      <div class="cdmf-search-wrap">
+        <label for="search-input" class="sr-only">Nach Interpret oder Songtitel suchen</label>
+        <input type="search" id="search-input" class="wizard-input" placeholder="Interpret oder Songtitel suchen…" autocomplete="off">
+      </div>
+
+      <p id="resume-banner" class="cdmf-undo-banner" hidden>
+        <span>Unfertige CD-Erfassung gefunden.</span>
+        <span class="cdmf-banner-btns">
+          <button type="button" id="btn-resume-draft" class="app-link-btn cdmf-undo-btn">Fortsetzen</button>
+          <button type="button" id="btn-discard-draft" class="app-link-btn cdmf-undo-btn">Verwerfen</button>
+        </span>
+      </p>
+
+      <p id="undo-banner" class="cdmf-undo-banner" hidden>
+        <span id="undo-banner-text"></span>
+        <span class="cdmf-banner-btns">
+          <button type="button" id="btn-undo" class="app-link-btn cdmf-undo-btn">Rückgängig</button>
+          <button type="button" id="btn-dismiss-undo" class="app-link-btn cdmf-undo-btn" aria-label="Hinweis ausblenden">✕</button>
+        </span>
+      </p>
+
+      <div id="home-empty" class="app-empty" hidden>Leider keine Daten vorhanden.</div>
+      <p id="home-count" class="cdmf-count" hidden></p>
+      <ul id="cd-list" class="cdmf-cd-list"></ul>
+
+      <button type="button" id="btn-open-backup" class="app-link-btn">Backup &amp; Regale verwalten</button>
+    </section>
+
+    <!-- Screen: Foto-Aufnahme / Qualitätsprüfung -->
+    <section id="screen-capture" class="app-screen" hidden>
+      <h1>Foto prüfen</h1>
+      <div class="cdmf-preview-wrap">
+        <img id="capture-preview" class="cdmf-preview" alt="Aufgenommene CD-Hülle">
+      </div>
+      <p id="quality-warning" class="cdmf-quality-warning" role="alert" hidden></p>
+      <div class="wizard-actions">
+        <button type="button" id="btn-retake" class="btn btn-ghost">Erneut aufnehmen</button>
+        <button type="button" id="btn-accept-photo" class="btn btn-primary">Foto ist gut</button>
+      </div>
+      <button type="button" id="btn-cancel-capture" class="app-link-btn">Abbrechen</button>
+    </section>
+
+    <!-- Screen: Verarbeitung (OCR) -->
+    <section id="screen-processing" class="app-screen" hidden>
+      <h1>Text wird erkannt…</h1>
+      <div class="cdmf-progress">
+        <div class="wizard-progress-bar"><div id="processing-fill" class="wizard-progress-fill"></div></div>
+        <p id="processing-status" class="wizard-step-label">Starte Texterkennung…</p>
+      </div>
+      <button type="button" id="btn-skip-ocr" class="app-link-btn">Ohne Texterkennung fortfahren</button>
+    </section>
+
+    <!-- Screen: Angaben prüfen/bearbeiten -->
+    <section id="screen-edit" class="app-screen" hidden>
+      <h1 id="edit-title">CD erfassen</h1>
+      <p id="edit-ocr-hint" class="wizard-hint" hidden>
+        Erkannter Text (bitte prüfen und die Felder unten daraus ausfüllen):
+        <span id="edit-ocr-text" class="cdmf-ocr-text"></span>
+      </p>
+
+      <form id="edit-form">
+        <label class="wizard-label" for="field-interpret">Interpret</label>
+        <input type="text" id="field-interpret" class="wizard-input" list="known-interprets" required>
+        <datalist id="known-interprets"></datalist>
+
+        <label class="wizard-label" for="field-album">CD-/Album-Titel</label>
+        <input type="text" id="field-album" class="wizard-input">
+
+        <label class="wizard-label" for="field-songs">Songtitel (ein Titel pro Zeile)</label>
+        <textarea id="field-songs" class="wizard-input" rows="4"></textarea>
+
+        <label class="wizard-label" for="field-ordner">Regal / Ablage</label>
+        <input type="text" id="field-ordner" class="wizard-input" list="known-ordner" placeholder="z. B. Wohnzimmer, Regal 2">
+        <datalist id="known-ordner"></datalist>
+
+        <p id="edit-error" class="error-message" role="alert"></p>
+
+        <div class="wizard-actions">
+          <button type="button" id="btn-cancel-edit" class="btn btn-ghost">Abbrechen</button>
+          <button type="submit" id="btn-save-cd" class="btn btn-primary">Speichern</button>
+        </div>
+      </form>
+      <button type="button" id="btn-delete-cd" class="app-link-btn" hidden>Diese CD löschen</button>
+    </section>
+
+    <!-- Screen: Detailansicht -->
+    <section id="screen-detail" class="app-screen" hidden>
+      <h1 id="detail-interpret">Interpret</h1>
+      <div class="cdmf-detail-photo-wrap">
+        <img id="detail-photo" class="cdmf-preview" alt="Foto der CD-Hülle" hidden>
+      </div>
+      <p id="detail-suggestion" class="wizard-hint"></p>
+      <dl class="cdmf-detail-list">
+        <dt>Album</dt>
+        <dd id="detail-album"></dd>
+        <dt>Regal / Ablage</dt>
+        <dd id="detail-ordner"></dd>
+        <dt>Songtitel</dt>
+        <dd id="detail-songs"></dd>
+      </dl>
+      <div class="wizard-actions">
+        <button type="button" id="btn-edit-cd" class="btn btn-secondary-outline">Bearbeiten</button>
+        <button type="button" id="btn-back-from-detail" class="btn btn-primary">Zurück zur Liste</button>
+      </div>
+    </section>
+
+    <!-- Screen: Backup & Regale -->
+    <section id="screen-backup" class="app-screen" hidden>
+      <h1>Backup &amp; Regale</h1>
+      <p class="app-intro">
+        Alle Daten bleiben ausschließlich auf diesem Gerät. Vor dem Löschen
+        einer CD wird automatisch eine Sicherung angelegt; zusätzlich lässt
+        sich die gesamte Sammlung jederzeit als Datei sichern.
+      </p>
+      <button type="button" id="btn-export-backup" class="btn btn-secondary-outline btn-block">Backup als Datei sichern</button>
+
+      <h2 class="cdmf-subheading">Automatische Sicherungen</h2>
+      <div id="backup-empty" class="app-empty" hidden>Leider keine Daten vorhanden.</div>
+      <ul id="backup-list" class="cdmf-cd-list"></ul>
+
+      <button type="button" id="btn-back-from-backup" class="app-link-btn">Zurück zur Liste</button>
+    </section>
+  </main>
+
+  <script src="js/cd-musikfinder.js"></script>
+</body>
+</html>

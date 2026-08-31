@@ -67,9 +67,39 @@ workflow*).
 
 Alle Seiten verlinken ausschließlich relative Pfade (`css/…`, `js/…`,
 `icons/…`), funktionieren also unverändert unter dem Pages-Unterpfad.
-Das gilt auch für `use-case-app.html`: Die Interview-App lässt sich auf
-dem iPhone direkt von der Pages-URL aus über Safari → Teilen → "Zum
-Home-Bildschirm" installieren.
+Das gilt auch für `use-case-app.html` und `cd-musikfinder.html`: Beide
+Apps lassen sich auf dem iPhone direkt von der Pages-URL aus über
+Safari → Teilen → "Zum Home-Bildschirm" installieren.
+
+## CD Musikfinder (`cd-musikfinder.html`)
+
+Eigenständige PWA zur Verwaltung einer physischen CD-Sammlung (siehe
+UC-001 in `USE_CASES.md`). Funktioniert komplett offline und ohne
+eigenes Backend:
+
+- **Erfassen**: CD-Hülle über die Gerätekamera fotografieren (mit
+  Bildqualitätsprüfung und Bestätigung vor dem Übernehmen) oder Angaben
+  von Hand eingeben.
+- **Texterkennung**: Best-effort-OCR über [Tesseract.js](https://github.com/naptha/tesseract.js),
+  das beim ersten Einsatz von einem CDN nachgeladen wird. Ist keine
+  Internetverbindung verfügbar oder schlägt das Laden fehl, wird ohne
+  Texterkennung fortgefahren – die Kernfunktionen (Fotografieren,
+  Speichern, Suchen) bleiben davon unberührt.
+- **Ablage**: Alle Daten (inkl. Fotos als `Blob`) liegen in IndexedDB,
+  ausschließlich auf dem Gerät. Die Sammlung wird automatisch nach
+  Regal/Ablage, dann Interpret sortiert; zu jeder CD wird ein
+  Fundort-Vorschlag berechnet.
+- **Suche**: nach Interpret oder Songtitel, mit direkter Anzeige, auf
+  welcher CD ein Song zu finden ist.
+- **Datensicherheit**: Vor jedem Löschen/Überschreiben wird automatisch
+  eine Sicherung angelegt (Rückgängig-Banner + browsbare Liste unter
+  "Backup & Regale"); zusätzlich lässt sich die gesamte Sammlung als
+  JSON-Datei exportieren. Ein unterbrochener Aufnahme-Vorgang (App
+  geschlossen, bevor gespeichert wurde) wird beim nächsten Start zum
+  Fortsetzen angeboten.
+
+Technische Details, Anforderungen und offene Punkte: siehe `USE_CASES.md`
+(UC-001) und `USE_CASE_PROMPTS.md`.
 
 ## Hinweise
 
