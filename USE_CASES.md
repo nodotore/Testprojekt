@@ -144,3 +144,10 @@ Benutzer-Feedback; Datenverlustrisiko bei fehlerhaftem Backup-Mechanismus.
 Fragen (Startzustand, Dateiformate, Einstellungen, Verhalten bei Absturz/
 Neustart) sollten vor der Implementierung geklärt werden, da sie
 Architektur und Datenmodell beeinflussen.
+
+### Umsetzungsstand
+
+Implementiert als PWA unter `cd-musikfinder.html`. Architekturentscheidung
+(PWA statt native App) und weitere technische Entscheidungen siehe
+`DECISIONS.md`, Umsetzungsdetails siehe `PLAN.md`, aktueller Stand siehe
+`PROGRESS.md`. Die oben genannten offenen Punkte sind weiterhin ungeklärt.

@@ -1,9 +1,13 @@
 # TODO
 
+- [x] UC-001 „CD Musikfinder": Architektur festgelegt (PWA statt native
+      App, siehe `DECISIONS.md`) und im selben Repository unter
+      `cd-musikfinder.html` umgesetzt.
+- [x] UC-001 „CD Musikfinder" implementiert (siehe `PROGRESS.md`) und
+      automatisiert getestet.
 - [ ] UC-001 „CD Musikfinder": offene Punkte aus `USE_CASES.md` mit dem
       Benutzer klären (Startzustand, Dateiformate, Einstellungen, Verhalten
-      bei Absturz/Neustart), bevor die Implementierung beginnt.
-- [ ] UC-001 „CD Musikfinder": Ort für das neue, eigenständige
-      App-Projekt festlegen (dieses Repository enthält bisher nur die
-      statische Website).
-- [ ] UC-001 „CD Musikfinder" gemäß `USE_CASE_PROMPTS.md` implementieren.
+      bei Absturz/Neustart).
+- [ ] UC-001 „CD Musikfinder": echten Test auf einem iPhone durchführen
+      (Kamera-Berechtigung, Foto-Qualität in der Praxis, Installation über
+      Safari → "Zum Home-Bildschirm").
