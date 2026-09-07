@@ -33,7 +33,7 @@ Standardwerte verwiesen) und Milestone 1 freigegeben. Fragen
 beantwortet ✅ (2026-09-07); Freigabe zum Start von Milestone 1 steht
 noch aus.
 
-## Milestone 1 — Grundgerüst
+## Milestone 1 — Grundgerüst (abgeschlossen 2026-09-07)
 
 **Ziel:** Lauffähiges, leeres Programmgerüst unter Windows startbar,
 mit Tests.
@@ -64,7 +64,12 @@ mit Tests.
 
 **Abnahmekriterium:** `start.ps1` startet unter Windows ohne manuelle
 Zusatzschritte außer Python-Installation; Ersteinrichtungsdialog
-speichert ein Profil; mind. 5 Tests grün.
+speichert ein Profil; mind. 5 Tests grün. **Erfüllt:** `start.ps1`
+erkennt Python 3.12+, legt `.venv` an, installiert Abhängigkeiten, führt
+`alembic upgrade head` aus und startet Streamlit; 50 Tests grün
+(`ruff`/`mypy` fehlerfrei). Offen: manuelle Verifikation unter echtem
+Windows sowie Browsertest der Oberfläche stehen noch aus (Sandbox bot
+nur Linux + Headless-/HTTP-Verifikation, siehe `PROGRESS.md`).
 
 ## Milestone 2 — Datenbeschaffung
 

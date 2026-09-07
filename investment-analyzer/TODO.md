@@ -13,19 +13,34 @@
       `MILESTONE_0.md` (2026-09-07)
 - [ ] Nutzer gibt Milestone 1 ausdrücklich frei
 
-## Milestone 1 (gesperrt bis Freigabe)
+## Milestone 1 — Grundgerüst (abgeschlossen)
 
-- [ ] `pyproject.toml` + Tooling-Setup (ruff, mypy, pytest)
-- [ ] Paketstruktur gemäß ADR-3 anlegen
-- [ ] Konfigurationssystem für Nutzerprofil (Auftrag §2)
-- [ ] SecretStore (Keyring + verschlüsselte Datei)
-- [ ] Datenbankschema + Alembic-Migrationen (SQLite + PostgreSQL)
-- [ ] Logging + Audit-Log-Grundgerüst
-- [ ] Streamlit-Startseite + Ersteinrichtungsdialog
-- [ ] Windows-Startskripte (`start.ps1`/`start.bat`)
-- [ ] Grundgerüst-Tests
+- [x] `pyproject.toml` + Tooling-Setup (ruff, mypy, pytest)
+- [x] Paketstruktur gemäß ADR-3/ADR-11 anlegen
+- [x] Konfigurationssystem für Nutzerprofil (Auftrag §2)
+- [x] SecretStore (Keyring + verschlüsselte Datei)
+- [x] Datenbankschema + Alembic-Migrationen (gegen SQLite getestet)
+- [x] Logging + Audit-Log-Grundgerüst
+- [x] Streamlit-Startseite + Ersteinrichtungsdialog
+- [x] Windows-Startskripte (`start.ps1`/`start.bat`)
+- [x] Grundgerüst-Tests (50 Tests grün, ruff+mypy fehlerfrei)
+- [ ] PostgreSQL-Migrationspfad gegen echte Instanz testen (nachholen,
+      sobald verfügbar — siehe `PROGRESS.md` „Offene Risiken")
+- [ ] Streamlit-Oberfläche in echtem Browser bedienen (Sandbox hatte nur
+      Headless-/HTTP-Verifikation)
+
+## Milestone 2 — Datenbeschaffung (nächster Schritt)
+
+- [ ] Connector-Basisklasse (Timeout, Retry+Backoff, Rate Limiting,
+      Cache, Validierung, Fehlerprotokoll, Lizenzhinweis)
+- [ ] Connector A: SEC EDGAR (Meldungen, USA)
+- [ ] Connector B: Alpha Vantage Free (Marktdaten)
+- [ ] SSRF-Schutz + URL-Allowlist je Connector
+- [ ] Normalisierung (Einheiten, Währung, Geschäftsjahr, Splits/Dividenden)
+- [ ] Entity Resolution (Ticker/ISIN/LEI → interne Entity-ID) befüllen
+- [ ] Tests: Cache, Rate-Limit-Einhaltung, simulierter Quellenausfall
 
 ## Spätere Milestones
 
-Siehe `PLAN.md` für Milestone 2–8; werden hier erst als Einzelaufgaben
+Siehe `PLAN.md` für Milestone 3–8; werden hier erst als Einzelaufgaben
 aufgeschlüsselt, wenn die jeweilige Milestone beginnt.

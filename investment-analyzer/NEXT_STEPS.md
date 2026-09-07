@@ -3,12 +3,17 @@
 1. ~~Blocker: Nutzer beantwortet die vier blockierenden Fragen aus
    `MILESTONE_0.md`~~ — erledigt am 2026-09-07 (siehe `MILESTONE_0.md`,
    ADR-7–ADR-10 in `DECISIONS.md`).
-2. **Aktueller Blocker:** ausdrückliche Freigabe des Nutzers zum Start
-   von Milestone 1 („Grundgerüst").
-3. Nach Freigabe: Milestone 1 gemäß `PLAN.md` beginnen (Tooling-Setup,
-   Paketstruktur, Konfigurationssystem, SecretStore, DB-Schema,
-   Logging/Audit, Streamlit-Startseite, Windows-Startskripte,
-   Grundgerüst-Tests).
-4. Zu Beginn von Milestone 2: Connector-Reihenfolge wie in
-   `DATA_SOURCES.md`/`PLAN.md` festgelegt umsetzen (SEC EDGAR + Alpha
-   Vantage Free), EU/DE-Lücke im UI sichtbar machen statt verschweigen.
+2. ~~Freigabe zum Start von Milestone 1~~ — erteilt am 2026-09-07.
+3. ~~Milestone 1 („Grundgerüst") umsetzen~~ — abgeschlossen am
+   2026-09-07 (siehe `PROGRESS.md`; 50 Tests grün, ruff/mypy fehlerfrei).
+4. **Aktuell:** Milestone 2 (Datenbeschaffung) gemäß `PLAN.md` beginnen:
+   Connector-Basisklasse, SEC EDGAR (Meldungen), Alpha Vantage Free
+   (Marktdaten), SSRF-Schutz/URL-Allowlist, Normalisierung,
+   Entity-Resolution-Befüllung, Cache-/Rate-Limit-/Ausfalltests. Die
+   bekannte EU/DE-Datenlücke (ADR-9) im späteren UI-Datenstatus sichtbar
+   machen, nicht verschweigen.
+5. Vor Abschluss von Milestone 1 als vollständig erledigt zu betrachten:
+   zwei offene Punkte aus `PROGRESS.md`/`TODO.md` bei Gelegenheit
+   nachholen — PostgreSQL-Migrationstest gegen eine echte Instanz und
+   ein Test der Streamlit-Oberfläche in einem echten Browser (Sandbox
+   hatte nur Headless-/HTTP-Verifikation zur Verfügung).

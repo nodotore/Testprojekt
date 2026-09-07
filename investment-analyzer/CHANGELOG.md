@@ -2,6 +2,22 @@
 
 ## Unreleased
 
+- Milestone 1 (Grundgerüst) umgesetzt: Python-3.12-Projektgerüst
+  (`pyproject.toml`, venv), Paketstruktur gemäß ADR-3/ADR-11
+  (`connectors, normalization, entity_resolution, fundamentals,
+  valuation, news, risk, scoring, backtesting, reports, ui, audit,
+  config, db`), Konfigurationssystem für das Nutzerprofil (Auftrag §2),
+  SecretStore mit OS-Keyring- und verschlüsseltem Datei-Fallback (ADR-5),
+  provenienzbehaftetes Datenbankschema (`Entity`, `EntityIdentifier`,
+  `Source`, `DataPoint`, `AuditLogEntry`, ADR-6) mit erster
+  Alembic-Migration (gegen SQLite verifiziert, Up-/Downgrade),
+  Logging- und Audit-Log-Grundgerüst inkl. Secret-Redaction in Logs,
+  Streamlit-Oberfläche „Start/Datenstatus" mit Ersteinrichtungsdialog
+  (ADR-12; zeigt ausschließlich echte, aus der DB gelesene Zahlen statt
+  Platzhaltern), Windows-Startskripte (`start.ps1`/`start.bat`,
+  `scripts/run-tests.ps1`) sowie `README.md`. 50 automatisierte Tests
+  grün, `ruff`/`mypy` fehlerfrei.
+
 - Nutzer hat die vier blockierenden Milestone-0-Fragen beantwortet
   (Projektstruktur = Unterverzeichnis bestätigt, Kostenvariante =
   Kostenlos, Prioritätsmärkte = breit/USA+DE+EU+global offen,

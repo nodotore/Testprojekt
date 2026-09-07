@@ -198,10 +198,61 @@ bleiben als optionaler, späterer Produktionspfad im Code vorbereitet
 nicht zwingend benötigt und nicht in den Windows-Startskripten
 vorausgesetzt.
 
+## ADR-11: Zwei zusätzliche Infrastruktur-Pakete (`config`, `db`)
+
+**Kontext:** Auftrag §4 nennt eine feste Liste von Domänenmodulen
+(`connectors, normalization, entity_resolution, fundamentals, valuation,
+news, risk, scoring, backtesting, reports, ui, audit`). Für das
+Grundgerüst (Milestone 1) werden aber Querschnittsbelange benötigt, die
+zu keinem dieser Domänenmodule gehören: Nutzerprofil-/App-Einstellungen
+inkl. Secret-Store, sowie die SQLAlchemy-`Base`-Klasse und Engine-/
+Session-Hilfsfunktionen.
+
+**Entscheidung:** Zwei zusätzliche Pakete `config/` (Nutzerprofil,
+App-Einstellungen, Secret-Store) und `db/` (SQLAlchemy-Grundgerüst:
+`Base`, Engine-/Session-Factory, dialektunabhängige Typ-Hilfen) werden
+ergänzt. Die eigentlichen Provenienz-Domänenmodelle bleiben bei den in
+ADR-3 zugewiesenen Modulen: `Entity`/`EntityIdentifier` in
+`entity_resolution/models.py`, `Source` in `connectors/models.py`,
+`DataPoint` in `normalization/models.py`, `AuditLogEntry` in
+`audit/models.py` — `db/__init__.py` importiert diese nur zentral, damit
+Alembic-Autogenerate und `create_all_tables()` (Test-/Dev-Bootstrap) alle
+Tabellen kennen.
+
+**Konsequenzen:** Die Modulliste aus ADR-3 bleibt fachlich unverändert;
+`config`/`db` sind reine Infrastruktur ohne eigene Fachlogik. Künftige
+Agenten, die an einem Domänenmodul arbeiten, finden dessen ORM-Modelle
+weiterhin im jeweils zuständigen Paket, nicht in `db/`.
+
+## ADR-12: UI-Logik von Streamlit-Rendering getrennt
+
+**Entscheidung:** Die Streamlit-Seite (`ui/app.py`) enthält nur
+Rendering-Code. Testbare Logik liegt in separaten, Streamlit-freien
+Modulen: `ui/bootstrap.py` (Anwendungskontext: Engine, Sessions,
+Logging, Audit-Logger, Profilspeicher; prüft per `check_database_ready`,
+ob Alembic-Migrationen bereits gelaufen sind, statt selbst Tabellen
+anzulegen), `ui/status.py` (wahrheitsgemäßer Datenstatus aus der DB,
+niemals Platzhalterzahlen) und `ui/profile_form.py` (Formular-Rohdaten →
+validiertes `NutzerProfil`).
+
+**Begründung:** Ermöglicht normale `pytest`-Unit-Tests für die Logik
+sowie zusätzlich End-to-End-Smoke-Tests der eigentlichen Seite über
+`streamlit.testing.v1.AppTest` (siehe `tests/ui/test_app_smoke.py`),
+ohne einen Browser zu benötigen. Ein echter `streamlit run`-Start wurde
+zusätzlich manuell verifiziert (HTTP 200, siehe `PROGRESS.md`).
+
+**Konsequenz für „Fail loud, nicht silent" (CLAUDE.md):** `app.py` legt
+beim Start NIE selbst Datenbanktabellen an (`create_all`) — das würde
+den Alembic-Versionsstand umgehen und stille Schema-Abweichungen
+zwischen Entwicklungs- und Produktivumgebung ermöglichen. Fehlt die
+Migration, zeigt die Oberfläche einen expliziten Fehler mit Anweisung,
+`start.ps1`/`start.bat` (führt `alembic upgrade head` aus) zu verwenden.
+
 ## Noch zu treffende Entscheidungen
 
-Keine blockierenden Entscheidungen mehr offen für den Start von
-Milestone 1. Verbleibende Detailfragen aus `MILESTONE_0.md` Abschnitt B
-(z. B. konkrete Zahlenwerte für Mindestmarktkapitalisierung) werden als
-konfigurierbare Standardwerte in Milestone 1 vorgeschlagen und im
-Ersteinrichtungsdialog vom Nutzer bestätigt/angepasst (Auftrag §2).
+Keine blockierenden Entscheidungen mehr offen für Milestone 1
+(abgeschlossen, siehe `PROGRESS.md`). Verbleibende Detailfragen aus
+`MILESTONE_0.md` Abschnitt B (z. B. weitere Feinjustierung der
+Mindestmarktkapitalisierung) bleiben über den Ersteinrichtungsdialog im
+laufenden Betrieb änderbar (Auftrag §2). Vor Milestone 2 zu klären:
+Priorisierung der EU/DE-Meldungsquellen-Lücke (siehe ADR-9).
