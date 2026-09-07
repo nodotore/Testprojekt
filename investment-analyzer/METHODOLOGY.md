@@ -1,8 +1,12 @@
-# Methodik (Planungsstand Milestone 0)
+# Methodik (Stand nach Milestone 3)
 
-**Status: geplant, noch nicht implementiert.** Diese Datei beschreibt die
-Methodik, wie sie ab Milestone 3/4/7 im Code umgesetzt werden soll. Sie
-dient als verbindliche Referenz für alle Agenten, damit
+**Status:** Der Abschnitt „Fundamentalkennzahlen" ist seit Milestone 3
+im Code umgesetzt (`fundamentals/calculations.py`, `series.py`,
+`report.py`) — Details und Abweichungen von der ursprünglichen Planung
+siehe dort. Die Abschnitte „Bewertung", „Scoring", „Zukunfts-/
+Trendanalyse", „Top-10-Rangliste" und „Backtesting-Prinzipien" sind
+weiterhin reine Planung für die jeweils zuständige künftige Milestone.
+Diese Datei dient als verbindliche Referenz für alle Agenten, damit
 Kennzahlenberechnung, Scoring und Prognosen konsistent und
 nachvollziehbar bleiben. Änderungen an der Methodik erfolgen über einen
 neuen ADR-Eintrag in `DECISIONS.md`, nicht stillschweigend im Code.
@@ -15,21 +19,35 @@ ADR-6). Ein Sprachmodell darf Ergebnisse zusammenfassen und erklären,
 aber keine Zahl erzeugen, die nicht aus einer Formel oder einem
 Quellenobjekt ableitbar ist (Auftrag §11).
 
-## Fundamentalkennzahlen (Milestone 3)
+## Fundamentalkennzahlen (Milestone 3 — implementiert)
 
-- Wachstumsraten (Umsatz, Gewinn, EPS, FCF) für 1/3/5/10 Jahre als
-  CAGR, jeweils mit Angabe der zugrundeliegenden Berichtsperioden.
-- Margen (Brutto/operativ/netto) inkl. Stabilitätsmaß (z. B.
-  Standardabweichung über die verfügbare Historie).
-- ROIC/ROE mit expliziter Behandlung von Sonderposten (bereinigt und
-  unbereinigt getrennt ausgewiesen, nie nur ein „bereinigter" Wert ohne
-  Kennzeichnung).
-- Cash Conversion = operativer Cashflow / Nettogewinn; Working Capital-
-  und Investitionsquoten aus der Kapitalflussrechnung.
+- Wachstumsraten (Umsatz, Gewinn, EPS, freier Cashflow) für 1/3/5/10
+  Jahre als CAGR (`fundamentals/calculations.py::growth_rate`), über das
+  Kalenderjahr der Berichtsperiode ermittelt; ohne exakt passenden
+  Vorjahreswert wird `None` statt einer Näherung geliefert.
+- Margen (Brutto/operativ/netto) inkl. Stabilitätsmaß (Stichproben-
+  Standardabweichung über die verfügbare Jahres-Historie).
+- ROE (Nettogewinn / durchschnittliches Eigenkapital) und ROIC
+  (NOPAT / investiertes Kapital, invested capital ≈ Schulden + Eigen-
+  kapital − liquide Mittel) implementiert. **Abweichung von der
+  ursprünglichen Planung:** eine getrennte bereinigte/unbereinigte
+  Sonderposten-Behandlung ist NICHT umgesetzt — es fließt der gemeldete
+  operative Gewinn ein, ohne Sonderposten-Bereinigung. Der ROIC-
+  Steuersatz ist ein expliziter, sichtbarer Parameter (Default 21 %,
+  aktueller US-Körperschaftsteuersatz) statt eines stillen Defaults.
+- Cash Conversion = operativer Cashflow / Nettogewinn; Investitionsquote
+  = |Capex| / Umsatz; Working Capital = kurzfristige Vermögenswerte −
+  kurzfristige Verbindlichkeiten.
 - Verschuldungskennzahlen: Nettoverbindlichkeiten/EBITDA, Zinsdeckung
-  (EBIT/Zinsaufwand), Fälligkeitsprofil aus den Anhangsangaben.
-- Verwässerung: Entwicklung der ausstehenden Aktien (voll verwässert vs.
-  Basis), Rückkaufvolumen, Dividendenquote und -deckung.
+  (operatives Ergebnis als EBIT-Näherung / Zinsaufwand). **Abweichung:**
+  ein Fälligkeitsprofil aus den Anhangsangaben ist NICHT umgesetzt — das
+  würde eine Volltextauswertung der Filings erfordern (wie bei den
+  zurückgestellten Warnsignalen, siehe `risk/warning_signals.py`).
+- Verwässerung: CAGR der verwässerten Aktienanzahl, Ausschüttungsquote
+  (Dividenden/Nettogewinn). **Abweichung:** Rückkaufvolumen wird erfasst
+  (`Metric.SHARE_REPURCHASES`), aber noch nicht zu einer eigenen
+  Kennzahl (z. B. Rückkaufrendite) verarbeitet — das benötigt
+  Marktkapitalisierungsdaten aus Milestone 4.
 
 ## Bewertung (Milestone 4)
 

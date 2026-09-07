@@ -98,6 +98,8 @@ class SecSubmissions:
     filings: tuple[SecFiling, ...]
     fetched_at_utc: datetime
     source_url: str
+    sic: str | None = None
+    sic_description: str | None = None
 
 
 @dataclass(frozen=True)
@@ -199,6 +201,8 @@ class SecEdgarConnector(Connector):
                 filings=filings,
                 fetched_at_utc=result.fetched_at_utc,
                 source_url=result.url,
+                sic=data.get("sic") or None,
+                sic_description=data.get("sicDescription") or None,
             )
         except (KeyError, TypeError, ValueError) as exc:
             raise ConnectorValidationError(

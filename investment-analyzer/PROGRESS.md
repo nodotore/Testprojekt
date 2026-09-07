@@ -204,3 +204,91 @@ Restatement-Verhalten). `ruff check .` und `mypy src` beide fehlerfrei.
 **Nächster Schritt:** Milestone 3 (Fundamentalanalyse) gemäß `PLAN.md`
 — siehe `NEXT_STEPS.md`. Vor produktivem Einsatz: Live-Verifikation der
 Connectoren in einer Umgebung mit Internetzugang nachholen.
+
+## Milestone 3 — Fundamentalanalyse
+
+**Status: Implementierung abgeschlossen; Verifikation an drei realen
+Unternehmen mangels Internetzugang nicht möglich (siehe „Offene
+Risiken", dieselbe Einschränkung wie in Milestone 2).**
+
+Umgesetzt (Hauptagent/project-orchestrator, sequenziell — jeder Schritt
+baut auf dem vorigen auf: Vokabular → Berechnungskern → Zeitreihen →
+Klassifikation → Warnsignale → Orchestrierung):
+
+- **Kennzahlen-Vokabular** (`fundamentals/metrics.py`): 22 kanonische
+  Kennzahlen (`Metric`-Enum) mit Mapping von gängigen US-GAAP-XBRL-Tags.
+  `normalization/ingest.py::ingest_sec_company_concept` löst nun jeden
+  XBRL-Tag verbindlich auf eine kanonische Kennzahl auf (oder verlangt
+  einen expliziten Override) — ein unbekannter Tag wird nicht mehr unter
+  einem uneinheitlichen Rohnamen gespeichert.
+- **Berechnungskern** (`fundamentals/calculations.py`): reine,
+  DB-unabhängige Funktionen für CAGR/Wachstumsraten (1/3/5/10 Jahre),
+  Brutto-/operative/Nettomarge inkl. Stabilität (Stichproben-
+  Standardabweichung), ROE, ROIC (mit explizit sichtbarem
+  Steuersatz-Parameter, kein stiller Default), Cash Conversion,
+  Investitionsquote, Working Capital, EBITDA-Näherung, Nettoverschuldung/
+  EBITDA, Zinsdeckung, Ausschüttungsquote, Aktienverwässerung. Grundsatz
+  durchgängig: fehlende Eingabe → `None`, niemals eine geschätzte Zahl.
+- **Zeitreihen-Repository** (`fundamentals/series.py`): point-in-time-
+  fähige Abfrage von `DataPoint`-Zeitreihen je Entity/Kennzahl; robuste,
+  metadatenfreie Trennung von Jahres- und Quartalswerten (Greedy-
+  Rückwärts-Auswahl nach Mindestabstand statt auf ein zusätzliches
+  „FY"/„Q1"-Feld angewiesen zu sein).
+- **SIC-Klassifikation + Peer-Gruppen** (`entity_resolution/models.py`
+  erweitert um `sic_code`/`sic_description`, neue Alembic-Migration
+  gegen SQLite verifiziert; `connectors/sec_edgar.py::SecSubmissions`
+  liefert SIC jetzt mit; `normalization/ingest.py::
+  update_entity_classification`; `fundamentals/peers.py::find_peers`).
+  Peer-Zuordnung bewusst nur branchenbasiert — Größenähnlichkeit
+  (Marktkapitalisierung) folgt erst mit Milestone 4.
+- **Warnsignale** (`risk/warning_signals.py`): sechs zahlenbasierte
+  Checks (sinkender Cashflow trotz steigendem Gewinn, starke
+  Verwässerung, hohe aktienbasierte Vergütung, ungewöhnliches
+  Forderungs-/Vorratswachstum, verspätete Einreichung). Acht aus
+  Auftrag §6 geforderte, aber textbasierte Signale (Going-Concern,
+  Rechtsstreitigkeiten, Sanktionen, Cybervorfälle u. a.) werden explizit
+  als noch nicht implementierbar aufgeführt (`NOT_YET_IMPLEMENTABLE_
+  SIGNALS`) statt stillschweigend als „unauffällig" vorgetäuscht.
+- **FundamentalsReport-Orchestrierung** (`fundamentals/report.py`):
+  fasst Wachstum, Margen, Renditen, Cashflow, Verschuldung,
+  Ausschüttung/Verwässerung, Warnsignale und Peers zu einem Bericht
+  zusammen; `data_completeness`/`missing_fields` machen sichtbar, wie
+  viele der 33 versuchten Kennzahlen tatsächlich berechnet werden
+  konnten (Auftrag §7: fehlende Daten reduzieren die Aussagekraft,
+  werden nicht neutral mit Null bewertet).
+
+**Tests:** 66 neue Tests (insgesamt 182, alle grün) — u. a. 33
+Handrechnungs-Tests für den Berechnungskern mit exakt nachrechenbaren
+Zahlen (z. B. 1,1³ = 1,331 für 10 % CAGR über 3 Jahre), vier
+Integrationstests für `FundamentalsReport` mit drei durchgängig
+hand-verifizierten synthetischen Beispielunternehmen (vollständige
+Kennzahlen, Datenlücken-Fall, Peer-Zuordnung) plus ein Point-in-time-
+Test. `ruff check .` und `mypy src` beide fehlerfrei.
+
+**Geänderte/neue Dateien:** ausschließlich unter `investment-analyzer/`
+— neue Module in `fundamentals/`, `risk/warning_signals.py`, Erweiterung
+von `entity_resolution/models.py` und `connectors/sec_edgar.py`, neue
+Alembic-Migration, zugehörige Tests unter `tests/`.
+
+**Offene Risiken:**
+- **Verifikation an drei realen Unternehmen (Abnahmekriterium) nicht
+  erbracht.** Wie bereits in Milestone 2 dokumentiert, ist in dieser
+  Sandbox kein Zugriff auf `sec.gov` möglich. Die Handrechnungs-Tests
+  verwenden daher bewusst gekennzeichnete, synthetische Beispieldaten,
+  die die Korrektheit der Formeln beweisen, aber die Verifikation gegen
+  tatsächlich veröffentlichte Geschäftszahlen nicht ersetzen. Nachzuholen
+  in einer Umgebung mit Internetzugang.
+- Nur eine Teilmenge der Auftrag-§6-Warnsignale ist implementierbar ohne
+  Volltextauswertung der Filings (siehe `NOT_YET_IMPLEMENTABLE_SIGNALS`
+  in `risk/warning_signals.py`); die übrigen acht bleiben bis
+  Milestone 5 (Nachrichtenanalyse) bzw. einer künftigen
+  Filing-Text-Auswertung offen.
+- Peer-Gruppen basieren aktuell ausschließlich auf dem SIC-Code, ohne
+  Größenfilter (keine Marktkapitalisierungsdaten vor Milestone 4).
+- `FundamentalsReport.data_completeness`/`missing_fields` sind ein
+  einfacher Konfidenz-Indikator für Milestone 3 — das vollständige,
+  gewichtete Scoring mit Ausgabeklassen („Vertieft prüfen" etc.) ist
+  explizit Aufgabe von Milestone 4.
+
+**Nächster Schritt:** Milestone 4 (Bewertung und Score) gemäß `PLAN.md`
+— siehe `NEXT_STEPS.md`.

@@ -2,6 +2,25 @@
 
 ## Unreleased
 
+- Milestone 3 (Fundamentalanalyse) umgesetzt: kanonisches Kennzahlen-
+  Vokabular mit XBRL-Tag-Mapping (`fundamentals/metrics.py`, ADR-14),
+  reiner Berechnungskern für Wachstum (1/3/5/10 Jahre), Margen +
+  Stabilität, ROE/ROIC, Cashflow-Kennzahlen, Verschuldung, Ausschüttung/
+  Verwässerung (`fundamentals/calculations.py`), point-in-time-fähiges
+  Zeitreihen-Repository mit metadatenfreier Jahres-/Quartalstrennung
+  (`fundamentals/series.py`, ADR-15), SIC-Klassifikation (neue Alembic-
+  Migration) und Peer-Gruppen-Zuordnung (`fundamentals/peers.py`),
+  sechs zahlenbasierte Warnsignal-Checks mit expliziter Auflistung der
+  noch nicht implementierbaren, textbasierten Signale
+  (`risk/warning_signals.py`), sowie die Orchestrierung zu einem
+  `FundamentalsReport` mit `data_completeness`/`missing_fields`
+  (`fundamentals/report.py`). 66 neue Tests (insgesamt 182), davon 33
+  Handrechnungs-Tests für den Berechnungskern und vier
+  Integrationstests mit drei hand-verifizierten synthetischen
+  Beispielunternehmen; `ruff`/`mypy` fehlerfrei. Verifikation an drei
+  realen Unternehmen mangels Internetzugang in dieser Sandbox nicht
+  möglich (offener Punkt, siehe PROGRESS.md).
+
 - Milestone 2 (Datenbeschaffung) umgesetzt: Connector-Grundgerüst
   (Timeout, exponentieller Retry-Backoff, injizierbarer Rate-Limiter,
   dateibasierter TTL-Cache ohne stillen Stale-Fallback, SSRF-Schutz mit

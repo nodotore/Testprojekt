@@ -9,10 +9,15 @@
 4. ~~Milestone 2 („Datenbeschaffung") umsetzen~~ — Implementierung
    abgeschlossen am 2026-09-07 (SEC-EDGAR- + Alpha-Vantage-Connector,
    Entity-Resolution, Ingestion; 116 Tests grün, ruff/mypy fehlerfrei).
-   **Ein Punkt bleibt formal offen, siehe 5.**
-5. **Offen — vor produktivem Einsatz nachzuholen:** Live-Verifikation
-   der beiden Connectoren gegen die echten APIs mit mindestens zehn
-   realen Unternehmen (Auftrag-Abnahmekriterium Milestone 2). In dieser
+5. ~~Milestone 3 („Fundamentalanalyse") umsetzen~~ — Implementierung
+   abgeschlossen am 2026-09-07 (Kennzahlen-Vokabular, Berechnungskern,
+   Zeitreihen-Repository, SIC-Klassifikation/Peer-Gruppen, Warnsignale,
+   FundamentalsReport; 182 Tests grün, ruff/mypy fehlerfrei).
+6. **Offen — vor produktivem Einsatz nachzuholen (Milestone 2 + 3, ein
+   gemeinsamer Blocker):** Live-Verifikation der Connectoren gegen die
+   echten APIs mit mindestens zehn realen Unternehmen UND
+   Handrechnungs-Abgleich der Fundamentalkennzahlen mit mindestens drei
+   davon (Auftrag-Abnahmekriterien Milestone 2 und 3). In dieser
    Sandbox-Entwicklungsumgebung ist ausgehender Netzwerkzugriff auf
    `sec.gov` und `alphavantage.co` durch die Egress-Policy des
    Umgebungs-Proxys blockiert (verifiziert per `curl`, siehe
@@ -24,12 +29,20 @@
      (kostenlos erhältlich unter alphavantage.co); der öffentliche
      „demo"-Schlüssel deckt nur das Testsymbol IBM ab, nicht zehn
      beliebige Unternehmen.
-6. **Aktuell nächster inhaltlicher Schritt:** Milestone 3
-   (Fundamentalanalyse) gemäß `PLAN.md` beginnen — Kennzahlenberechnung,
-   Zeitreihen (1/3/5/10 Jahre), Peer-Gruppen, Warnsignale. Dabei auch
-   die in Milestone 2 offen gelassene Notierungswährung für
-   Alpha-Vantage-Kurse auflösen (siehe `TODO.md`).
-7. Weiterhin offen, bei Gelegenheit nachzuholen (nicht blockierend):
-   PostgreSQL-Migrationstest gegen eine echte Instanz, Test der
-   Streamlit-Oberfläche in einem echten Browser (Sandbox hatte nur
-   Headless-/HTTP-Verifikation zur Verfügung).
+   - Für den Handrechnungs-Abgleich: drei reale Unternehmen mit
+     öffentlich einsehbaren Geschäftsberichten auswählen, Kennzahlen von
+     Hand aus dem 10-K nachrechnen und mit `build_fundamentals_report()`
+     vergleichen.
+7. **Aktuell nächster inhaltlicher Schritt:** Milestone 4 (Bewertung
+   und Score) gemäß `PLAN.md` beginnen — Multiples, DCF mit drei
+   Szenarien + Sensitivitätsmatrix, erklärbares Scoring mit
+   Startgewichtung aus Auftrag §7, Konfidenzlogik, Gegenargumente/
+   Ausgabeklassen.
+8. Bei Gelegenheit, nicht blockierend für Milestone 4:
+   - Notierungswährung für Alpha-Vantage-Kurse auflösen (aus
+     Milestone 2 offen, weiterhin nicht erledigt).
+   - Peer-Gruppen-Zuordnung um einen Größenfilter (Marktkapitalisierung)
+     ergänzen, sobald in Milestone 4 verfügbar.
+   - PostgreSQL-Migrationstest gegen eine echte Instanz, Test der
+     Streamlit-Oberfläche in einem echten Browser (Sandbox hatte nur
+     Headless-/HTTP-Verifikation zur Verfügung).

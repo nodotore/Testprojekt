@@ -23,8 +23,9 @@ from sqlalchemy.orm import Session
 
 from investment_analyzer.connectors.alpha_vantage import AlphaVantageQuote
 from investment_analyzer.connectors.models import Source
-from investment_analyzer.connectors.sec_edgar import SecCompanyConcept
+from investment_analyzer.connectors.sec_edgar import SecCompanyConcept, SecSubmissions
 from investment_analyzer.entity_resolution.models import Entity
+from investment_analyzer.fundamentals.metrics import Metric, resolve_metric
 from investment_analyzer.normalization.models import DataPoint, ValueKind
 
 
@@ -44,14 +45,35 @@ def _sec_filing_index_url(cik: str, accession_number: str) -> str:
 
 
 def ingest_sec_company_concept(
-    session: Session, *, entity: Entity, source: Source, concept: SecCompanyConcept
+    session: Session,
+    *,
+    entity: Entity,
+    source: Source,
+    concept: SecCompanyConcept,
+    metric: Metric | None = None,
 ) -> list[DataPoint]:
     """Wandelt eine ``SecCompanyConcept`` (eine XBRL-Kennzahl, alle Perioden) in DataPoints um.
+
+    Der XBRL-Tag (``concept.tag``) wird auf eine kanonische Kennzahl
+    (``fundamentals.metrics.Metric``) abgebildet — entweder automatisch
+    über ``resolve_metric`` oder explizit über ``metric`` (z. B. für
+    Tags, die (noch) nicht im Mapping stehen). Ist keines von beiden
+    möglich, wird ein ``ValueError`` ausgelöst statt die Kennzahl unter
+    einem uneinheitlichen Rohnamen zu speichern (Auftrag §6: verbindliches
+    Kennzahlen-Vokabular ab Milestone 3).
 
     Jede von der SEC gemeldete Periode/Einreichung wird zu einer Zeile mit
     ``value_kind=REPORTED``. Bereits vorhandene (Entity, Kennzahl,
     Berichtsperiode, Einreichung) werden nicht erneut eingefügt.
     """
+
+    resolved_metric = metric or resolve_metric(concept.tag)
+    if resolved_metric is None:
+        raise ValueError(
+            f"XBRL-Tag {concept.tag!r} ist nicht im Kennzahlen-Mapping "
+            "(fundamentals/metrics.py) bekannt. Entweder das Mapping ergänzen "
+            "oder den Parameter 'metric' explizit angeben."
+        )
 
     existing_keys = {
         (period_end, document_id)
@@ -59,7 +81,7 @@ def ingest_sec_company_concept(
             select(DataPoint.period_end, DataPoint.document_id).where(
                 DataPoint.entity_id == entity.id,
                 DataPoint.source_id == source.id,
-                DataPoint.metric_name == concept.tag,
+                DataPoint.metric_name == resolved_metric.value,
             )
         ).all()
     }
@@ -73,7 +95,7 @@ def ingest_sec_company_concept(
         data_point = DataPoint(
             entity_id=entity.id,
             source_id=source.id,
-            metric_name=concept.tag,
+            metric_name=resolved_metric.value,
             period_start=fact.start_date,
             period_end=fact.end_date,
             fiscal_year=fact.fiscal_year,
@@ -88,7 +110,13 @@ def ingest_sec_company_concept(
             confidence_score=0.95,
             document_url=_sec_filing_index_url(concept.cik, fact.accession_number),
             document_type=fact.form,
-            content_hash=_sha256(concept.tag, fact.unit, str(fact.value), fact.end_date.isoformat(), fact.accession_number),
+            content_hash=_sha256(
+                resolved_metric.value,
+                fact.unit,
+                str(fact.value),
+                fact.end_date.isoformat(),
+                fact.accession_number,
+            ),
             document_id=fact.accession_number,
         )
         session.add(data_point)
@@ -134,3 +162,20 @@ def ingest_alpha_vantage_quote(
     )
     session.add(data_point)
     return data_point
+
+
+def update_entity_classification(entity: Entity, submissions: SecSubmissions) -> None:
+    """Aktualisiert die SIC-Branchenklassifikation einer Entity aus SEC-Submissions.
+
+    Grundlage für die Peer-Gruppen-Zuordnung (Auftrag §6,
+    ``fundamentals/peers.py``). Ändert nur das übergebene ``Entity``-
+    Objekt in-memory; der Aufrufer committed die Session. Überschreibt
+    einen vorhandenen Wert nur, wenn die Antwort tatsächlich einen neuen
+    liefert — eine unvollständige Antwort löscht keine bereits bekannte
+    Klassifikation.
+    """
+
+    if submissions.sic:
+        entity.sic_code = submissions.sic
+    if submissions.sic_description:
+        entity.sic_description = submissions.sic_description

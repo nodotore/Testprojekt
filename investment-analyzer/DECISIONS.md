@@ -276,12 +276,66 @@ Test (`test_secret_params_landen_im_request_aber_nicht_in_der_
 provenienz_url`, `tests/connectors/test_base_connector.py`) sichert
 dieses Verhalten dauerhaft ab.
 
+## ADR-14: Kanonisches Kennzahlen-Vokabular verbindlich ab Milestone 3
+
+**Kontext:** `DataPoint.metric_name` speicherte bis Milestone 2 den
+rohen XBRL-Tag-Namen der Quelle (z. B. `"Revenues"`). Der Docstring in
+`normalization/models.py` kündigte bereits an, dass dieser Namensraum
+„ab Milestone 3 im fundamentals-Modul verbindlich" definiert wird.
+
+**Entscheidung:** `fundamentals/metrics.py` definiert ein kanonisches,
+quellenunabhängiges Kennzahlen-Vokabular (`Metric`-Enum, z. B.
+`Metric.REVENUE = "revenue"`) mit einem Mapping von SEC-US-GAAP-XBRL-
+Tags auf diese Kennzahlen. `normalization/ingest.py::
+ingest_sec_company_concept` löst jeden Tag verbindlich auf eine
+kanonische Kennzahl auf (oder verlangt einen expliziten `metric`-
+Override) und speichert `DataPoint.metric_name` fortan als kanonischen
+Namen (z. B. `"revenue"` statt `"Revenues"`). Ein unbekannter Tag löst
+einen `ValueError` aus, statt uneinheitlich unter dem Rohnamen
+gespeichert zu werden.
+
+**Konsequenz — bewusste Abhängigkeit `normalization` → `fundamentals`:**
+Dies führt zu einer gerichteten Abhängigkeit von `normalization` auf
+`fundamentals.metrics` (nicht umgekehrt, kein Zyklus: `fundamentals.
+metrics` hat keine Abhängigkeit zurück zu `normalization`). Das weicht
+von der reinen ADR-3-Modultrennung geringfügig ab, ist aber die
+konsistente Umsetzung der bereits in Milestone 1 dokumentierten
+Absicht. Migrationspfad für bereits gespeicherte Milestone-2-Testdaten:
+keiner nötig, da in dieser Sandbox noch keine Produktivdaten aus echten
+Quellenabrufen bestehen (siehe „Offene Risiken" in `PROGRESS.md`).
+
+## ADR-15: Jahres-/Quartalstrennung ohne zusätzliches Metadatenfeld
+
+**Kontext:** Der SEC-XBRL-Company-Concept-Endpoint liefert pro Fakt ein
+`fp`-Feld (`"Q1"`/`"Q2"`/`"Q3"`/`"FY"`), das Quartals- von
+Jahreswerten unterscheidet. `DataPoint` speichert dieses Feld bewusst
+nicht separat (siehe `normalization/models.py`), um das Datenmodell
+nicht auf eine quellenspezifische Konvention festzulegen, die für
+künftige, nicht-SEC-Quellen ggf. nicht existiert.
+
+**Entscheidung:** `fundamentals/series.py::select_annual_points` wählt
+Jahrespunkte stattdessen geometrisch: vom jüngsten Zeitreihenpunkt
+rückwärts wird ein weiterer Punkt nur aufgenommen, wenn er mindestens
+330 Tage vor dem zuletzt aufgenommenen liegt. Funktioniert unabhängig
+von Metadaten und sowohl für Fluss- als auch für Bestandsgrößen.
+
+**Konsequenz:** Bei sehr unregelmäßiger Berichtsfrequenz (z. B.
+Rumpfgeschäftsjahre nach einer Restrukturierung) kann die Heuristik
+einzelne Perioden falsch einordnen. Dieses Risiko wird als vertretbar
+eingestuft, da eine falsch eingeordnete Periode zu einem fehlenden
+(`None`) statt einem falschen Wachstumswert führt — die
+`growth_rate`-Funktion verlangt ohnehin eine exakte Kalenderjahr-
+Übereinstimmung (siehe `calculations.py`) und liefert sonst `None`,
+nie eine erfundene Zahl.
+
 ## Noch zu treffende Entscheidungen
 
-Keine blockierenden Entscheidungen mehr offen für Milestone 1 oder 2
-(beide abgeschlossen, siehe `PROGRESS.md`). Verbleibende Detailfragen
-aus `MILESTONE_0.md` Abschnitt B (z. B. weitere Feinjustierung der
+Keine blockierenden Entscheidungen mehr offen für Milestone 1–3 (alle
+abgeschlossen, siehe `PROGRESS.md`). Verbleibende Detailfragen aus
+`MILESTONE_0.md` Abschnitt B (z. B. weitere Feinjustierung der
 Mindestmarktkapitalisierung) bleiben über den Ersteinrichtungsdialog im
 laufenden Betrieb änderbar (Auftrag §2). Weiterhin offen: Priorisierung
-der EU/DE-Meldungsquellen-Lücke (ADR-9) und Auflösung der
-Notierungswährung für Alpha-Vantage-Kurse (siehe `TODO.md`, Milestone 3).
+der EU/DE-Meldungsquellen-Lücke (ADR-9), Auflösung der
+Notierungswährung für Alpha-Vantage-Kurse, und ob die Peer-Gruppen-
+Zuordnung schon vor Milestone 4 um einen Größenfilter ergänzt werden
+soll (siehe `TODO.md`).

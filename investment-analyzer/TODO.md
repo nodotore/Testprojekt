@@ -54,12 +54,34 @@
 - [ ] EU/DE-Meldungsquellen-Lücke (ADR-9): ggf. in späterer Milestone
       schließen, falls Nutzer das priorisiert.
 
-## Milestone 3 — Fundamentalanalyse (nächster Schritt)
+## Milestone 3 — Fundamentalanalyse (Implementierung abgeschlossen)
+
+- [x] Kennzahlen-Vokabular + XBRL-Tag-Mapping (`fundamentals/metrics.py`)
+- [x] Berechnungskern: Wachstum, Margen+Stabilität, ROE/ROIC, Cashflow-
+      Kennzahlen, Verschuldung, Ausschüttung/Verwässerung
+- [x] Point-in-time-Zeitreihen-Repository mit Jahres-/Quartalstrennung
+- [x] SIC-Klassifikation (Migration) + Peer-Gruppen-Zuordnung
+- [x] Sechs zahlenbasierte Warnsignal-Checks; textbasierte Signale
+      explizit als offen dokumentiert (kein Fake-Coverage)
+- [x] FundamentalsReport-Orchestrierung mit `data_completeness`/
+      `missing_fields`
+- [x] Tests: 66 neue (insgesamt 182 grün), `ruff`/`mypy` fehlerfrei
+- [ ] **Offen:** Handrechnungs-Verifikation an mind. 3 realen
+      Unternehmen (Auftrag-Abnahmekriterium) — in dieser Sandbox mangels
+      Internetzugang nicht möglich (siehe `PROGRESS.md`, dieselbe
+      Einschränkung wie Milestone 2). Nachholen, sobald Internetzugang
+      verfügbar ist.
+- [ ] Notierungswährung für Alpha-Vantage-Kurse auflösen (aus
+      Milestone 2 verschoben, weiterhin offen)
+- [ ] Peer-Gruppen um Größenfilter (Marktkapitalisierung) erweitern,
+      sobald in Milestone 4 verfügbar
+
+## Milestone 4 — Bewertung und Score (nächster Schritt)
 
 Siehe `PLAN.md` für Details; wird hier aufgeschlüsselt, sobald die
 Milestone beginnt.
 
 ## Spätere Milestones
 
-Siehe `PLAN.md` für Milestone 4–8; werden hier erst als Einzelaufgaben
+Siehe `PLAN.md` für Milestone 5–8; werden hier erst als Einzelaufgaben
 aufgeschlüsselt, wenn die jeweilige Milestone beginnt.

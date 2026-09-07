@@ -122,7 +122,7 @@ echtem Internetzugang (z. B. beim Nutzer über `start.ps1`); für Alpha
 Vantage zusätzlich erst, sobald ein echter API-Schlüssel vorliegt (der
 öffentliche „demo"-Schlüssel funktioniert nur für das Symbol IBM).
 
-## Milestone 3 — Fundamentalanalyse
+## Milestone 3 — Fundamentalanalyse (abgeschlossen 2026-09-07, mit offenem Punkt)
 
 Normalisierung, Kennzahlen (Auftrag §6 „Fundamentaldaten"), Zeitreihen
 (1/3/5/10 Jahre), Peer-Gruppen-Zuordnung, Warnsignale (Auftrag §6
@@ -130,6 +130,36 @@ Normalisierung, Kennzahlen (Auftrag §6 „Fundamentaldaten"), Zeitreihen
 Abnahme: manuell nachgerechnete Testfälle (mind. 3 reale Unternehmen,
 Handrechnung vs. Code) stimmen überein (financial-analysis-agent +
 test-agent).
+
+**Erfüllt:** Kanonisches Kennzahlen-Vokabular (`fundamentals/metrics.py`,
+22 Kennzahlen, XBRL-Tag-Mapping) verbindlich in der Ingestion verankert
+(Auftrag §16-Grundsatz „keine unbelegten Zahlen" — unbekannte Tags
+werden abgelehnt statt uneinheitlich gespeichert). Reiner, DB-freier
+Berechnungskern (`calculations.py`: CAGR/Wachstum, Margen + Stabilität,
+ROE/ROIC, Cash Conversion/Investitionsquote/Working Capital, EBITDA,
+Nettoverschuldung/EBITDA, Zinsdeckung, Ausschüttungsquote,
+Aktienverwässerung). Point-in-time-fähiges Zeitreihen-Repository
+(`series.py`) mit robuster Jahres-/Quartals-Trennung ohne zusätzliche
+Metadaten. SIC-Klassifikation (neue Alembic-Migration, gegen SQLite
+verifiziert) und einfache Peer-Gruppen-Zuordnung über den SIC-Code.
+Sechs zahlenbasierte Warnsignal-Checks (`risk/warning_signals.py`) mit
+expliziter Auflistung der acht textbasierten, noch nicht
+implementierbaren Signale aus Auftrag §6 (keine Fake-Coverage).
+Orchestrierung zu einem `FundamentalsReport` (`report.py`) inkl.
+`data_completeness`/`missing_fields` — fehlende Daten reduzieren
+sichtbar die Aussagekraft statt neutral mit Null bewertet zu werden
+(Auftrag §7-Grundsatz, vollständige Umsetzung folgt in Milestone 4).
+66 neue Tests (insgesamt 182), `ruff`/`mypy` fehlerfrei.
+
+**Offen — Verifikation an drei realen Unternehmen:** Die Handrechnungs-
+Tests verwenden bewusst einfache, synthetische Beispieldaten (klar so
+gekennzeichnet), da diese Sandbox mangels Internetzugangs keine echten
+SEC-Filings laden konnte (dieselbe Einschränkung wie bei den
+Connector-Live-Tests in Milestone 2, siehe `PROGRESS.md`). Die Formeln
+sind damit nachweislich korrekt implementiert; der Abgleich mit
+tatsächlich veröffentlichten Geschäftszahlen dreier realer Unternehmen
+steht noch aus und ist nachzuholen, sobald Internetzugang und
+(für Alpha Vantage) ein echter API-Schlüssel verfügbar sind.
 
 ## Milestone 4 — Bewertung und Score
 

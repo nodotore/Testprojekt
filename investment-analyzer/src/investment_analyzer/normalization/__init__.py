@@ -10,6 +10,7 @@ Split-/Dividenden-Anpassung — folgen in Milestone 3).
 from investment_analyzer.normalization.ingest import (
     ingest_alpha_vantage_quote,
     ingest_sec_company_concept,
+    update_entity_classification,
 )
 from investment_analyzer.normalization.models import DataPoint, ValueKind
 
@@ -18,4 +19,5 @@ __all__ = [
     "ValueKind",
     "ingest_alpha_vantage_quote",
     "ingest_sec_company_concept",
+    "update_entity_classification",
 ]

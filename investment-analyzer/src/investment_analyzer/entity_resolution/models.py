@@ -29,6 +29,11 @@ class Entity(Base):
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     country: Mapped[str | None] = mapped_column(String(2), nullable=True)
     primary_exchange: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    #: SEC Standard Industrial Classification — Grundlage für die Peer-Gruppen-Zuordnung
+    #: (Auftrag §6, Milestone 3). Wird aus SecSubmissions befüllt, siehe
+    #: normalization/ingest.py::update_entity_classification.
+    sic_code: Mapped[str | None] = mapped_column(String(10), nullable=True)
+    sic_description: Mapped[str | None] = mapped_column(String(255), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
 
     identifiers: Mapped[list[EntityIdentifier]] = relationship(

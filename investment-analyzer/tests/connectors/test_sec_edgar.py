@@ -27,6 +27,8 @@ SUBMISSIONS_RESPONSE = {
     "name": "Apple Inc.",
     "tickers": ["AAPL"],
     "exchanges": ["Nasdaq"],
+    "sic": "3571",
+    "sicDescription": "Electronic Computers",
     "filings": {
         "recent": {
             "accessionNumber": ["0000320193-24-000123", "0000320193-24-000045"],
@@ -130,6 +132,8 @@ def test_get_submissions_liefert_geparste_filings() -> None:
     assert submissions.cik == "0000320193"
     assert submissions.name == "Apple Inc."
     assert submissions.tickers == ("AAPL",)
+    assert submissions.sic == "3571"
+    assert submissions.sic_description == "Electronic Computers"
     assert len(submissions.filings) == 2
     erster = submissions.filings[0]
     assert erster.accession_number == "0000320193-24-000123"
