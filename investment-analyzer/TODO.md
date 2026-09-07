@@ -76,12 +76,43 @@
 - [ ] Peer-Gruppen um Größenfilter (Marktkapitalisierung) erweitern,
       sobald in Milestone 4 verfügbar
 
-## Milestone 4 — Bewertung und Score (nächster Schritt)
+## Milestone 4 — Bewertung und Score (Implementierung abgeschlossen)
+
+- [x] Multiples (KGV, EV/EBITDA, EV/EBIT, KBV, KCFV, FCF-Rendite) als
+      reine Funktionen (`valuation/multiples.py`)
+- [x] DCF mit drei Szenarien (Basis/optimistisch/pessimistisch) +
+      Sensitivitätsmatrix (`valuation/dcf.py`)
+- [x] Valuation-Report-Orchestrierung inkl. Peer-Vergleich und
+      Datenlücken-Dokumentation (`valuation/report.py`)
+- [x] Kennzahlen-Vokabular um `PRICE_CLOSE` erweitert, point-in-time-
+      Zugriff auf den jüngsten Kurswert (`fundamentals/series.py::
+      get_latest_value`)
+- [x] Deterministisches, erklärbares Scoring mit Startgewichtung aus
+      Auftrag §7, `coverage`-Konfidenzsignal, sichtbaren Risikoabzügen,
+      Ausgabeklassen, Gegenargumenten/Ungültigkeitsbedingungen
+      (`scoring/score.py`)
+- [x] Tests: 59 neue (insgesamt 241 grün), `ruff`/`mypy` fehlerfrei
+- [ ] **Offen:** DCF-/Multiples-/Scoring-Handrechnung an realen
+      Unternehmen (Auftrag-Abnahmekriterium) — in dieser Sandbox mangels
+      Internetzugang nicht möglich (siehe `PROGRESS.md`, dieselbe
+      Einschränkung wie Milestone 2/3).
+- [ ] Bewertungskomponente „Sicherheitsmarge" um historischen Multiples-
+      Vergleich (eigene 5-/10-Jahres-Historie) erweitern, sobald
+      mehrjährige Kurshistorie akkumuliert ist.
+- [ ] Scoring-Komponente „Management/Kapitalallokation" um
+      Insidertransaktionen/Vergütungsdaten erweitern, sobald eine
+      strukturierte Quelle angebunden ist.
+- [ ] WACC-Standardwert (9 %) durch unternehmensspezifische CAPM-
+      Herleitung (mit Beta) ersetzen.
+- [ ] `ScoreResult`/`ValuationReport` dauerhaft persistieren und ins
+      Audit-Log schreiben (vorgesehen für Milestone 6/8a, UI/Rangliste).
+
+## Milestone 5 — Nachrichtenanalyse (nächster Schritt)
 
 Siehe `PLAN.md` für Details; wird hier aufgeschlüsselt, sobald die
 Milestone beginnt.
 
 ## Spätere Milestones
 
-Siehe `PLAN.md` für Milestone 5–8; werden hier erst als Einzelaufgaben
+Siehe `PLAN.md` für Milestone 6–8; werden hier erst als Einzelaufgaben
 aufgeschlüsselt, wenn die jeweilige Milestone beginnt.

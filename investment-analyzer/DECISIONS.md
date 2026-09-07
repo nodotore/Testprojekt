@@ -328,14 +328,74 @@ eingestuft, da eine falsch eingeordnete Periode zu einem fehlenden
 Übereinstimmung (siehe `calculations.py`) und liefert sonst `None`,
 nie eine erfundene Zahl.
 
+## ADR-16: Marktdaten (`PRICE_CLOSE`) als eigene Kategorie im Kennzahlen-Vokabular
+
+**Kontext:** `valuation/` benötigt für Multiples und Sicherheitsmarge
+den aktuellsten bekannten Kurs, ohne die Jahres-/Quartals-Heuristik aus
+ADR-15 (die für Fundamentaldaten aus Filings gedacht ist) auf tägliche
+Kursdaten anzuwenden.
+
+**Entscheidung:** `fundamentals/metrics.py::Metric` erhält
+`PRICE_CLOSE`, dokumentiert als Marktdatum, das weder zu
+`FLOW_METRICS` noch zu `STOCK_METRICS` gehört, aber dieselbe
+provenienzbehaftete, point-in-time-fähige Zeitreiheninfrastruktur
+nutzt. `normalization/ingest.py::ingest_alpha_vantage_quote` speichert
+fortan `Metric.PRICE_CLOSE.value` statt eines Literal-Strings (keine
+Verhaltensänderung, nur Formalisierung). Neu:
+`fundamentals/series.py::get_latest_value` liefert den jüngsten
+bekannten Wert einer Kennzahl ohne Jahres-/Quartalsfilterung — für
+Kurse ist „letzter bekannter Wert" die richtige Semantik, nicht
+„letzter Jahreswert".
+
+**Konsequenzen:** `valuation/report.py` nutzt `get_latest_value` für
+den aktuellen Kurs; alle anderen Kennzahlen bleiben über
+`get_latest_annual_value`/`select_annual_points` (ADR-15) angebunden.
+
+## ADR-17: Scoring — nicht berechenbare Komponenten werden aus der Gewichtssumme entfernt, nicht mit 0 bewertet
+
+**Kontext:** Auftrag §7 verlangt eine Startgewichtung über acht
+Komponenten (Finanzqualität, Bewertung, Wachstum, Bilanzstärke,
+Wettbewerbsvorteil, Management, Nachrichten, Datenqualität), verbietet
+aber ausdrücklich, fehlende Daten neutral mit 0 zu bewerten. Zwei
+Komponenten („Wettbewerbsvorteil", „Nachrichten und Katalysatoren")
+sind mit dem aktuellen Datenstand (keine Textanalyse/News-Modul vor
+Milestone 5) strukturell nicht berechenbar.
+
+**Entscheidung:** `scoring/score.py::compute_score` berechnet den
+Gesamtscore als gewichteten Durchschnitt ausschließlich über die
+tatsächlich berechenbaren Komponenten; deren Gewichte werden auf 100 %
+renormiert. Die nicht berechenbaren Komponenten werden explizit in
+`NOT_YET_IMPLEMENTABLE_COMPONENTS` benannt und tauchen weder als
+Teilscore noch als versteckte 0 auf. `coverage` (Anteil der
+tatsächlich genutzten Gewichtssumme an der vollen Auftrag-§7-Gewichtung,
+in dieser Milestone max. 85 %) macht diese Einschränkung sichtbar und
+fließt zusätzlich als Konfidenzschwelle in die Klassifikation ein
+(niedrige `coverage` oder niedrige `data_completeness` stufen auf
+„Beobachten"/„Datenlage unzureichend" herab, auch bei hohem reinen
+Score).
+
+**Begründung:** Verhindert exakt das in Auftrag §7 verbotene Verhalten
+(fehlende Daten = neutraler Malus), ohne die Berechenbarkeit der
+übrigen sechs Komponenten zu verzögern; folgt demselben „ehrliche
+Lücke dokumentieren statt vortäuschen"-Muster wie die zurückgestellten
+textbasierten Warnsignale in Milestone 3
+(`risk/warning_signals.py::NOT_YET_IMPLEMENTABLE_SIGNALS`).
+
+**Konsequenzen:** Sobald das `news`-Modul (Milestone 5) und eine
+strukturierte Wettbewerbsvorteil-Quelle verfügbar sind, werden die
+beiden Komponenten ergänzt und `coverage` steigt entsprechend — kein
+Schema-Bruch, da `ComponentScore`/`ScoreResult` bereits für eine
+variable Anzahl an Komponenten ausgelegt sind.
+
 ## Noch zu treffende Entscheidungen
 
-Keine blockierenden Entscheidungen mehr offen für Milestone 1–3 (alle
+Keine blockierenden Entscheidungen mehr offen für Milestone 1–4 (alle
 abgeschlossen, siehe `PROGRESS.md`). Verbleibende Detailfragen aus
 `MILESTONE_0.md` Abschnitt B (z. B. weitere Feinjustierung der
 Mindestmarktkapitalisierung) bleiben über den Ersteinrichtungsdialog im
 laufenden Betrieb änderbar (Auftrag §2). Weiterhin offen: Priorisierung
 der EU/DE-Meldungsquellen-Lücke (ADR-9), Auflösung der
-Notierungswährung für Alpha-Vantage-Kurse, und ob die Peer-Gruppen-
-Zuordnung schon vor Milestone 4 um einen Größenfilter ergänzt werden
-soll (siehe `TODO.md`).
+Notierungswährung für Alpha-Vantage-Kurse, unternehmensspezifische
+CAPM-Herleitung des WACC statt des groben Standardwerts, und ob die
+Peer-Gruppen-Zuordnung um einen Größenfilter ergänzt werden soll (siehe
+`TODO.md`).

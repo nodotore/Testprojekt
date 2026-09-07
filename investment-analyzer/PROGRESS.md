@@ -292,3 +292,103 @@ Alembic-Migration, zugehörige Tests unter `tests/`.
 
 **Nächster Schritt:** Milestone 4 (Bewertung und Score) gemäß `PLAN.md`
 — siehe `NEXT_STEPS.md`.
+
+## Milestone 4 — Bewertung und Score
+
+**Status: Implementierung abgeschlossen; Verifikation mit realen
+Marktdaten/DCF-Annahmen mangels Internetzugang nicht möglich (dieselbe
+Einschränkung wie Milestone 2/3, siehe „Offene Risiken").**
+
+Umgesetzt (Hauptagent/project-orchestrator, sequenziell — Multiples →
+DCF → Valuation-Orchestrierung → Scoring bauen aufeinander auf):
+
+- **Multiples** (`valuation/multiples.py`): KGV, EV/EBITDA, EV/EBIT,
+  KBV, Kurs/FCF, FCF-Rendite. Bei negativem/Null-Nenner (z. B. negativer
+  Gewinn) bewusst `None` statt einer irreführenden Zahl.
+- **DCF-Modell** (`valuation/dcf.py`): zweistufiges Discounted-Cashflow-
+  Modell (explizite Projektionsjahre + Gordon-Growth-Terminalwert).
+  Dokumentierte Vereinfachung: konstante FCF-Marge auf den projizierten
+  Umsatz statt einzeln modelliertem Capex/Working-Capital/Abschreibungs-
+  pfad. `run_dcf` liefert `None` bei rechnerisch unzulässigen Annahmen
+  (WACC ≤ Terminalwachstum oder ≤ 0) statt eines Fantasiewerts.
+  `build_sensitivity_matrix` deckt alle vier in Auftrag §6 genannten
+  Dimensionen über zwei 2D-Matrizen ab (Wachstum×WACC,
+  Marge×Terminalwachstum). `safety_margin()` = (unteres Band −
+  aktueller Kurs) / unteres Band, wie in `METHODOLOGY.md` festgelegt.
+- **Valuation-Report-Orchestrierung** (`valuation/report.py`):
+  Multiples aus aktuellem Kurs (`Metric.PRICE_CLOSE`, neu im
+  Kennzahlen-Vokabular ergänzt, siehe unten) + Fundamentaldaten; Peer-
+  Multiples über dieselbe SIC-Peer-Gruppe wie in Milestone 3, ohne
+  erfundene Werte für Peers ohne Datenlage; Standard-DCF-Szenarien
+  (`derive_default_scenarios`) leiten Wachstum/Marge deterministisch
+  aus der 3-/1-Jahres-Historie ab, WACC/Terminalwachstum sind explizit
+  gekennzeichnete Annahmen (Default 9 % / 2 %) — liefert `None` statt
+  einer erfundenen Annahme, wenn die Historie nicht reicht.
+- **Kennzahlen-Vokabular erweitert:** `Metric.PRICE_CLOSE` ergänzt
+  (Marktdaten, weder Fluss- noch Bestandsgröße), `ingest_alpha_vantage_
+  quote` nutzt es jetzt statt eines Roh-Strings — nutzt dieselbe
+  point-in-time-Zeitreihen-Infrastruktur wie die Fundamentaldaten.
+  `fundamentals/series.py::get_latest_value` ergänzt für Kennzahlen ohne
+  Jahresrhythmus (Kurse werden täglich beobachtet, nicht jährlich).
+- **Scoring** (`scoring/score.py`): exakte Umsetzung der Auftrag-§7-
+  Startgewichtung (25/20/15/15/10/5/5/5). Jede Teilkennzahl wird über
+  eine dokumentierte lineare Skala auf 0–100 abgebildet
+  (`_linear_score`), nie durch ein Sprachmodell bewertet. Zwei
+  Komponenten („Wettbewerbsvorteil", „Nachrichten und Katalysatoren")
+  sind strukturell nicht berechenbar und werden explizit als nicht
+  verfügbar markiert statt mit 0 bewertet — `coverage` (max. 85 % in
+  dieser Milestone) macht das sichtbar. Risiken aus den Milestone-3-
+  Warnsignalen wirken als sichtbare, benannte Punktabzüge. Konfidenz-
+  Schwellen (`coverage`, `data_completeness`) stufen unsichere
+  Kandidaten auf „Beobachten"/„Datenlage unzureichend" herab, auch wenn
+  der reine Score hoch wäre. Bis zu fünf positive Faktoren, fünf
+  Risiken, Gegenargumente und Ungültigkeitsbedingungen werden
+  deterministisch aus den berechneten Werten generiert. Verbotene
+  Formulierungen aus Auftrag §7 kommen nirgends vor (dediziert
+  getestet).
+
+**Tests:** 59 neue Tests (insgesamt 241, alle grün) — Multiples-
+Handrechnungen, ein exakt von Hand nachrechenbarer DCF-Fall
+(Wachstum = WACC, wodurch sich jede Jahresdiskontierung exakt zu
+`base_revenue × fcf_margin` kürzt), Sensitivitätsmatrix-Tests,
+Valuation-Report-Integrationstests (inkl. Peer-Vergleich und
+Datenlücken-Fall), sowie Scoring-Tests auf zwei Ebenen (reine
+Komponentenfunktionen mit von Hand gebauten Berichten + eine
+End-to-End-Datenbankprüfung). `ruff check .` und `mypy src` beide
+fehlerfrei.
+
+**Geänderte/neue Dateien:** ausschließlich unter `investment-analyzer/`
+— neue Module `valuation/multiples.py`, `valuation/dcf.py`,
+`valuation/report.py`, `scoring/score.py`, `scoring/__init__.py`;
+Erweiterungen in `fundamentals/metrics.py`, `fundamentals/series.py`,
+`normalization/ingest.py`; zugehörige Tests unter `tests/`.
+
+**Offene Risiken:**
+- **Verifikation mit realen Marktdaten (Abnahmekriterium „DCF-
+  Handrechnung stimmt") nur mit synthetischen Daten erbracht.** Wie in
+  Milestone 2/3 blockiert die Egress-Policy dieser Sandbox den Zugriff
+  auf `sec.gov`/`alphavantage.co`. Die DCF-/Multiples-Arithmetik ist
+  exakt hand-verifiziert, aber nicht gegen echte Kurs- und
+  Geschäftsberichtsdaten realer Unternehmen geprüft. Nachzuholen in
+  einer Umgebung mit Internetzugang und echtem Alpha-Vantage-Schlüssel.
+- Scoring-Komponente „Bewertung/Sicherheitsmarge" basiert in
+  Milestone 4 ausschließlich auf der DCF-Sicherheitsmarge — ein
+  historischer Multiples-Vergleich (eigene 5-/10-Jahres-Historie) ist
+  noch nicht möglich, da bislang keine mehrjährige Kurshistorie
+  akkumuliert wurde (Alpha Vantage GLOBAL_QUOTE liefert nur den
+  aktuellen Kurs je Abruf).
+- Scoring-Komponente „Management/Kapitalallokation" ist bewusst schmal
+  (nur Aktienverwässerung) — Insidertransaktionen und Vergütungsdaten
+  sind über keine angebundene Quelle strukturiert verfügbar.
+- WACC-Standardwert (9 %) ist eine grobe marktübliche Schätzung, kein
+  unternehmensspezifisch hergeleiteter Kapitalkostensatz (z. B. via
+  CAPM mit Beta) — Verbesserung als späterer Punkt vorgemerkt.
+- `ScoreResult`/`ValuationReport`/`FundamentalsReport` werden aktuell
+  nur zur Laufzeit berechnet, nicht in der Datenbank persistiert oder
+  ins Audit-Log geschrieben — das „nachvollziehbar geloggt" aus dem
+  Abnahmekriterium ist über die vollständig in `ScoreResult`
+  eingebetteten Gewichte/Notizen erfüllt, eine dauerhafte
+  Audit-Log-Persistenz folgt mit der UI-/Rangliste (Milestone 6/8a).
+
+**Nächster Schritt:** Milestone 5 (Nachrichtenanalyse) gemäß `PLAN.md`
+— siehe `NEXT_STEPS.md`.

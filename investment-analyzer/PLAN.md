@@ -161,7 +161,7 @@ tatsächlich veröffentlichten Geschäftszahlen dreier realer Unternehmen
 steht noch aus und ist nachzuholen, sobald Internetzugang und
 (für Alpha Vantage) ein echter API-Schlüssel verfügbar sind.
 
-## Milestone 4 — Bewertung und Score
+## Milestone 4 — Bewertung und Score (abgeschlossen 2026-09-07)
 
 Multiples, DCF mit drei Szenarien + Sensitivitätsmatrix (Auftrag §6
 „Bewertung"), erklärbares Scoring mit Startgewichtung aus Auftrag §7,
@@ -169,6 +169,46 @@ Konfidenzlogik (fehlende Daten → Konfidenzabschlag statt Nullwertung),
 Gegenargumente/Ausgabeklassen. Abnahme: DCF-Handrechnung stimmt;
 Scoring-Gewichte konfigurierbar und nachvollziehbar geloggt
 (financial-analysis-agent + test-agent).
+
+**Erfüllt:** Multiples-Berechnungskern (`valuation/multiples.py`: KGV,
+EV/EBITDA, EV/EBIT, KBV, Kurs/FCF, FCF-Rendite). Zweistufiges DCF-Modell
+(`valuation/dcf.py`) mit explizit dokumentierter Vereinfachung (konstante
+FCF-Marge statt einzeln modelliertem Capex/NWC/Abschreibungspfad),
+Sensitivitätsmatrizen für alle vier in Auftrag §6 genannten Dimensionen
+(Wachstum×WACC, Marge×Terminalwachstum), Sicherheitsmarge statt
+Einzelkursziel. `valuation/report.py` leitet die drei Szenarien
+(Basis/Optimistisch/Pessimistisch) deterministisch aus der eigenen
+3-/1-Jahres-Historie ab — liefert `None` (keine erfundene Annahme)
+statt einer Bewertung, wenn die Historie nicht reicht.
+`scoring/score.py` setzt die Auftrag-§7-Startgewichtung 1:1 um
+(25/20/15/15/10/5/5/5 = 100), rechnet Risiken als sichtbare, benannte
+Abzüge nach der gewichteten Durchschnittsbildung, und weist über
+`coverage`/`data_completeness` aus, wie vertrauenswürdig der Score ist
+— unterhalb definierter Schwellen wird auf „Beobachten" oder
+„Datenlage unzureichend" herabgestuft statt einen unbegründet hohen
+Score auszugeben. Zu jedem Ergebnis werden bis zu fünf positive
+Faktoren, fünf Risiken (inkl. der Warnsignal-Evidenz aus Milestone 3),
+Gegenargumente und Ungültigkeitsbedingungen erzeugt — alle Texte
+deterministisch aus den berechneten Zahlen generiert, nie vom
+Sprachmodell erfunden; die verbotenen Formulierungen „sicherer Kauf"/
+„garantierter Gewinn" werden nirgends verwendet (dediziert getestet).
+
+**Bewusste, dokumentierte Lücke:** Zwei der acht Auftrag-§7-Komponenten
+(„Wettbewerbsvorteil" 10 %, „Nachrichten und Katalysatoren" 5 %) sind
+strukturell nicht berechenbar, da es noch kein Wettbewerbs-/
+Geschäftsmodell- oder Nachrichtenmodul gibt (Milestone 5+). Sie werden
+NICHT mit 0 bewertet, sondern als „nicht verfügbar" markiert und aus
+der Gewichtssumme ausgeschlossen (`coverage` sinkt entsprechend auf
+maximal 85 %) — konsistent mit dem bereits in Milestone 3 etablierten
+Muster (`NOT_YET_IMPLEMENTABLE_SIGNALS`).
+
+59 neue Tests (insgesamt 241), davon zahlreiche exakte
+Handrechnungs-Tests (u. a. ein DCF-Fall mit Wachstum = WACC, wodurch
+sich jedes Jahr exakt auf `base_revenue × fcf_margin` abdiskontiert —
+siehe `tests/valuation/test_dcf.py`). `ruff`/`mypy` fehlerfrei. Wie in
+Milestone 2/3 war eine Verifikation mit echten Marktdaten/DCF-Annahmen
+für reale Unternehmen in dieser Sandbox mangels Internetzugang nicht
+möglich (siehe `PROGRESS.md`).
 
 ## Milestone 5 — Nachrichtenanalyse
 

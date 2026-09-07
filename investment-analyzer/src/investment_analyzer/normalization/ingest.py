@@ -142,7 +142,7 @@ def ingest_alpha_vantage_quote(
     data_point = DataPoint(
         entity_id=entity.id,
         source_id=source.id,
-        metric_name="price_close",
+        metric_name=Metric.PRICE_CLOSE.value,
         period_start=None,
         period_end=quote.latest_trading_day,
         fiscal_year=None,

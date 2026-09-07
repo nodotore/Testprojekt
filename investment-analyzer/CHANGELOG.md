@@ -2,6 +2,30 @@
 
 ## Unreleased
 
+- Milestone 4 (Bewertung und Score) umgesetzt: Multiples (KGV,
+  EV/EBITDA, EV/EBIT, KBV, KCFV, FCF-Rendite) als reine Funktionen
+  (`valuation/multiples.py`), Zwei-Phasen-DCF mit drei Szenarien
+  (Basis/optimistisch/pessimistisch) und Sensitivitätsmatrix
+  (`valuation/dcf.py`), Valuation-Report-Orchestrierung inkl.
+  Peer-Vergleich und expliziter Datenlücken-Dokumentation
+  (`valuation/report.py`), Kennzahlen-Vokabular um `PRICE_CLOSE`
+  erweitert (ADR-16) mit point-in-time-fähigem Zugriff auf den
+  jüngsten Kurswert (`fundamentals/series.py::get_latest_value`), sowie
+  deterministisches, erklärbares Scoring nach Auftrag §7
+  (`scoring/score.py`): Startgewichtung über sechs aktuell berechenbare
+  Komponenten mit Renormierung und sichtbarem `coverage`-
+  Konfidenzsignal statt Nullbewertung fehlender Daten (ADR-17),
+  sichtbare Risikoabzüge aus den Milestone-3-Warnsignalen,
+  Konfidenzschwellen für die Klassifikation, sowie deterministisch
+  generierte positive Faktoren/Risiken/Gegenargumente/
+  Ungültigkeitsbedingungen ohne verbotene Formulierungen. 59 neue Tests
+  (insgesamt 241), davon hand-verifizierte Multiples-/DCF-Fälle (u. a.
+  ein exakt nachrechenbarer Fall mit Wachstum = WACC) und
+  Scoring-Komponententests auf zwei Ebenen (reine Funktionen +
+  End-to-End-Datenbankprüfung); `ruff`/`mypy` fehlerfrei. Verifikation
+  an realen Unternehmen weiterhin mangels Internetzugang in dieser
+  Sandbox nicht möglich (siehe PROGRESS.md).
+
 - Milestone 3 (Fundamentalanalyse) umgesetzt: kanonisches Kennzahlen-
   Vokabular mit XBRL-Tag-Mapping (`fundamentals/metrics.py`, ADR-14),
   reiner Berechnungskern für Wachstum (1/3/5/10 Jahre), Margen +

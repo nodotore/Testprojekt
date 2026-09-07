@@ -53,6 +53,13 @@ class Metric(StrEnum):
     STOCK_BASED_COMPENSATION = "stock_based_compensation"
     DEPRECIATION_AND_AMORTIZATION = "depreciation_and_amortization"
 
+    #: Marktdaten (Alpha Vantage), keine Fundamentalkennzahl im engeren Sinn —
+    #: gehört weder zu FLOW_METRICS noch zu STOCK_METRICS, wird aber über
+    #: dasselbe Kennzahlen-Vokabular referenziert, damit `valuation/` dieselbe
+    #: point-in-time-Zeitreihen-Infrastruktur (`fundamentals/series.py`)
+    #: nutzen kann wie die Fundamentaldaten.
+    PRICE_CLOSE = "price_close"
+
 
 #: Als Geldbetrag interpretierbare Kennzahlen (für Marge/Wachstumsberechnungen relevant).
 FLOW_METRICS = frozenset(

@@ -12,6 +12,7 @@ from investment_analyzer.fundamentals.metrics import Metric
 from investment_analyzer.fundamentals.series import (
     get_annual_series,
     get_latest_annual_value,
+    get_latest_value,
     get_series,
     get_value_at,
     select_annual_points,
@@ -275,3 +276,64 @@ def test_get_latest_annual_value_ohne_daten_liefert_none(tmp_path: Path) -> None
         entity = session.get(Entity, entity_id)
         assert entity is not None
         assert get_latest_annual_value(session, entity, Metric.REVENUE) is None
+
+
+def test_get_latest_value_liefert_juengsten_punkt_ohne_jahresfilterung(tmp_path: Path) -> None:
+    """Tägliche Marktdaten (z. B. Kurse) haben keinen Jahresrhythmus.
+
+    ``get_series`` liefert alle Punkte unverändert (keine implizite
+    Jahresfilterung); ``get_latest_value`` greift daraus gezielt den
+    zeitlich jüngsten heraus, ohne den Umweg über die für Fundamental-
+    daten gedachte Jahres-Heuristik in ``select_annual_points``."""
+
+    session_factory = _session_factory(tmp_path)
+    with session_factory() as session:
+        sources = ensure_default_sources(session)
+        entity = find_or_create_entity(
+            session, name="Beispiel AG",
+            identifiers=[IdentifierSpec(id_type=IdentifierType.CIK, id_value="0000000001")],
+        )
+        session.flush()
+        session.add_all(
+            [
+                _make_datapoint(
+                    entity=entity, source=sources["alpha_vantage"], metric=Metric.PRICE_CLOSE,
+                    period_end=date(2024, 9, 4), value=100.0, retrieved_at_utc=datetime(2024, 9, 4, tzinfo=UTC),
+                ),
+                _make_datapoint(
+                    entity=entity, source=sources["alpha_vantage"], metric=Metric.PRICE_CLOSE,
+                    period_end=date(2024, 9, 5), value=101.5, retrieved_at_utc=datetime(2024, 9, 5, tzinfo=UTC),
+                ),
+                _make_datapoint(
+                    entity=entity, source=sources["alpha_vantage"], metric=Metric.PRICE_CLOSE,
+                    period_end=date(2024, 9, 6), value=102.0, retrieved_at_utc=datetime(2024, 9, 6, tzinfo=UTC),
+                ),
+            ]
+        )
+        session.commit()
+        entity_id = entity.id
+
+    with session_factory() as session:
+        entity = session.get(Entity, entity_id)
+        assert entity is not None
+        alle_punkte = get_series(session, entity, Metric.PRICE_CLOSE)
+        neuester = get_latest_value(session, entity, Metric.PRICE_CLOSE)
+
+    assert len(alle_punkte) == 3
+    assert neuester == (date(2024, 9, 6), 102.0)
+
+
+def test_get_latest_value_ohne_daten_liefert_none(tmp_path: Path) -> None:
+    session_factory = _session_factory(tmp_path)
+    with session_factory() as session:
+        entity = find_or_create_entity(
+            session, name="Firma ohne Daten",
+            identifiers=[IdentifierSpec(id_type=IdentifierType.CIK, id_value="0000000099")],
+        )
+        session.commit()
+        entity_id = entity.id
+
+    with session_factory() as session:
+        entity = session.get(Entity, entity_id)
+        assert entity is not None
+        assert get_latest_value(session, entity, Metric.REVENUE) is None

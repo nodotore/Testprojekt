@@ -1,15 +1,17 @@
-# Methodik (Stand nach Milestone 3)
+# Methodik (Stand nach Milestone 4)
 
-**Status:** Der Abschnitt „Fundamentalkennzahlen" ist seit Milestone 3
-im Code umgesetzt (`fundamentals/calculations.py`, `series.py`,
-`report.py`) — Details und Abweichungen von der ursprünglichen Planung
-siehe dort. Die Abschnitte „Bewertung", „Scoring", „Zukunfts-/
-Trendanalyse", „Top-10-Rangliste" und „Backtesting-Prinzipien" sind
-weiterhin reine Planung für die jeweils zuständige künftige Milestone.
-Diese Datei dient als verbindliche Referenz für alle Agenten, damit
-Kennzahlenberechnung, Scoring und Prognosen konsistent und
-nachvollziehbar bleiben. Änderungen an der Methodik erfolgen über einen
-neuen ADR-Eintrag in `DECISIONS.md`, nicht stillschweigend im Code.
+**Status:** Die Abschnitte „Fundamentalkennzahlen" (seit Milestone 3)
+und „Bewertung"/„Scoring" (seit Milestone 4) sind im Code umgesetzt
+(`fundamentals/calculations.py`, `series.py`, `report.py`;
+`valuation/multiples.py`, `dcf.py`, `report.py`; `scoring/score.py`) —
+Details und Abweichungen von der ursprünglichen Planung siehe dort. Die
+Abschnitte „Zukunfts-/Trendanalyse", „Top-10-Rangliste" und
+„Backtesting-Prinzipien" sind weiterhin reine Planung für die jeweils
+zuständige künftige Milestone. Diese Datei dient als verbindliche
+Referenz für alle Agenten, damit Kennzahlenberechnung, Scoring und
+Prognosen konsistent und nachvollziehbar bleiben. Änderungen an der
+Methodik erfolgen über einen neuen ADR-Eintrag in `DECISIONS.md`, nicht
+stillschweigend im Code.
 
 ## Grundprinzip
 
@@ -49,52 +51,74 @@ Quellenobjekt ableitbar ist (Auftrag §11).
   Kennzahl (z. B. Rückkaufrendite) verarbeitet — das benötigt
   Marktkapitalisierungsdaten aus Milestone 4.
 
-## Bewertung (Milestone 4)
+## Bewertung (Milestone 4 — implementiert)
 
-- Multiples (KGV, EV/EBITDA, EV/EBIT, KBV, KCFV, FCF-Rendite) jeweils im
-  Vergleich zur eigenen 5-/10-Jahres-Historie und zu einer Peer-Gruppe
-  (Branchenzuordnung + Größenähnlichkeit).
-- DCF: drei Szenarien (Basis/optimistisch/pessimistisch) mit explizit
-  ausgewiesenen Annahmen (Umsatzwachstum, Margenpfad, Kapitalkosten
-  WACC, Terminalwachstum). Ergebnis ist eine **Bewertungsspanne**, kein
-  Einzelkurswert.
-- Sensitivitätsmatrix: Variation von Wachstum, Marge, WACC,
-  Terminalwachstum je ±1–2 Stufen, tabellarisch dargestellt.
-- Ausgabe „Sicherheitsmarge" = (fairer Wert unteres Band − aktueller
-  Kurs) / fairer Wert unteres Band, nie ein einzelnes „Kursziel".
+- Multiples (KGV, EV/EBITDA, EV/EBIT, KBV, KCFV, FCF-Rendite) als reine
+  Funktionen (`valuation/multiples.py`), aktuell im Vergleich zur
+  Peer-Gruppe (Branchenzuordnung, Milestone 3). **Abweichung von der
+  ursprünglichen Planung:** ein Vergleich zur eigenen 5-/10-Jahres-
+  Historie ist NICHT umgesetzt — dafür fehlt eine mehrjährig
+  akkumulierte Kurshistorie (Alpha Vantage GLOBAL_QUOTE liefert nur den
+  aktuellen Kurs je Abruf); vorgemerkt als offener Punkt.
+- DCF (`valuation/dcf.py`): Zwei-Phasen-Modell (explizite
+  Projektionsjahre + Gordon-Growth-Terminalwert) mit drei Szenarien
+  (Basis/optimistisch/pessimistisch, aus der Umsatz-/Margenhistorie des
+  Unternehmens abgeleitet) und explizit ausgewiesenen Annahmen
+  (Umsatzwachstum, FCF-Marge, WACC-Default 9 %, Terminalwachstum-
+  Default 2 %). Ergebnis ist eine **Bewertungsspanne**, kein
+  Einzelkurswert. **Abweichung:** die FCF-Marge wird als über die
+  Projektionsjahre konstant angenommen statt Capex/NWC/D&A getrennt
+  fortzuschreiben — vereinfachte, aber transparent dokumentierte
+  Annahme (`DCFAssumptions`). WACC ist ein grober marktüblicher
+  Standardwert, keine unternehmensspezifische CAPM-Herleitung (mit
+  Beta) — als späterer Verbesserungspunkt vorgemerkt.
+- Sensitivitätsmatrix (`build_sensitivity_matrix`): Variation zweier
+  wählbarer Parameter (z. B. Wachstum × WACC) über einen konfigurier-
+  baren Wertebereich, tabellarisch als fairer Wert je Kombination.
+- Sicherheitsmarge (`safety_margin`) = (fairer Wert − aktueller Kurs) /
+  fairer Wert, je Szenario einzeln ausgewiesen, nie ein einzelnes
+  „Kursziel".
 
-## Scoring (Milestone 4, Auftrag §7)
+## Scoring (Milestone 4, Auftrag §7 — implementiert)
 
-Gesamtscore 0–100, Startgewichtung (konfigurierbar, siehe
-`AUFTRAG.md` §7):
+Gesamtscore 0–100 (`scoring/score.py::compute_score`/`score_entity`),
+Startgewichtung (konfigurierbar, siehe `AUFTRAG.md` §7):
 
-| Komponente | Gewicht |
-|---|---:|
-| Finanzqualität | 25 |
-| Bewertung/Sicherheitsmarge | 20 |
-| Wachstum und Beständigkeit | 15 |
-| Bilanzstärke | 15 |
-| Wettbewerbsvorteil | 10 |
-| Management/Kapitalallokation | 5 |
-| Nachrichten und Katalysatoren | 5 |
-| Datenqualität/Aktualität | 5 |
+| Komponente | Gewicht | Status Milestone 4 |
+|---|---:|---|
+| Finanzqualität | 25 | berechnet |
+| Bewertung/Sicherheitsmarge | 20 | berechnet (nur DCF, siehe oben) |
+| Wachstum und Beständigkeit | 15 | berechnet |
+| Bilanzstärke | 15 | berechnet |
+| Wettbewerbsvorteil | 10 | **nicht berechenbar** (ADR-17) |
+| Management/Kapitalallokation | 5 | berechnet, bewusst schmal (nur Aktienverwässerung) |
+| Nachrichten und Katalysatoren | 5 | **nicht berechenbar** (ADR-17, wartet auf Milestone 5) |
+| Datenqualität/Aktualität | 5 | berechnet |
 
-Risiken wirken als sichtbare, ausgewiesene Abzüge (kein verstecktes
-„Malus"-Feld). Fehlende Daten reduzieren die Konfidenz statt neutral mit
-0 bewertet zu werden; unterhalb definierter Konfidenzschwellen wird ein
-Kandidat auf „Beobachten" oder „Datenlage unzureichend" gesetzt statt
-einen vollen Score zu erhalten.
+**Abweichung von der ursprünglichen Planung (siehe ADR-17):** die
+beiden strukturell nicht berechenbaren Komponenten
+(„Wettbewerbsvorteil", „Nachrichten und Katalysatoren") fließen NICHT
+mit 0 in den gewichteten Durchschnitt ein — sie werden aus der
+Gewichtssumme entfernt, die übrigen sechs Gewichte werden auf 100 %
+renormiert. Der Anteil der tatsächlich genutzten Original-Gewichtung
+wird als `coverage` sichtbar gemacht (in dieser Milestone max. 85 %,
+da 15 der 100 Gewichtspunkte auf die beiden fehlenden Komponenten
+entfallen).
+
+Risiken (aus den Milestone-3-Warnsignalen) wirken als sichtbare,
+ausgewiesene Punktabzüge nach dem gewichteten Durchschnitt (kein
+verstecktes „Malus"-Feld). `coverage` und `data_completeness` wirken
+als Konfidenzschwellen: unterhalb definierter Werte wird ein Kandidat
+auf „Beobachten" oder „Datenlage unzureichend" herabgestuft, auch wenn
+der reine gewichtete Score hoch wäre.
 
 Ausgabeklassen: **Vertieft prüfen**, **Beobachten**, **Derzeit
-unattraktiv**, **Datenlage unzureichend**. Zu jedem Ergebnis: fünf
-wichtigste positive Faktoren, fünf Risiken, Gegenargumente, Bedingungen
-für Ungültigkeit der These. Verbotene Formulierungen: „sicherer Kauf",
-„garantierter Gewinn".
-
-Die exakten Schwellenwerte (Mindestkonfidenz, Mindestliquidität,
-Mindesthistorie für Top-10-Aufnahme) werden in Milestone 4 als
-konfigurierbare Parameter mit begründeten Startwerten festgelegt und
-hier ergänzt.
+unattraktiv**, **Datenlage unzureichend**. Zu jedem Ergebnis: bis zu
+fünf wichtigste positive Faktoren, fünf Risiken, Gegenargumente,
+Bedingungen für Ungültigkeit der These — alle deterministisch aus den
+berechneten Werten generiert, nie durch ein Sprachmodell. Verbotene
+Formulierungen „sicherer Kauf"/„garantierter Gewinn" kommen im
+generierten Text nachweislich nicht vor (dediziert getestet).
 
 ## Zukunfts-/Trendanalyse (Milestone 4/5, Auftrag §7a)
 

@@ -164,3 +164,18 @@ def get_latest_annual_datapoint(
     if not annual_dates:
         return None
     return latest_by_period[annual_dates[-1]]
+
+
+def get_latest_value(
+    session: Session, entity: Entity, metric: Metric, *, as_of: datetime | None = None
+) -> tuple[date, float] | None:
+    """Jüngster bekannter Wert, OHNE Jahres-/Quartalsfilterung.
+
+    Für Kennzahlen ohne Jahresrhythmus (insbesondere Marktdaten wie
+    ``Metric.PRICE_CLOSE``, die täglich beobachtet werden) ist
+    ``get_latest_annual_value`` ungeeignet — hier zählt schlicht der
+    zeitlich jüngste, zum Stichtag ``as_of`` bereits bekannte Punkt.
+    """
+
+    points = get_series(session, entity, metric, as_of=as_of)
+    return points[-1] if points else None
