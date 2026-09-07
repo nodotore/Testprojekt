@@ -107,12 +107,37 @@
 - [ ] `ScoreResult`/`ValuationReport` dauerhaft persistieren und ins
       Audit-Log schreiben (vorgesehen für Milestone 6/8a, UI/Rangliste).
 
-## Milestone 5 — Nachrichtenanalyse (nächster Schritt)
+## Milestone 5 — Nachrichtenanalyse (Implementierung abgeschlossen)
+
+- [x] Connector-Grundgerüst um `get_text()` erweitert (RSS/Atom-Abruf)
+- [x] GDELT-DOC-2.0-Connector (Volltextsuche, kein API-Schlüssel nötig)
+- [x] Generischer IR-RSS-Connector (RSS-2.0/Atom-Parsing über stdlib)
+- [x] `NewsItem`-Modell + Migration + Source-Seeding (`gdelt`/`ir_rss`)
+- [x] HTML-Bereinigung zu Klartext (`news/sanitize.py`)
+- [x] Deterministische Klassifikation: Quellqualität + Ereignistyp
+      (`news/classification.py`)
+- [x] Idempotente Ingestion mit URL-Normalisierung/Dedup-Hash
+      (`news/ingest.py`)
+- [x] Deterministisches Ereignis-Clustering (`news/clustering.py`) +
+      `NewsReport`-Orchestrierung (`news/report.py`)
+- [x] Tests: 60 neue (insgesamt 301 grün), `ruff`/`mypy` fehlerfrei
+- [ ] **Offen:** Duplikaterkennung an einem realen Testset verifizieren
+      (Auftrag-Abnahmekriterium) — in dieser Sandbox mangels
+      Internetzugang nicht möglich (siehe `PROGRESS.md`).
+- [ ] KI-Zusammenfassung mit Quellenverweis implementieren (UI-/
+      Reports-Schicht, Milestone 6+) — Datengrundlage
+      (`NewsCluster.items[*].url`) ist vorhanden.
+- [ ] IR-RSS-Feed-URL-zu-Entity-Zuordnung lösen (aktuell nicht
+      automatisiert, Connector erwartet die Feed-URL explizit).
+- [ ] Quellqualitäts-Heuristik für „Kommentar" (kleine Domain-Liste in
+      `news/classification.py`) bei Bedarf erweitern.
+
+## Milestone 6 — Portfolio und Exporte (nächster Schritt)
 
 Siehe `PLAN.md` für Details; wird hier aufgeschlüsselt, sobald die
 Milestone beginnt.
 
 ## Spätere Milestones
 
-Siehe `PLAN.md` für Milestone 6–8; werden hier erst als Einzelaufgaben
+Siehe `PLAN.md` für Milestone 7–8; werden hier erst als Einzelaufgaben
 aufgeschlüsselt, wenn die jeweilige Milestone beginnt.

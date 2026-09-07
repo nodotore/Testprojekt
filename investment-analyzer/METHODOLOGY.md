@@ -1,17 +1,18 @@
-# Methodik (Stand nach Milestone 4)
+# Methodik (Stand nach Milestone 5)
 
-**Status:** Die Abschnitte „Fundamentalkennzahlen" (seit Milestone 3)
-und „Bewertung"/„Scoring" (seit Milestone 4) sind im Code umgesetzt
-(`fundamentals/calculations.py`, `series.py`, `report.py`;
-`valuation/multiples.py`, `dcf.py`, `report.py`; `scoring/score.py`) —
-Details und Abweichungen von der ursprünglichen Planung siehe dort. Die
-Abschnitte „Zukunfts-/Trendanalyse", „Top-10-Rangliste" und
-„Backtesting-Prinzipien" sind weiterhin reine Planung für die jeweils
-zuständige künftige Milestone. Diese Datei dient als verbindliche
-Referenz für alle Agenten, damit Kennzahlenberechnung, Scoring und
-Prognosen konsistent und nachvollziehbar bleiben. Änderungen an der
-Methodik erfolgen über einen neuen ADR-Eintrag in `DECISIONS.md`, nicht
-stillschweigend im Code.
+**Status:** Die Abschnitte „Fundamentalkennzahlen" (seit Milestone 3),
+„Bewertung"/„Scoring" (seit Milestone 4) und „Nachrichten" (seit
+Milestone 5) sind im Code umgesetzt (`fundamentals/calculations.py`,
+`series.py`, `report.py`; `valuation/multiples.py`, `dcf.py`,
+`report.py`; `scoring/score.py`; `news/classification.py`,
+`clustering.py`, `report.py`) — Details und Abweichungen von der
+ursprünglichen Planung siehe dort. Die Abschnitte „Zukunfts-/
+Trendanalyse", „Top-10-Rangliste" und „Backtesting-Prinzipien" sind
+weiterhin reine Planung für die jeweils zuständige künftige Milestone.
+Diese Datei dient als verbindliche Referenz für alle Agenten, damit
+Kennzahlenberechnung, Scoring und Prognosen konsistent und
+nachvollziehbar bleiben. Änderungen an der Methodik erfolgen über einen
+neuen ADR-Eintrag in `DECISIONS.md`, nicht stillschweigend im Code.
 
 ## Grundprinzip
 
@@ -92,7 +93,7 @@ Startgewichtung (konfigurierbar, siehe `AUFTRAG.md` §7):
 | Bilanzstärke | 15 | berechnet |
 | Wettbewerbsvorteil | 10 | **nicht berechenbar** (ADR-17) |
 | Management/Kapitalallokation | 5 | berechnet, bewusst schmal (nur Aktienverwässerung) |
-| Nachrichten und Katalysatoren | 5 | **nicht berechenbar** (ADR-17, wartet auf Milestone 5) |
+| Nachrichten und Katalysatoren | 5 | **nicht berechenbar** (ADR-17 — `news`-Modul existiert seit Milestone 5, aber noch nicht an `scoring/score.py` angebunden) |
 | Datenqualität/Aktualität | 5 | berechnet |
 
 **Abweichung von der ursprünglichen Planung (siehe ADR-17):** die
@@ -119,6 +120,46 @@ Bedingungen für Ungültigkeit der These — alle deterministisch aus den
 berechneten Werten generiert, nie durch ein Sprachmodell. Verbotene
 Formulierungen „sicherer Kauf"/„garantierter Gewinn" kommen im
 generierten Text nachweislich nicht vor (dediziert getestet).
+
+## Nachrichten (Milestone 5, Auftrag §6 — implementiert)
+
+- Abruf über zwei Connectoren (`connectors/gdelt.py`, `ir_rss.py`):
+  GDELT-Volltextsuche nach Firmenname (unabhängige Berichterstattung,
+  global) und ein generischer RSS-2.0-/Atom-Feed-Connector für
+  Unternehmens-eigene Investor-Relations-/Pressemitteilungs-Feeds.
+- Deduplizierung bei der Ingestion (`news/ingest.py`): URL-Normalisierung
+  (Fragment + bekannte Tracking-Parameter entfernt) vor dem
+  Dedup-Hashing — derselbe Treffer aus wiederholten Abrufen erzeugt
+  keine zweite Zeile.
+- Quellqualitätsklassifikation (`news/classification.py`):
+  Unternehmensmeldung (IR-RSS-Herkunft), unabhängiger Bericht (Standard
+  für GDELT-Treffer) oder Kommentar (kleine, dokumentierte Domain-Liste
+  bekannter Meinungsportale) — rein regelbasiert.
+- Ereignisklassifikation (`news/classification.py`): grobe,
+  priorisierte Schlüsselwort-Zuordnung zu Earnings, M&A, Management,
+  Recht/Regulierung, Kapitalmarkt, Produkt/Betrieb, Cyber/Lieferkette
+  oder Sonstiges — Deutsch/Englisch gemischt, kein Sprachmodell.
+- Ereignis-Clustering (`news/clustering.py`): mehrere Berichte über
+  dasselbe Ereignis werden zusammengeführt, wenn Ereignistyp,
+  zeitliche Nähe (Standard: ≤ 2 Tage) und Titel-Ähnlichkeit
+  (`difflib.SequenceMatcher`, Standard-Schwelle 0,6) übereinstimmen —
+  eine lexikalische Heuristik, kein semantisches Verständnis.
+- HTML-Bereinigung (`news/sanitize.py`): jeder gespeicherte
+  Kurz-Ausschnitt (`summary_text`) ist reiner Klartext, kein Markup, kein
+  Skript-/Stilinhalt (Auftrag §12). Kein Artikel-Volltext wird
+  gespeichert — nur Titel und Kurz-Ausschnitt, der Volltext bleibt über
+  die gespeicherte `url` referenzierbar.
+- **Abweichung von der ursprünglichen Planung:** eine automatisierte
+  KI-Zusammenfassung mit Quellenverweis ist NICHT umgesetzt — es gibt in
+  dieser Entwicklungsumgebung keine Claude-API-Anbindung. Die
+  Datengrundlage (`NewsCluster.items[*].url`, verpflichtend je Cluster)
+  ist gelegt; die Erzeugung folgt in der UI-/Reports-Schicht (Milestone
+  6+). Jede künftige Zusammenfassung MUSS den bereinigten Text weiterhin
+  als nicht vertrauenswürdige Nutzdaten behandeln, nie als Anweisung
+  (Auftrag §12, „Prompt-Injection-Texte ignorieren").
+- Stimmung wird an keiner Stelle als eigenständiges Kaufsignal
+  verwendet (Auftrag §6) — es gibt aktuell überhaupt keine
+  Stimmungsanalyse; Ereignistyp und Quellqualität sind rein strukturell.
 
 ## Zukunfts-/Trendanalyse (Milestone 4/5, Auftrag §7a)
 

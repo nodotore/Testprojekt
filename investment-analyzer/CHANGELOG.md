@@ -2,6 +2,30 @@
 
 ## Unreleased
 
+- Milestone 5 (Nachrichtenanalyse) umgesetzt: Connector-Grundgerüst um
+  `get_text()` erweitert (Rohtext statt JSON, für Quellen ohne
+  JSON-API), GDELT-DOC-2.0-Connector (`connectors/gdelt.py`,
+  Volltextsuche nach Firmenname, kein API-Schlüssel nötig) und
+  generischer IR-RSS-Connector (`connectors/ir_rss.py`, RSS-2.0-/
+  Atom-Parsing über stdlib `xml.etree`, Host-Allowlist wird pro
+  Feed-URL zur Laufzeit gesetzt, SSRF-/DNS-Rebinding-Schutz bleibt
+  unabhängig davon aktiv). Neues provenienzbehaftetes `NewsItem`-Modell
+  (`news/models.py`, ADR-18) mit Migration, Source-Seeding um
+  `gdelt`/`ir_rss` erweitert. HTML-Bereinigung zu reinem Klartext
+  (`news/sanitize.py`, Auftrag §12) sowie deterministische,
+  regelbasierte Klassifikation von Quellqualität und Ereignistyp
+  (`news/classification.py`, ADR-19) — nie durch ein Sprachmodell.
+  Idempotente Ingestion mit URL-Normalisierung/Dedup-Hash
+  (`news/ingest.py`), rein funktionales Ereignis-Clustering über
+  Titel-Ähnlichkeit (`news/clustering.py`, `difflib`, keine Embeddings)
+  und `NewsReport`-Orchestrierung (`news/report.py`). 60 neue Tests
+  (insgesamt 301), `ruff`/`mypy` fehlerfrei. Die im Auftrag genannte
+  KI-Zusammenfassung mit Quellenverweis wird bewusst NICHT umgesetzt
+  (keine Claude-API-Anbindung in dieser Umgebung) — Datengrundlage
+  dafür ist gelegt, siehe PROGRESS.md. Verifikation der
+  Duplikaterkennung an einem realen Testset mangels Internetzugang in
+  dieser Sandbox nicht möglich.
+
 - Milestone 4 (Bewertung und Score) umgesetzt: Multiples (KGV,
   EV/EBITDA, EV/EBIT, KBV, KCFV, FCF-Rendite) als reine Funktionen
   (`valuation/multiples.py`), Zwei-Phasen-DCF mit drei Szenarien

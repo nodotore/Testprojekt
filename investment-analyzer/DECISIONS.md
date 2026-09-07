@@ -387,15 +387,68 @@ beiden Komponenten ergänzt und `coverage` steigt entsprechend — kein
 Schema-Bruch, da `ComponentScore`/`ScoreResult` bereits für eine
 variable Anzahl an Komponenten ausgelegt sind.
 
+## ADR-18: Eigenes `NewsItem`-Modell statt Wiederverwendung von `DataPoint`
+
+**Kontext:** Milestone 5 benötigt provenienzbehaftete Speicherung von
+Nachrichtentreffern (GDELT, IR-RSS). `DataPoint` (ADR-6) ist auf
+numerische Fakten mit Berichtsperiode/Einheit/Währung zugeschnitten —
+ein Nachrichtentreffer ist dagegen ein Textdokument-Verweis (Titel, URL,
+Domain, Sprache, Kurz-Ausschnitt).
+
+**Entscheidung:** `news/models.py::NewsItem` ist ein eigenständiges
+ORM-Modell, folgt aber demselben Provenienz-Grundprinzip wie
+`DataPoint`: Referenz auf `Source`, Abrufzeitpunkt UTC, Inhalts-Hash zur
+Nachprüfbarkeit (`content_hash`, eindeutig je `source_id`). Bewusst NICHT
+gespeichert wird der volle Artikeltext (Urheberrecht/Fair-Use-Grenzen
+der angebundenen Quellen) — nur Titel und ein kurzer, HTML-bereinigter
+Ausschnitt (`summary_text`); der Volltext bleibt über `url` referenzierbar
+(Auftrag §11).
+
+**Konsequenzen:** `db/__init__.py::register_all_models()` importiert
+zusätzlich `news.models`, damit Alembic-Autogenerate und `create_all`
+(Tests) die neue Tabelle kennen. IR-RSS erhält KEINE eigene Source-Zeile
+je Host (uneinheitliche, pro Emittent unterschiedliche Hosts) — eine
+generische `"ir_rss"`-Source-Zeile dokumentiert das Verfahren, der
+konkrete Host steht je Treffer in `NewsItem.domain`/`url`.
+
+## ADR-19: Nachrichtenklassifikation deterministisch/regelbasiert, nie durch ein Sprachmodell
+
+**Kontext:** Auftrag §6 verlangt, Nachrichten nach Quellqualität
+(Unternehmensmeldung/unabhängiger Bericht/Kommentar) und implizit nach
+Ereignistyp einzuordnen. Eine Sprachmodell-basierte Klassifikation wäre
+naheliegend, widerspricht aber dem in ADR-6/Auftrag §8a etablierten
+Grundsatz „Fakten und Einordnungen entstehen aus Code, ein Sprachmodell
+fasst nur zusammen/erklärt" — sowie der fehlenden LLM-API-Anbindung in
+dieser Entwicklungsumgebung (siehe `news/report.py`, offene Lücke
+„KI-Zusammenfassung").
+
+**Entscheidung:** `news/classification.py` klassifiziert ausschließlich
+über einfache, im Code nachvollziehbare Regeln: Quellqualität aus dem
+Connector-Ursprung (IR-RSS = per Definition Unternehmensmeldung) plus
+einer kleinen, bewusst unvollständigen Domain-Liste für „Kommentar";
+Ereignistyp über eine priorisierte Schlüsselwortliste (Kleinschreibung,
+Teilstring-Suche, Deutsch/Englisch gemischt). Kein Treffer → `SONSTIGES`
+statt eines geratenen Werts.
+
+**Konsequenzen:** Die Klassifikation ist eine grobe, dokumentierte
+Heuristik, keine redaktionelle Prüfung — Domain-/Schlüsselwortlisten
+können bei Bedarf erweitert werden, ohne dass das ein Schema-Bruch wäre
+(reine Konstantenlisten, keine Migration nötig). Dieselbe Prämisse gilt
+für das Ereignis-Clustering (`news/clustering.py`): lexikalische
+Titel-Ähnlichkeit (`difflib.SequenceMatcher`) statt Embeddings/
+Sprachmodell — deterministisch reproduzierbar, auf Kosten semantischer
+Präzision bei stark unterschiedlichem Wortlaut über dasselbe Ereignis.
+
 ## Noch zu treffende Entscheidungen
 
-Keine blockierenden Entscheidungen mehr offen für Milestone 1–4 (alle
+Keine blockierenden Entscheidungen mehr offen für Milestone 1–5 (alle
 abgeschlossen, siehe `PROGRESS.md`). Verbleibende Detailfragen aus
 `MILESTONE_0.md` Abschnitt B (z. B. weitere Feinjustierung der
 Mindestmarktkapitalisierung) bleiben über den Ersteinrichtungsdialog im
 laufenden Betrieb änderbar (Auftrag §2). Weiterhin offen: Priorisierung
 der EU/DE-Meldungsquellen-Lücke (ADR-9), Auflösung der
 Notierungswährung für Alpha-Vantage-Kurse, unternehmensspezifische
-CAPM-Herleitung des WACC statt des groben Standardwerts, und ob die
-Peer-Gruppen-Zuordnung um einen Größenfilter ergänzt werden soll (siehe
-`TODO.md`).
+CAPM-Herleitung des WACC statt des groben Standardwerts, ob die
+Peer-Gruppen-Zuordnung um einen Größenfilter ergänzt werden soll, sowie
+— neu aus Milestone 5 — wie die Zuordnung „IR-RSS-Feed-URL ↔ Entity"
+gepflegt werden soll (siehe `TODO.md`).

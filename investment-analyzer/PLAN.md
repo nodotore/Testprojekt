@@ -210,14 +210,51 @@ Milestone 2/3 war eine Verifikation mit echten Marktdaten/DCF-Annahmen
 für reale Unternehmen in dieser Sandbox mangels Internetzugang nicht
 möglich (siehe `PROGRESS.md`).
 
-## Milestone 5 — Nachrichtenanalyse
+## Milestone 5 — Nachrichtenanalyse (abgeschlossen 2026-09-07)
 
-Abruf (GDELT + IR-RSS gemäß `DATA_SOURCES.md`), Deduplizierung,
-Sprach-/Ereigniserkennung, Clustering, Quellenqualitätsklassifikation
-(Unternehmensmeldung/unabhängiger Bericht/Kommentar), KI-Zusammenfassung
-mit Quellenverweis. Abnahme: Duplikaterkennung nachweislich funktionsfähig
-an realem Testset; kein KI-Text ohne Quellenverweis (data-source-agent +
-news-Modul, security-reviewer prüft Prompt-Injection-Behandlung).
+**Erfüllt:** Connector-Grundgerüst um `get_text()` erweitert (Rohtext
+statt JSON, für RSS/Atom, ohne `get_json()`-Verhalten zu ändern);
+GDELT-DOC-2.0-Connector (`connectors/gdelt.py`, Volltextsuche nach
+Firmenname, kein API-Schlüssel nötig) und generischer IR-RSS-Connector
+(`connectors/ir_rss.py`, RSS-2.0/Atom-Parsing über stdlib
+`xml.etree`, Host-Allowlist wird pro Feed-URL zur Laufzeit gesetzt,
+SSRF-/DNS-Rebinding-Schutz bleibt davon unabhängig aktiv). Neues
+provenienzbehaftetes `NewsItem`-Modell (`news/models.py`, ADR-18) mit
+Migration und Erweiterung des Source-Seedings um `gdelt`/`ir_rss`.
+HTML-Bereinigung zu reinem Klartext (`news/sanitize.py`, Skript-/
+Stilinhalte werden verworfen, Auftrag §12) sowie deterministische,
+regelbasierte Klassifikation von Quellqualität
+(Unternehmensmeldung/unabhängiger Bericht/Kommentar) und Ereignistyp
+(Earnings, M&A, Management, Recht/Regulierung, Kapitalmarkt,
+Produkt/Betrieb, Cyber/Lieferkette, Sonstiges) in
+`news/classification.py` — nie durch ein Sprachmodell (ADR-19).
+Idempotente Ingestion (`news/ingest.py`, URL-Normalisierung inkl.
+Entfernung bekannter Tracking-Parameter vor dem Dedup-Hash). Rein
+funktionales, deterministisches Ereignis-Clustering
+(`news/clustering.py`, `difflib.SequenceMatcher`, keine Embeddings/kein
+Sprachmodell) und `NewsReport`-Orchestrierung (`news/report.py`).
+
+**Bewusste, dokumentierte Lücke:** Die im Auftrag genannte
+„KI-Zusammenfassung mit Quellenverweis" wird in dieser Milestone NICHT
+umgesetzt — es gibt in dieser Entwicklungsumgebung weder eine
+Claude-API-Anbindung noch einen dafür vorgesehenen `SecretStore`-
+Schlüssel. Die Datengrundlage dafür ist gelegt (`NewsCluster.items`
+referenziert jede Quelle zwingend über `url`); die eigentliche
+Zusammenfassungs-Erzeugung ist als Punkt für die UI-/Reports-Schicht
+(Milestone 6+) vorgemerkt, inkl. der Pflicht, den bereinigten Text
+weiterhin als nicht vertrauenswürdige Nutzdaten zu behandeln (Auftrag
+§12, „Prompt-Injection-Texte ignorieren"). Ebenfalls offen: welche
+IR-RSS-Feed-URL zu welcher `Entity` gehört, ist keine automatisierte
+Zuordnung — der Connector liefert nur den Abruf-/Parse-Mechanismus für
+eine gegebene URL.
+
+60 neue Tests (insgesamt 301), davon Connector-Tests (Mock-HTTP,
+XML-Parsing-Fälle für RSS/Atom inkl. kaputtem XML), Dedup-/
+Idempotenz-Tests gegen die Datenbank, hand-nachvollziehbare
+Klassifikations- und Clustering-Fälle. `ruff`/`mypy` fehlerfrei. Wie in
+Milestone 2/3/4 war eine Verifikation der Duplikaterkennung an einem
+realen Testset (Abnahmekriterium) in dieser Sandbox mangels
+Internetzugang nicht möglich (siehe `PROGRESS.md`).
 
 ## Milestone 6 — Portfolio und Exporte
 

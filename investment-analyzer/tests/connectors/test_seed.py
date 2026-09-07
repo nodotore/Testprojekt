@@ -15,19 +15,19 @@ def _session_factory(tmp_path: Path):
     return create_session_factory(engine)
 
 
-def test_ensure_default_sources_legt_beide_quellen_an(tmp_path: Path) -> None:
+def test_ensure_default_sources_legt_alle_quellen_an(tmp_path: Path) -> None:
     session_factory = _session_factory(tmp_path)
     with session_factory() as session:
         sources = ensure_default_sources(session)
         session.commit()
 
-    assert set(sources) == {"sec_edgar", "alpha_vantage"}
+    assert set(sources) == {"sec_edgar", "alpha_vantage", "gdelt", "ir_rss"}
     assert sources["sec_edgar"].display_name == "SEC EDGAR"
     assert "Public Domain" in sources["sec_edgar"].license_note
 
     with session_factory() as session:
         alle = session.scalars(select(Source)).all()
-    assert len(alle) == 2
+    assert len(alle) == 4
 
 
 def test_ensure_default_sources_ist_idempotent(tmp_path: Path) -> None:
@@ -42,7 +42,7 @@ def test_ensure_default_sources_ist_idempotent(tmp_path: Path) -> None:
 
     with session_factory() as session:
         alle = session.scalars(select(Source)).all()
-    assert len(alle) == 2  # keine Duplikate beim zweiten Aufruf
+    assert len(alle) == 4  # keine Duplikate beim zweiten Aufruf
 
 
 def test_ensure_default_sources_aktualisiert_bestehende_zeile(tmp_path: Path) -> None:

@@ -392,3 +392,91 @@ Erweiterungen in `fundamentals/metrics.py`, `fundamentals/series.py`,
 
 **Nächster Schritt:** Milestone 5 (Nachrichtenanalyse) gemäß `PLAN.md`
 — siehe `NEXT_STEPS.md`.
+
+## Milestone 5 — Nachrichtenanalyse
+
+**Status:** Implementierung abgeschlossen (2026-09-07).
+
+**Umgesetzt:**
+
+- Connector-Grundgerüst (`connectors/base.py`) um `get_text()` erweitert
+  (Rohtext statt JSON, für Quellen ohne JSON-API), ohne `get_json()`-
+  Verhalten zu ändern — beide teilen sich jetzt eine gemeinsame `_get()`-
+  Kernmethode mit austauschbarem Parser.
+- GDELT-DOC-2.0-Connector (`connectors/gdelt.py`): Volltextsuche nach
+  Firmenname, kein API-Schlüssel nötig, konservativ gedrosselt (kein
+  dokumentiertes Rate Limit bei GDELT).
+- Generischer IR-RSS-Connector (`connectors/ir_rss.py`): RSS-2.0- und
+  Atom-Parsing über `xml.etree` (Standardbibliothek, keine neue
+  Abhängigkeit). Jede Instanz ist an genau eine Feed-URL gebunden; die
+  Host-Allowlist wird daraus zur Laufzeit abgeleitet — der SSRF-/
+  DNS-Rebinding-Schutz bleibt davon unabhängig vollständig aktiv.
+- `NewsItem`-ORM-Modell (`news/models.py`, ADR-18) mit Provenienz
+  (Quelle, URL, Abrufzeitpunkt UTC, Inhalts-Hash) plus Alembic-Migration;
+  Source-Seeding um `gdelt` und `ir_rss` erweitert.
+- HTML-Bereinigung zu reinem Klartext (`news/sanitize.py`): Skript-/
+  Stilinhalte werden verworfen, Entities aufgelöst, auf einen kurzen
+  Ausschnitt gekürzt (kein Artikel-Volltext, Auftrag §12/Fair-Use).
+- Deterministische, regelbasierte Klassifikation (`news/classification.py`,
+  ADR-19): Quellqualität (Unternehmensmeldung/unabhängiger
+  Bericht/Kommentar — IR-RSS ist per Definition eine Unternehmensmeldung)
+  und Ereignistyp (Earnings, M&A, Management, Recht/Regulierung,
+  Kapitalmarkt, Produkt/Betrieb, Cyber/Lieferkette, Sonstiges) — beide
+  rein lexikalisch, nie durch ein Sprachmodell.
+- Idempotente Ingestion (`news/ingest.py`): URL-Normalisierung
+  (Fragment + bekannte Tracking-Parameter entfernt) vor dem
+  Dedup-Hashing, damit dieselbe Meldung nicht mehrfach gespeichert wird.
+- Rein funktionales Ereignis-Clustering (`news/clustering.py`): gleicher
+  Ereignistyp + zeitliche Nähe + Titel-Ähnlichkeit
+  (`difflib.SequenceMatcher`, Standardbibliothek) — keine Embeddings,
+  kein Sprachmodell, deterministisch nachvollziehbar.
+- `NewsReport`-Orchestrierung (`news/report.py`): liest `NewsItem`-Zeilen
+  einer Entity, clustert sie, zählt Meldungen ohne bekanntes Datum.
+
+**Bewusste, dokumentierte Lücke:** Die im Auftrag genannte
+„KI-Zusammenfassung mit Quellenverweis" wird NICHT umgesetzt — in dieser
+Entwicklungsumgebung gibt es weder eine Claude-API-Anbindung noch einen
+dafür vorgesehenen `SecretStore`-Schlüssel. Die Datengrundlage ist
+gelegt (`NewsCluster.items` referenziert jede Quelle zwingend über
+`url`); die eigentliche Erzeugung ist für die UI-/Reports-Schicht
+(Milestone 6+) vorgemerkt, inklusive der Pflicht, den bereinigten Text
+weiterhin als nicht vertrauenswürdige Nutzdaten zu behandeln, nie als
+Anweisung (Auftrag §12). Ebenfalls offen: die Zuordnung „welche
+IR-RSS-Feed-URL gehört zu welcher `Entity`" ist nicht automatisiert —
+der Connector liefert nur den Abruf-/Parse-Mechanismus für eine
+gegebene URL, keine Feed-Erkennung.
+
+**Tests:** 60 neue Tests (insgesamt 301, alle grün) — Connector-Tests
+mit Mock-HTTP (inkl. kaputtem XML/JSON als Fehlerfall), Idempotenz-/
+Dedup-Tests gegen die Datenbank (inkl. Tracking-Parameter-Normalisierung),
+hand-nachvollziehbare Klassifikations- und Clustering-Fälle (u. a.
+Multi-Source-Cluster-Erkennung). `ruff check .` und `mypy src` beide
+fehlerfrei.
+
+**Geänderte/neue Dateien:** ausschließlich unter `investment-analyzer/`
+— neue Module `connectors/gdelt.py`, `connectors/ir_rss.py`,
+`news/models.py`, `news/sanitize.py`, `news/classification.py`,
+`news/ingest.py`, `news/clustering.py`, `news/report.py`; Erweiterungen
+in `connectors/base.py`, `connectors/seed.py`, `db/__init__.py`; neue
+Alembic-Migration `news_items`; zugehörige Tests unter
+`tests/connectors/`, `tests/news/`.
+
+**Offene Risiken:**
+- **Verifikation der Duplikaterkennung an einem realen Testset**
+  (Auftrag-Abnahmekriterium) nur mit synthetischen Daten erbracht. Wie
+  in Milestone 2/3/4 blockiert die Egress-Policy dieser Sandbox den
+  Zugriff auf `api.gdeltproject.org` und beliebige IR-RSS-Hosts.
+  Nachzuholen in einer Umgebung mit Internetzugang.
+- KI-Zusammenfassung mit Quellenverweis fehlt vollständig (s. o.) —
+  technische Grundlage vorhanden, Erzeugung nicht implementiert.
+- Quellqualitäts-Heuristik für „Kommentar" beruht auf einer kleinen,
+  bewusst unvollständigen Domain-Liste (`classification.py::
+  KNOWN_COMMENTARY_DOMAINS`) — keine redaktionelle Prüfung.
+- IR-RSS-Feed-URL-zu-Entity-Zuordnung ist nicht automatisiert (s. o.).
+- Clustering ist eine lexikalische Heuristik (Titel-Ähnlichkeit) ohne
+  semantisches Verständnis — kann inhaltlich verwandte Meldungen mit
+  sehr unterschiedlichem Wortlaut verpassen (bewusst konservativ: lieber
+  zu viele Cluster als fälschlich zusammengeführte Ereignisse).
+
+**Nächster Schritt:** Milestone 6 (Portfolio und Exporte) gemäß
+`PLAN.md` — siehe `NEXT_STEPS.md`.

@@ -3,9 +3,9 @@
 Provenienz-first-Prinzip (siehe DECISIONS.md ADR-6): Alle Domänenmodelle
 (``Entity``/``EntityIdentifier`` in ``entity_resolution``, ``Source`` in
 ``connectors``, ``DataPoint`` in ``normalization``, ``AuditLogEntry`` in
-``audit``) registrieren sich auf derselben ``Base.metadata`` und werden
-hier zentral importiert, damit sowohl Alembic-Autogenerate als auch
-``create_all`` in Tests alle Tabellen kennen.
+``audit``, ``NewsItem`` in ``news``) registrieren sich auf derselben
+``Base.metadata`` und werden hier zentral importiert, damit sowohl
+Alembic-Autogenerate als auch ``create_all`` in Tests alle Tabellen kennen.
 
 Dieses Modul ist bewusst dialektunabhängig gehalten (kein SQLite- oder
 PostgreSQL-spezifischer Code), damit dieselben Modelle unverändert gegen
@@ -39,6 +39,7 @@ def register_all_models() -> None:
     from investment_analyzer.entity_resolution import (
         models as _entity_resolution_models,  # noqa: F401
     )
+    from investment_analyzer.news import models as _news_models  # noqa: F401
     from investment_analyzer.normalization import models as _normalization_models  # noqa: F401
 
 

@@ -126,6 +126,46 @@ class Connector:
         einen abgelaufenen Cache-Eintrag (Auftrag §4).
         """
 
+        return self._get(
+            path_or_url,
+            params=params,
+            secret_params=secret_params,
+            cache_ttl_seconds=cache_ttl_seconds,
+            parse=lambda response: response.json(),
+        )
+
+    def get_text(
+        self,
+        path_or_url: str,
+        *,
+        params: dict[str, Any] | None = None,
+        secret_params: dict[str, Any] | None = None,
+        cache_ttl_seconds: int | None = None,
+    ) -> FetchResult:
+        """Wie ``get_json``, liefert aber den rohen Antworttext statt geparstem JSON.
+
+        Für Quellen ohne JSON-API (z. B. RSS-/Atom-Feeds, ``news/``-Modul,
+        Milestone 5). Dieselben Provenienz-, Cache-, Retry- und
+        SSRF-Garantien gelten unverändert.
+        """
+
+        return self._get(
+            path_or_url,
+            params=params,
+            secret_params=secret_params,
+            cache_ttl_seconds=cache_ttl_seconds,
+            parse=lambda response: response.text,
+        )
+
+    def _get(
+        self,
+        path_or_url: str,
+        *,
+        params: dict[str, Any] | None,
+        secret_params: dict[str, Any] | None,
+        cache_ttl_seconds: int | None,
+        parse: Callable[[httpx.Response], Any],
+    ) -> FetchResult:
         public_url = self._with_query(self._build_url(path_or_url), params or {})
         ttl = cache_ttl_seconds if cache_ttl_seconds is not None else self.config.cache_ttl_seconds
         # secret_params fließt nur in den Hash ein (Cache-Schlüssel), nie im Klartext gespeichert.
@@ -148,7 +188,7 @@ class Connector:
             assert_safe_url(public_url, self.config.allowed_hosts)
 
         request_url = self._with_query(public_url, secret_params or {})
-        data, status_code = self._request_with_retry(request_url)
+        data, status_code = self._request_with_retry(request_url, parse)
         fetched_at = self._clock()
 
         if self._cache is not None:
@@ -162,7 +202,7 @@ class Connector:
             data=data, url=public_url, fetched_at_utc=fetched_at, from_cache=False, status_code=status_code
         )
 
-    def _request_with_retry(self, url: str) -> tuple[Any, int]:
+    def _request_with_retry(self, url: str, parse: Callable[[httpx.Response], Any]) -> tuple[Any, int]:
         last_error: ConnectorError | None = None
 
         for attempt in range(1, self.config.max_retries + 1):
@@ -189,10 +229,10 @@ class Connector:
                     )
                 else:
                     try:
-                        return response.json(), response.status_code
+                        return parse(response), response.status_code
                     except ValueError as exc:
                         raise ConnectorValidationError(
-                            f"Antwort von {url} ist kein gültiges JSON: {exc}"
+                            f"Antwort von {url} konnte nicht verarbeitet werden: {exc}"
                         ) from exc
 
             if attempt < self.config.max_retries:
