@@ -71,7 +71,7 @@ erkennt Python 3.12+, legt `.venv` an, installiert Abhängigkeiten, führt
 Windows sowie Browsertest der Oberfläche stehen noch aus (Sandbox bot
 nur Linux + Headless-/HTTP-Verifikation, siehe `PROGRESS.md`).
 
-## Milestone 2 — Datenbeschaffung
+## Milestone 2 — Datenbeschaffung (abgeschlossen 2026-09-07, mit offenem Punkt)
 
 **Ziel:** Zwei robuste Connectoren (Primärquelle Unternehmensmeldungen +
 Marktdatenquelle), vollständig mit Provenienz, Cache, Rate Limits,
@@ -96,6 +96,31 @@ Datenalter getestet.
 **Abnahmekriterium:** Beide Connectoren liefern für mind. 10 reale
 Testunternehmen Daten mit vollständiger Provenienz; simulierter Ausfall
 erzeugt sichtbaren Fehler, keinen stillen Fallback auf veraltete Werte.
+
+**Erfüllt:** Connector-Grundgerüst (Timeout, exponentieller Backoff,
+Rate-Limiting, dateibasierter Cache mit TTL, SSRF-Schutz mit
+DNS-Rebinding-Prüfung, einheitliches Fehlerprotokoll) sowie SEC-EDGAR-
+und Alpha-Vantage-Connector vollständig implementiert und mit
+gemockten, realistisch strukturierten Antworten getestet (66 neue
+Tests, insgesamt 116, `ruff`/`mypy` fehlerfrei). Simulierter
+Quellenausfall (Timeout, 5xx, 429, ungültiges JSON, Alpha-Vantage-
+Rate-Limit-Hinweis im 200er-Body) erzeugt in jedem Fall einen
+sichtbaren Fehler statt eines stillen Fallbacks auf veraltete
+Cache-Daten (dediziert getestet). Source-Seeding, Entity-Resolution
+(niemals Ticker allein, ADR/Auftrag §5) und Ingestion in
+provenienzbehaftete `DataPoint`-Zeilen (inkl. Point-in-time-/
+Restatement-Verhalten) sind implementiert und getestet.
+
+**Offen — Live-Verifikation mit 10 realen Unternehmen:** In dieser
+Sandbox-Entwicklungsumgebung ist ausgehender Netzwerkzugriff auf
+`www.sec.gov`/`data.sec.gov` und `www.alphavantage.co` durch die
+Egress-Policy des Umgebungs-Proxys blockiert (verifiziert per
+`curl` → `403 CONNECT tunnel failed`, siehe `PROGRESS.md`). Der
+formale Abnahmenachweis mit zehn realen Unternehmen konnte hier daher
+nicht erbracht werden und steht aus — nachzuholen in einer Umgebung mit
+echtem Internetzugang (z. B. beim Nutzer über `start.ps1`); für Alpha
+Vantage zusätzlich erst, sobald ein echter API-Schlüssel vorliegt (der
+öffentliche „demo"-Schlüssel funktioniert nur für das Symbol IBM).
 
 ## Milestone 3 — Fundamentalanalyse
 

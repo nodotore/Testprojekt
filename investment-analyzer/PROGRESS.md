@@ -116,3 +116,91 @@ fehlende Migration). `ruff check .` und `mypy src` beide fehlerfrei.
 
 **Nächster Schritt:** Milestone 2 (Datenbeschaffung) gemäß `PLAN.md` —
 siehe `NEXT_STEPS.md`.
+
+## Milestone 2 — Datenbeschaffung
+
+**Status: Implementierung abgeschlossen; Live-Verifikation mit realen
+Daten in dieser Sandbox nicht möglich (siehe „Offene Risiken").**
+
+Umgesetzt (Hauptagent/project-orchestrator, sequenziell — die Schritte
+bauen aufeinander auf: Grundgerüst → Connectoren → Persistenz →
+Ingestion):
+
+- **Connector-Grundgerüst** (`connectors/base.py`, `errors.py`,
+  `ssrf.py`, `rate_limiter.py`, `cache.py`): Timeout, exponentieller
+  Retry-Backoff, injizierbarer Sliding-Window-Rate-Limiter,
+  dateibasierter Cache mit TTL (abgelaufene Einträge werden NIE als
+  aktuell zurückgegeben), SSRF-Schutz mit Host-Allowlist UND
+  DNS-Rebinding-Prüfung (injizierbarer Resolver), einheitliches
+  Fehlerprotokoll. Trennung von `params` (öffentlich, landet in der
+  gespeicherten Provenienz-URL) und `secret_params` (z. B. API-Keys —
+  nie in URL/Cache/Logs, siehe ADR-13).
+- **SEC-EDGAR-Connector** (`connectors/sec_edgar.py`): Ticker→CIK-
+  Auflösung über die offizielle Ticker-Liste, Submissions-Endpoint
+  (Firmenname, Ticker/Börsen, jüngste Einreichungen), XBRL-
+  Company-Concept-Endpoint (einzelne Kennzahl über alle Perioden,
+  bereits mit Berichtsperiode/Einreichungsdatum/Accession Number —
+  vollständige Provenienz gemäß Auftrag §5). Pflicht-User-Agent mit
+  Kontaktadresse.
+- **Alpha-Vantage-Connector** (`connectors/alpha_vantage.py`):
+  `GLOBAL_QUOTE`-Kurs-Snapshot. Besonderheit beachtet: Alpha Vantage
+  meldet Rate-Limits/Fehler als HTTP 200 mit `"Note"`/`"Information"`/
+  `"Error Message"`-Feld statt als Fehlerstatus — wird explizit erkannt
+  und in `ConnectorRateLimitedError`/`ConnectorValidationError`
+  übersetzt. Free-Tier-Rate-Limit (5/Minute) als Default.
+- **Source-Seeding** (`connectors/seed.py`): idempotentes Anlegen/
+  Aktualisieren der `Source`-Zeilen für beide Connectoren.
+- **Entity-Resolution-Service** (`entity_resolution/service.py`):
+  `find_or_create_entity` verlangt mindestens eine stabile Kennung
+  (ISIN, LEI oder CIK) — ein Ticker allein wird mit `ValueError`
+  abgelehnt (Auftrag §5). Bestehende Entities werden über die stabile
+  Kennung wiedergefunden, fehlende Kennungen ergänzt, ohne den Namen
+  bei einem Treffer stillschweigend zu überschreiben.
+- **Ingestion** (`normalization/ingest.py`): `ingest_sec_company_concept`
+  wandelt XBRL-Fakten in `DataPoint`-Zeilen um (inkl. konstruierter
+  EDGAR-Einreichungs-Index-URL als direktem Beleglink), idempotent über
+  (Berichtsperiode, Accession Number) — eine neue Einreichung derselben
+  Periode (Restatement) erzeugt eine zusätzliche Zeile statt die alte zu
+  überschreiben (append-only, ADR-6, dediziert getestet).
+  `ingest_alpha_vantage_quote` wandelt einen Kurs-Snapshot um; da
+  `GLOBAL_QUOTE` keine Währung liefert, wird `currency` bewusst auf
+  `None` gesetzt (keine geratene Annahme, Auftrag §11) und
+  Qualität/Konfidenz entsprechend reduziert (0,6 statt 0,95).
+
+**Tests:** 66 neue Tests (insgesamt 116, alle grün) — Connector-
+Grundgerüst (Cache/Rate-Limit/SSRF/Retry/Fehlerfälle inkl. Secret-Leak-
+Test), SEC-EDGAR- und Alpha-Vantage-Connector (gemockte, realistisch
+strukturierte Antworten inkl. Alpha-Vantage-200er-Fehlerfälle),
+Source-Seeding, Entity-Resolution (inkl. „zwei Firmen, gleicher Ticker,
+verschiedene Börsen"), Ingestion (Provenienzfelder, Idempotenz,
+Restatement-Verhalten). `ruff check .` und `mypy src` beide fehlerfrei.
+
+**Geänderte/neue Dateien:** ausschließlich unter `investment-analyzer/`
+— neue Module in `connectors/`, `entity_resolution/service.py`,
+`normalization/ingest.py`, zugehörige Tests unter `tests/`.
+
+**Offene Risiken:**
+- **Live-Verifikation mit 10 realen Unternehmen (Abnahmekriterium)
+  nicht erbracht.** In dieser Sandbox-Entwicklungsumgebung blockiert die
+  Egress-Policy des Umgebungs-Proxys ausgehende Verbindungen zu
+  `www.sec.gov`/`data.sec.gov` und `www.alphavantage.co` (verifiziert:
+  `curl` → `403 CONNECT tunnel failed, response 403` für beide Hosts,
+  2026-09-07). Die gesamte Connector-Logik ist gegen realistisch
+  strukturierte, gemockte Antworten getestet, aber ein echter
+  End-to-End-Abruf gegen die realen APIs steht aus. Muss in einer
+  Umgebung mit echtem Internetzugang nachgeholt werden (z. B. beim
+  Nutzer über `start.ps1`).
+- Für Alpha Vantage liegt kein echter API-Schlüssel vor (wurde vom
+  Nutzer bisher nicht bereitgestellt); der öffentliche „demo"-Schlüssel
+  funktioniert nur für das Testsymbol IBM, nicht für zehn beliebige
+  Unternehmen.
+- Bekannte, bereits in ADR-9 dokumentierte Lücke: keine gleichwertige
+  kostenlose Meldungs-Primärquelle für DE/EU (nur SEC EDGAR/USA
+  angebunden).
+- Alpha-Vantage-Kurse werden ohne Währungsangabe gespeichert (API-
+  Limitierung); Auflösung der Notierungswährung über Börsen-Metadaten
+  ist für Milestone 3 vorgesehen (siehe `TODO.md`).
+
+**Nächster Schritt:** Milestone 3 (Fundamentalanalyse) gemäß `PLAN.md`
+— siehe `NEXT_STEPS.md`. Vor produktivem Einsatz: Live-Verifikation der
+Connectoren in einer Umgebung mit Internetzugang nachholen.

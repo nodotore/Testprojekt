@@ -29,18 +29,37 @@
 - [ ] Streamlit-Oberfläche in echtem Browser bedienen (Sandbox hatte nur
       Headless-/HTTP-Verifikation)
 
-## Milestone 2 — Datenbeschaffung (nächster Schritt)
+## Milestone 2 — Datenbeschaffung (Implementierung abgeschlossen)
 
-- [ ] Connector-Basisklasse (Timeout, Retry+Backoff, Rate Limiting,
+- [x] Connector-Basisklasse (Timeout, Retry+Backoff, Rate Limiting,
       Cache, Validierung, Fehlerprotokoll, Lizenzhinweis)
-- [ ] Connector A: SEC EDGAR (Meldungen, USA)
-- [ ] Connector B: Alpha Vantage Free (Marktdaten)
-- [ ] SSRF-Schutz + URL-Allowlist je Connector
-- [ ] Normalisierung (Einheiten, Währung, Geschäftsjahr, Splits/Dividenden)
-- [ ] Entity Resolution (Ticker/ISIN/LEI → interne Entity-ID) befüllen
-- [ ] Tests: Cache, Rate-Limit-Einhaltung, simulierter Quellenausfall
+- [x] SSRF-Schutz + URL-Allowlist je Connector (inkl. DNS-Rebinding-Prüfung)
+- [x] Connector A: SEC EDGAR (Meldungen, USA — Submissions + XBRL Company Concept)
+- [x] Connector B: Alpha Vantage Free (Marktdaten — GLOBAL_QUOTE)
+- [x] Entity Resolution (Ticker/ISIN/LEI/CIK → interne Entity-ID),
+      Ticker allein wird abgelehnt
+- [x] Source-Seeding (idempotent)
+- [x] Ingestion: Connector-Ergebnisse → provenienzbehaftete DataPoints
+      (idempotent, append-only/Restatement-fähig)
+- [x] Tests: Cache, Rate-Limit-Einhaltung, simulierter Quellenausfall
+      (66 neue Tests, insgesamt 116 grün, ruff+mypy fehlerfrei)
+- [ ] **Offen:** Live-Verifikation mit mind. 10 realen Unternehmen gegen
+      die echten APIs — in dieser Sandbox durch Egress-Policy blockiert
+      (siehe `PROGRESS.md`). Nachholen in Umgebung mit Internetzugang;
+      für Alpha Vantage zusätzlich echten API-Schlüssel vom Nutzer nötig
+      (siehe `NEXT_STEPS.md`).
+- [ ] Notierungswährung für Alpha-Vantage-Kurse auflösen (aktuell
+      bewusst `None`, siehe ADR/`normalization/ingest.py`) — vorgesehen
+      für Milestone 3 zusammen mit Börsen-/Währungs-Normalisierung.
+- [ ] EU/DE-Meldungsquellen-Lücke (ADR-9): ggf. in späterer Milestone
+      schließen, falls Nutzer das priorisiert.
+
+## Milestone 3 — Fundamentalanalyse (nächster Schritt)
+
+Siehe `PLAN.md` für Details; wird hier aufgeschlüsselt, sobald die
+Milestone beginnt.
 
 ## Spätere Milestones
 
-Siehe `PLAN.md` für Milestone 3–8; werden hier erst als Einzelaufgaben
+Siehe `PLAN.md` für Milestone 4–8; werden hier erst als Einzelaufgaben
 aufgeschlüsselt, wenn die jeweilige Milestone beginnt.

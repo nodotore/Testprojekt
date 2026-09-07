@@ -248,11 +248,40 @@ zwischen Entwicklungs- und Produktivumgebung ermöglichen. Fehlt die
 Migration, zeigt die Oberfläche einen expliziten Fehler mit Anweisung,
 `start.ps1`/`start.bat` (führt `alembic upgrade head` aus) zu verwenden.
 
+## ADR-13: Trennung von `params` und `secret_params` im Connector-Grundgerüst
+
+**Kontext:** Alpha Vantage (und potenziell weitere kostenpflichtige
+Quellen) übergibt den API-Schlüssel als Query-Parameter
+(`?apikey=...`). Auftrag §12 verlangt, dass Zugangsdaten niemals in
+Logs, Exportdateien oder — implizit — in dauerhaft gespeicherten
+Provenienz-Feldern (`DataPoint.document_url`) landen.
+
+**Entscheidung:** `Connector.get_json()` unterscheidet zwischen
+`params` (fließt in die tatsächliche Anfrage UND in die zurückgegebene/
+gespeicherte `FetchResult.url`) und `secret_params` (fließt NUR in die
+tatsächliche HTTP-Anfrage; taucht nie in `FetchResult.url`, im
+Cache-Klartext oder in Logs auf). Der Cache-Schlüssel wird zwar aus
+beidem gebildet, aber nur als SHA-256-Hash — nicht umkehrbar, kein
+Klartext-Leck.
+
+**Begründung:** Ohne diese Trennung würde `AlphaVantageQuote.source_url`
+(und darüber `DataPoint.document_url`) den API-Schlüssel enthalten und
+dauerhaft in der Datenbank sowie in jedem Export (Excel/PDF/JSON,
+Milestone 6) landen — ein klarer Verstoß gegen Auftrag §12.
+
+**Konsequenzen:** Jeder künftige Connector mit API-Schlüssel im
+Query-String (z. B. eine spätere „günstig"-Tarif-Quelle) MUSS den
+Schlüssel über `secret_params` übergeben, nicht über `params`. Ein
+Test (`test_secret_params_landen_im_request_aber_nicht_in_der_
+provenienz_url`, `tests/connectors/test_base_connector.py`) sichert
+dieses Verhalten dauerhaft ab.
+
 ## Noch zu treffende Entscheidungen
 
-Keine blockierenden Entscheidungen mehr offen für Milestone 1
-(abgeschlossen, siehe `PROGRESS.md`). Verbleibende Detailfragen aus
-`MILESTONE_0.md` Abschnitt B (z. B. weitere Feinjustierung der
+Keine blockierenden Entscheidungen mehr offen für Milestone 1 oder 2
+(beide abgeschlossen, siehe `PROGRESS.md`). Verbleibende Detailfragen
+aus `MILESTONE_0.md` Abschnitt B (z. B. weitere Feinjustierung der
 Mindestmarktkapitalisierung) bleiben über den Ersteinrichtungsdialog im
-laufenden Betrieb änderbar (Auftrag §2). Vor Milestone 2 zu klären:
-Priorisierung der EU/DE-Meldungsquellen-Lücke (siehe ADR-9).
+laufenden Betrieb änderbar (Auftrag §2). Weiterhin offen: Priorisierung
+der EU/DE-Meldungsquellen-Lücke (ADR-9) und Auflösung der
+Notierungswährung für Alpha-Vantage-Kurse (siehe `TODO.md`, Milestone 3).
