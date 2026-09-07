@@ -2,6 +2,29 @@
 
 ## Unreleased
 
+- Milestone 6 (Portfolio und Exporte) umgesetzt: neues Modul
+  `portfolio/` (ADR-20) mit Watchlist-/Portfolio-CSV-Import
+  (zeilengenaue Fehlersammlung, idempotent, dieselbe Entity-Auflösung
+  wie jede andere Ingestion), Branchen-/Länder-/Währungs-
+  Konzentrationsanalyse nach Marktwert (liefert `computable=False`
+  statt Fantasiewert bei gemischten Bestandswährungen; „Faktor-
+  Konzentration" explizit als nicht berechenbar dokumentiert),
+  unverbindliche Positionsgrößen-Bandbreite, konfigurierbare
+  `PortfolioAssumptions` (Transaktionskosten/Steuersatz/
+  Mindestliquidität), historischer Max-Drawdown und Pearson-Korrelation
+  der Tagesrenditen mit expliziter „Datenlage unzureichend"-Markierung,
+  sowie `PortfolioReport`-Orchestrierung. Neues Modul `reports/` mit
+  `ReportBundle` (ADR-21) als einziger Quelle der Wahrheit für JSON-,
+  Excel- (alle sieben Auftrag-§10-Tabellenblätter: Zusammenfassung,
+  Kennzahlen, Bewertung, Risiken, Nachrichten, Quellen, Annahmen) und
+  PDF-Export — beide Formate lesen strukturell aus demselben
+  `report_bundle_to_dict()`, inkl. Formel-Injection-Schutz für
+  Zellwerte aus externen Quellen (Auftrag §12). 60 neue Tests
+  (insgesamt 372), `ruff`/`mypy` fehlerfrei. Das Abnahmekriterium
+  „Export = UI-Werte" ist strukturell (ADR-21), aber mangels
+  existierender Report-UI-Seite noch nicht live nachprüfbar (siehe
+  PROGRESS.md).
+
 - Milestone 5 (Nachrichtenanalyse) umgesetzt: Connector-Grundgerüst um
   `get_text()` erweitert (Rohtext statt JSON, für Quellen ohne
   JSON-API), GDELT-DOC-2.0-Connector (`connectors/gdelt.py`,

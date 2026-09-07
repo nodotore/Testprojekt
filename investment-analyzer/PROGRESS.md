@@ -480,3 +480,103 @@ Alembic-Migration `news_items`; zugehörige Tests unter
 
 **Nächster Schritt:** Milestone 6 (Portfolio und Exporte) gemäß
 `PLAN.md` — siehe `NEXT_STEPS.md`.
+
+## Milestone 6 — Portfolio und Exporte
+
+**Status:** Implementierung abgeschlossen (2026-09-07).
+
+**Umgesetzt:**
+
+- Neues Modul `portfolio/` (ADR-20, über die ursprüngliche
+  Auftrag-§4-Modulliste hinaus ergänzt): `WatchlistEntry`/
+  `PortfolioPosition`-ORM-Modelle (Bestands-Snapshot, keine
+  Transaktionshistorie) + Alembic-Migration.
+- CSV-Import (`portfolio/csv_import.py`) für Watchlist und Portfolio —
+  nutzt dieselbe Entity-Auflösung wie jede andere Ingestion (nie Ticker
+  allein, Auftrag §5), sammelt Fehler zeilengenau statt abzubrechen
+  oder still zu überspringen, ist idempotent (erneuter Import
+  aktualisiert bestehende Zeilen).
+- Konzentrationsanalyse (`portfolio/concentration.py`): Branchen-/
+  Länder-Konzentration nach Marktwert, nur berechenbar bei einheitlicher
+  Bestandswährung (sonst `computable=False` statt Fantasiewert);
+  Währungs-Exposure separat und ohne Prozentangabe über Währungsgrenzen
+  hinweg. „Faktor-Konzentration" explizit als nicht berechenbar
+  dokumentiert (`NOT_YET_IMPLEMENTABLE_CONCENTRATIONS`).
+- Positionsgrößen-Bandbreite (`portfolio/position_sizing.py`) —
+  unverbindlich, nie ein einzelner empfohlener Wert (Auftrag §8).
+- Konfigurierbare `PortfolioAssumptions` (`portfolio/assumptions.py`):
+  Transaktionskosten, Steuersatz, Mindestliquidität, mit dokumentierten
+  Default-Näherungen.
+- Historischer Max-Drawdown und Pearson-Korrelation der Tagesrenditen
+  (`portfolio/risk_metrics.py`) — reine Funktionen mit expliziter
+  „Datenlage unzureichend"-Markierung bei zu wenigen Kurspunkten.
+- `PortfolioReport`-Orchestrierung (`portfolio/report.py`): liest
+  Bestände + jüngste Kurse, wendet alle obigen Bausteine an, dokumentiert
+  jede Lücke explizit in `gaps` statt sie wegzulassen.
+- Neues Modul `reports/` (bisher leerer Stub) mit `ReportBundle`
+  (ADR-21) als einziger Quelle der Wahrheit für alle Exportformate:
+  aggregiert FundamentalsReport/ValuationReport/ScoreResult/NewsReport
+  (`reports/bundle.py`), JSON-Export (`json_export.py`), Excel-Export
+  mit allen sieben in Auftrag §10 geforderten Tabellenblättern
+  (Zusammenfassung, Kennzahlen, Bewertung, Risiken, Nachrichten,
+  Quellen, Annahmen — `excel_export.py`, `openpyxl`), PDF-Export
+  (`pdf_export.py`, `reportlab`). Excel- und PDF-Export lesen
+  ausschließlich aus demselben `report_bundle_to_dict()` — zwei
+  Exportformate können dadurch strukturell keine unterschiedlichen
+  Werte zeigen. Formel-Injection-Schutz (Auftrag §12) für Zellwerte aus
+  externen Quellen (Nachrichtentitel/-URLs) im Excel-Export.
+
+**Bewusste, dokumentierte Lücke:** Das Milestone-6-Abnahmekriterium
+„Export enthält exakt dieselben Werte wie die UI-Ansicht
+(automatisierter Abgleich)" ist strukturell, aber nicht live erfüllt —
+es existiert noch keine Streamlit-Detailseite, die Berichte anzeigt
+(nur die Start/Datenstatus-Seite aus Milestone 1). Der automatisierte
+Abgleich kann erst erfolgen, sobald diese UI-Seite gebaut ist
+(voraussichtlich Milestone 8). Die ADR-21-Architekturentscheidung (ein
+einziges `ReportBundle` als Datenquelle) stellt sicher, dass eine
+künftige UI-Seite automatisch dieselben Werte zeigt, sofern sie
+ebenfalls von einem `ReportBundle` rendert.
+
+**Tests:** 60 neue Tests (insgesamt 372, alle grün) — CSV-Import-
+Fehlerfälle, hand-nachrechenbare Konzentrations-/Drawdown-/
+Korrelations-Fälle (u. a. ein exakt konstruierter Fall mit Korrelation
+= -1.0), PortfolioReport-Integrationstests gegen die Datenbank
+(inkl. gemischte-Währungen-Lücke), ReportBundle-Konsistenztests (Score
+aus dem Bundle ist bit-identisch mit einer unabhängigen
+`compute_score`-Berechnung), JSON-Rundtrip-Test, Excel-Tabellenblatt-
+Struktur- und Wertetests, PDF-Erzeugungstests (Magic-Bytes-Prüfung, da
+kein PDF-Parser als Testabhängigkeit vorhanden ist). `ruff check .` und
+`mypy src` beide fehlerfrei.
+
+**Geänderte/neue Dateien:** ausschließlich unter `investment-analyzer/`
+— neue Module `portfolio/` (models, csv_import, concentration,
+position_sizing, assumptions, risk_metrics, report) und `reports/`
+(bundle, json_export, excel_export, pdf_export); neue Alembic-Migration
+`watchlist_entries`/`portfolio_positions`; Erweiterung in
+`db/__init__.py`; zugehörige Tests unter `tests/portfolio/`,
+`tests/reports/`.
+
+**Offene Risiken:**
+- **UI-vs.-Export-Abgleich nicht live nachprüfbar** (s. o.) — strukturell
+  durch ADR-21 abgesichert, aber erst mit einer echten Report-UI-Seite
+  (Milestone 8) tatsächlich testbar.
+- Keine FX-Umrechnung: Konzentrationsanalyse bei gemischten
+  Bestandswährungen liefert `computable=False` statt eines Werts.
+- Korrelation/Drawdown liefern in dieser Sandbox mangels Kurshistorie
+  (Alpha Vantage GLOBAL_QUOTE nur Einzelabruf-Snapshots) für die
+  meisten synthetischen Testfälle „Datenlage unzureichend" — realistisch
+  auch im späteren Produktivbetrieb, bis genug Kurspunkte akkumuliert
+  sind.
+- IR-RSS-Feed-URL-zu-Entity-Zuordnung weiterhin nicht automatisiert
+  (aus Milestone 5 offen).
+- PDF-Export rendert Nachrichtentitel/-URLs bewusst nicht (nur
+  aggregierte Zahlen) — Sicherheitsentscheidung gegen reportlabs
+  Markup-Parsing für externen Text (siehe ADR-21); bei Bedarf später als
+  reine Tabellen-Zellen (kein Markup-Parsing) nachrüstbar.
+- Portfolio-Konzentration/-Positionsgrößen nutzen den zuletzt bekannten
+  Kurs ohne Altersprüfung — ein sehr alter Kurs würde nicht gesondert
+  markiert (kleinere Lücke, nicht behebbar ohne echte Marktdaten in
+  dieser Sandbox zu testen).
+
+**Nächster Schritt:** Milestone 7 (Backtesting) gemäß `PLAN.md` — siehe
+`NEXT_STEPS.md`.

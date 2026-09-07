@@ -132,12 +132,39 @@
 - [ ] Quellqualitäts-Heuristik für „Kommentar" (kleine Domain-Liste in
       `news/classification.py`) bei Bedarf erweitern.
 
-## Milestone 6 — Portfolio und Exporte (nächster Schritt)
+## Milestone 6 — Portfolio und Exporte (Implementierung abgeschlossen)
+
+- [x] `portfolio/`-Modul: `WatchlistEntry`/`PortfolioPosition`-Modelle +
+      Migration
+- [x] CSV-Import (Watchlist + Portfolio), zeilengenaue Fehlersammlung,
+      idempotent
+- [x] Konzentrationsanalyse (Branche/Land/Währung), Positionsgrößen-
+      Bandbreite, konfigurierbare `PortfolioAssumptions`
+- [x] Historischer Max-Drawdown + Korrelation (reine Funktionen) +
+      `PortfolioReport`-Orchestrierung
+- [x] `reports/`-Modul: `ReportBundle` als einzige Quelle der Wahrheit +
+      JSON-Export
+- [x] Excel-Export (7 Tabellenblätter gemäß Auftrag §10) + PDF-Export
+- [x] Tests: 60 neue (insgesamt 372 grün), `ruff`/`mypy` fehlerfrei
+- [ ] **Offen:** UI-vs.-Export-Abgleich (Auftrag-Abnahmekriterium) live
+      nachprüfen, sobald eine Streamlit-Detailseite existiert
+      (voraussichtlich Milestone 8) — strukturell durch ADR-21
+      (`ReportBundle`) bereits abgesichert.
+- [ ] FX-Umrechnungsmodell für Portfolio-Konzentration bei gemischten
+      Bestandswährungen (aktuell `computable=False`).
+- [ ] Faktor-Konzentration (Value/Growth/Quality) — kein Faktormodell
+      vorhanden.
+- [ ] PDF-Export um Nachrichtentitel/-URLs als reine Tabellen-Zellen
+      erweitern (aktuell bewusst nur aggregierte Zahlen, siehe ADR-21).
+- [ ] IR-RSS-Feed-URL-zu-Entity-Zuordnung lösen (aus Milestone 5
+      weiterhin offen).
+
+## Milestone 7 — Backtesting (nächster Schritt)
 
 Siehe `PLAN.md` für Details; wird hier aufgeschlüsselt, sobald die
 Milestone beginnt.
 
 ## Spätere Milestones
 
-Siehe `PLAN.md` für Milestone 7–8; werden hier erst als Einzelaufgaben
+Siehe `PLAN.md` für Milestone 8; werden hier erst als Einzelaufgaben
 aufgeschlüsselt, wenn die jeweilige Milestone beginnt.

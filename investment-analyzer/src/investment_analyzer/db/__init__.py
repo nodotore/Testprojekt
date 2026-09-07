@@ -3,7 +3,8 @@
 Provenienz-first-Prinzip (siehe DECISIONS.md ADR-6): Alle Domänenmodelle
 (``Entity``/``EntityIdentifier`` in ``entity_resolution``, ``Source`` in
 ``connectors``, ``DataPoint`` in ``normalization``, ``AuditLogEntry`` in
-``audit``, ``NewsItem`` in ``news``) registrieren sich auf derselben
+``audit``, ``NewsItem`` in ``news``, ``WatchlistEntry``/
+``PortfolioPosition`` in ``portfolio``) registrieren sich auf derselben
 ``Base.metadata`` und werden hier zentral importiert, damit sowohl
 Alembic-Autogenerate als auch ``create_all`` in Tests alle Tabellen kennen.
 
@@ -41,6 +42,7 @@ def register_all_models() -> None:
     )
     from investment_analyzer.news import models as _news_models  # noqa: F401
     from investment_analyzer.normalization import models as _normalization_models  # noqa: F401
+    from investment_analyzer.portfolio import models as _portfolio_models  # noqa: F401
 
 
 def create_db_engine(database_url: str, *, echo: bool = False) -> Engine:

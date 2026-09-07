@@ -439,16 +439,104 @@ Titel-Ähnlichkeit (`difflib.SequenceMatcher`) statt Embeddings/
 Sprachmodell — deterministisch reproduzierbar, auf Kosten semantischer
 Präzision bei stark unterschiedlichem Wortlaut über dasselbe Ereignis.
 
+## ADR-20: Neues Modul `portfolio/` über die ursprüngliche Auftrag-§4-Modulliste hinaus
+
+**Kontext:** Auftrag §4 nennt eine feste Liste von Domänenmodulen
+(`connectors, normalization, entity_resolution, fundamentals, valuation,
+news, risk, scoring, backtesting, reports, ui, audit`). Auftrag §8
+(„Portfolio- und Vergleichsfunktionen": Watchlist/Portfolio-Import,
+Branchen-/Länder-/Währungs-/Faktor-Konzentration, Korrelation,
+historische Drawdowns, Positionsgrößen-Bandbreiten, konfigurierbare
+Transaktionskosten-/Steuer-/Liquiditäts-Annahmen) beschreibt jedoch
+eigenständige Fachlogik, die in keinem der zwölf genannten Module
+sauber unterzubringen ist — analog zur bereits in ADR-11 dokumentierten
+Ergänzung um `config`/`db`.
+
+**Entscheidung:** Ein neues Modul `portfolio/` wird ergänzt:
+`models.py` (`WatchlistEntry`, `PortfolioPosition` — zwei getrennte,
+schlanke Bestands-Snapshot-Modelle, keine Transaktionshistorie),
+`csv_import.py` (manueller/CSV-Import, nutzt dieselbe
+Entity-Auflösung wie alle anderen Ingestion-Pfade — nie Ticker allein,
+Auftrag §5), `concentration.py`, `position_sizing.py`,
+`risk_metrics.py` (reine Berechnungsfunktionen) und `report.py`
+(DB-Orchestrierung zu `PortfolioReport`, dasselbe Muster wie
+`fundamentals`/`valuation`/`news`).
+
+**Konsequenz — bewusste Einschränkung ohne FX-Umrechnung:** Es existiert
+kein Fremdwährungs-Umrechnungsmodell. Branchen-/Länder-Konzentration als
+Prozentsatz wird nur berechnet, wenn alle einbezogenen Positionen
+dieselbe Bestandswährung haben (sonst `computable=False` statt eines
+irreführenden Werts, Auftrag §11); Währungs-Exposure wird deshalb separat
+und ohne Prozentangabe über Währungsgrenzen hinweg ausgewiesen. Diese
+Lücke ist strukturell dieselbe wie die unbekannte Alpha-Vantage-
+Kurswährung (siehe ADR-16) und wird nicht durch eine erfundene
+Umrechnung überbrückt.
+
+**Konsequenz — Faktor-Konzentration nicht umgesetzt:** Wie schon bei den
+zurückgestellten Warnsignalen (Milestone 3) und den beiden
+nicht-berechenbaren Scoring-Komponenten (ADR-17) wird „Faktor-
+Konzentration" (Value-/Growth-/Quality-Exposure je Position) explizit
+als `NOT_YET_IMPLEMENTABLE_CONCENTRATIONS` benannt statt stillschweigend
+wegzulassen — es existiert noch kein Faktormodell.
+
+**Konsequenz — Korrelation/Drawdown meist „Datenlage unzureichend" in
+dieser Umgebung:** Beide Kennzahlen benötigen eine Kurshistorie; Alpha
+Vantage `GLOBAL_QUOTE` (Kostenlos-Paket) liefert nur den jeweils
+aktuellen Kurs je Abruf. Bis genug Punkte über wiederholte Abrufe
+akkumuliert sind, liefern `max_drawdown`/`pairwise_correlation`
+strukturell `computable=False` — der ehrliche Normalfall, kein
+Implementierungsfehler.
+
+## ADR-21: `ReportBundle` als einzige Quelle der Wahrheit für alle Exportformate
+
+**Kontext:** Auftrag §10 verlangt einen Excel-Export mit exakt sieben
+Tabellenblättern (Zusammenfassung, Kennzahlen, Bewertung, Risiken,
+Nachrichten, Quellen, Annahmen) sowie zusätzlich PDF- und JSON-Export
+(Auftrag §2). Das Abnahmekriterium aus `PLAN.md` Milestone 6 verlangt,
+dass der Export „exakt dieselben Werte wie die UI-Ansicht" zeigt.
+
+**Entscheidung:** `reports/bundle.py::build_report_bundle` aggregiert
+`FundamentalsReport`, `ValuationReport`, `ScoreResult` und `NewsReport`
+(alle bereits unabhängig getestete, deterministische Bausteine aus
+Milestone 3–5) zu einem einzigen `ReportBundle` — reine Aggregation,
+keine neuen Zahlen. `reports/json_export.py::report_bundle_to_dict`
+wandelt dieses Bundle strukturell in JSON-taugliche Werte um; sowohl
+`reports/excel_export.py` als auch `reports/pdf_export.py` bauen
+AUSSCHLIESSLICH auf demselben `report_bundle_to_dict()`-Ergebnis auf,
+nie auf eigenen Datenbankabfragen.
+
+**Begründung/Konsequenz:** Dadurch können zwei Exportformate für
+dieselbe Analyse strukturell nicht unterschiedliche Werte zeigen — der
+Beweis liegt im Code-Pfad, nicht in einem manuellen Abgleich. Eine
+künftige UI-Detailseite (Auftrag §10 Seite 4, Milestone 8+) MUSS
+ebenfalls von einem `ReportBundle` rendern, nicht von eigenen Anfragen,
+damit das Abnahmekriterium „Export = UI-Werte" strukturell erhalten
+bleibt — bis diese UI-Seite existiert, ist der vollständige
+UI-vs.-Export-Abgleich nicht live nachprüfbar (offener Punkt, siehe
+`PROGRESS.md`/`NEXT_STEPS.md`).
+
+**Konsequenz — Formel-Injection-Schutz im Excel-Export (Auftrag §12):**
+Nachrichtentitel/-URLs/-Domains stammen aus externen, nicht
+vertrauenswürdigen Quellen. `excel_export.py::_sanitize_excel_string`
+neutralisiert Zellwerte, die mit `=`, `+`, `-` oder `@` beginnen
+(potenzielle Formel-Interpretation in Tabellenkalkulationen bzw.
+Re-Import-Pfaden). Im PDF-Export läuft aus demselben Grund nur intern
+generierter Text (Score-Begründungen, Annahmen) durch reportlabs
+`Paragraph` (interpretiert minimales Markup) — externer Text
+(Nachrichtentitel) wird aktuell nur aggregiert (Anzahl), nicht über
+`Paragraph` gerendert.
+
 ## Noch zu treffende Entscheidungen
 
-Keine blockierenden Entscheidungen mehr offen für Milestone 1–5 (alle
+Keine blockierenden Entscheidungen mehr offen für Milestone 1–6 (alle
 abgeschlossen, siehe `PROGRESS.md`). Verbleibende Detailfragen aus
 `MILESTONE_0.md` Abschnitt B (z. B. weitere Feinjustierung der
 Mindestmarktkapitalisierung) bleiben über den Ersteinrichtungsdialog im
 laufenden Betrieb änderbar (Auftrag §2). Weiterhin offen: Priorisierung
 der EU/DE-Meldungsquellen-Lücke (ADR-9), Auflösung der
-Notierungswährung für Alpha-Vantage-Kurse, unternehmensspezifische
+Notierungswährung für Alpha-Vantage-Kurse (jetzt zusätzlich relevant für
+die Portfolio-Konzentrationsanalyse, ADR-20), unternehmensspezifische
 CAPM-Herleitung des WACC statt des groben Standardwerts, ob die
-Peer-Gruppen-Zuordnung um einen Größenfilter ergänzt werden soll, sowie
-— neu aus Milestone 5 — wie die Zuordnung „IR-RSS-Feed-URL ↔ Entity"
+Peer-Gruppen-Zuordnung um einen Größenfilter ergänzt werden soll, wie
+die Zuordnung „IR-RSS-Feed-URL ↔ Entity"
 gepflegt werden soll (siehe `TODO.md`).

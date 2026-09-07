@@ -1,14 +1,17 @@
-# Methodik (Stand nach Milestone 5)
+# Methodik (Stand nach Milestone 6)
 
 **Status:** Die Abschnitte „Fundamentalkennzahlen" (seit Milestone 3),
-„Bewertung"/„Scoring" (seit Milestone 4) und „Nachrichten" (seit
-Milestone 5) sind im Code umgesetzt (`fundamentals/calculations.py`,
-`series.py`, `report.py`; `valuation/multiples.py`, `dcf.py`,
-`report.py`; `scoring/score.py`; `news/classification.py`,
-`clustering.py`, `report.py`) — Details und Abweichungen von der
-ursprünglichen Planung siehe dort. Die Abschnitte „Zukunfts-/
-Trendanalyse", „Top-10-Rangliste" und „Backtesting-Prinzipien" sind
-weiterhin reine Planung für die jeweils zuständige künftige Milestone.
+„Bewertung"/„Scoring" (seit Milestone 4), „Nachrichten" (seit
+Milestone 5) und „Portfolio und Exporte" (seit Milestone 6) sind im Code
+umgesetzt (`fundamentals/calculations.py`, `series.py`, `report.py`;
+`valuation/multiples.py`, `dcf.py`, `report.py`; `scoring/score.py`;
+`news/classification.py`, `clustering.py`, `report.py`;
+`portfolio/concentration.py`, `risk_metrics.py`, `position_sizing.py`,
+`report.py`; `reports/bundle.py`, `excel_export.py`, `pdf_export.py`) —
+Details und Abweichungen von der ursprünglichen Planung siehe dort. Die
+Abschnitte „Zukunfts-/Trendanalyse", „Top-10-Rangliste" und
+„Backtesting-Prinzipien" sind weiterhin reine Planung für die jeweils
+zuständige künftige Milestone.
 Diese Datei dient als verbindliche Referenz für alle Agenten, damit
 Kennzahlenberechnung, Scoring und Prognosen konsistent und
 nachvollziehbar bleiben. Änderungen an der Methodik erfolgen über einen
@@ -160,6 +163,57 @@ generierten Text nachweislich nicht vor (dediziert getestet).
 - Stimmung wird an keiner Stelle als eigenständiges Kaufsignal
   verwendet (Auftrag §6) — es gibt aktuell überhaupt keine
   Stimmungsanalyse; Ereignistyp und Quellqualität sind rein strukturell.
+
+## Portfolio und Exporte (Milestone 6, Auftrag §8/§10 — implementiert)
+
+- Watchlist-/Portfolio-Import: manuell (ORM-Modelle) oder per CSV
+  (`portfolio/csv_import.py`). Ein Bestands-Snapshot je Entity (keine
+  Transaktionshistorie) — erneuter Import aktualisiert die bestehende
+  Zeile. Entity-Auflösung wie überall: nie Ticker allein, mindestens
+  ISIN/LEI/CIK (Auftrag §5).
+- Konzentrationsanalyse (`portfolio/concentration.py`): Branchen-
+  (SIC-Klassifikation, Milestone 3) und Länder-Konzentration nach
+  Marktwert (Menge × jüngster bekannter Kurs). **Abweichung von der
+  ursprünglichen Planung:** nur berechenbar, wenn alle einbezogenen
+  Positionen dieselbe Bestandswährung haben — es existiert kein
+  Fremdwährungs-Umrechnungsmodell; bei gemischten Währungen liefert die
+  Funktion `computable=False` statt eines aus einer erfundenen
+  Umrechnung entstandenen Prozentsatzes (Auftrag §11). Währungs-
+  Exposure wird deshalb separat und ohne Prozentangabe über
+  Währungsgrenzen hinweg ausgewiesen. „Faktor-Konzentration" (Value-/
+  Growth-/Quality-Exposure) ist NICHT umgesetzt — kein Faktormodell
+  vorhanden (siehe ADR-20).
+- Korrelation und historischer Max-Drawdown (`portfolio/risk_metrics.py`):
+  Pearson-Korrelation der Tagesrenditen (nicht der Kursniveaus selbst —
+  das wäre wegen eines gemeinsamen Zeittrends irreführend), größter
+  beobachteter Rückgang vom letzten Höchststand. Beide benötigen eine
+  Kurshistorie; mit den aktuell nur Einzelabruf-fähigen Alpha-Vantage-
+  Marktdaten (Kostenlos-Paket) liefert das für die meisten Positionen
+  „Datenlage unzureichend" statt eines Werts, bis über wiederholte
+  Abrufe genug Kurspunkte akkumuliert sind — der realistische
+  Normalfall in dieser Version, kein Implementierungsfehler.
+- Positionsgrößen-Bandbreite (`portfolio/position_sizing.py`): stets
+  eine Spanne von 0 bis zur selbst gesetzten Nutzerlimit-Obergrenze,
+  nie ein einzelner empfohlener Wert — ausdrücklich unverbindlich
+  gekennzeichnet (kein Kaufsignal, Auftrag §1/§12).
+- Konfigurierbare Annahmen (`portfolio/assumptions.py`):
+  Transaktionskosten, Steuersatz (deutsche Kapitalertragsteuer + Soli
+  als Default-Näherung, keine individuelle Steuerberatung), Mindest-
+  Liquiditätsschwelle — grobe, dokumentierte Startwerte, über die
+  Einstellungsseite änderbar.
+- Export (`reports/`): `ReportBundle` (ADR-21) aggregiert
+  FundamentalsReport/ValuationReport/ScoreResult/NewsReport zu einer
+  einzigen Datenquelle. JSON-, Excel- (alle sieben Auftrag-§10-
+  Tabellenblätter: Zusammenfassung, Kennzahlen, Bewertung, Risiken,
+  Nachrichten, Quellen, Annahmen) und PDF-Export lesen strukturell aus
+  demselben `report_bundle_to_dict()` — zwei Exportformate können
+  dadurch nie unterschiedliche Werte für dieselbe Analyse zeigen.
+  Formel-Injection-Schutz für Excel-Zellwerte aus externen Quellen
+  (Nachrichtentitel/-URLs, Auftrag §12). **Abweichung:** das
+  Abnahmekriterium „Export = UI-Werte" ist damit strukturell, aber noch
+  nicht live geprüft — es existiert noch keine Streamlit-Detailseite,
+  die Berichte anzeigt (nur Start/Datenstatus aus Milestone 1); der
+  Live-Abgleich folgt, sobald diese UI-Seite gebaut ist.
 
 ## Zukunfts-/Trendanalyse (Milestone 4/5, Auftrag §7a)
 

@@ -23,19 +23,25 @@
    Modell, HTML-Bereinigung, Klassifikation, Dedup-Ingestion,
    Ereignis-Clustering, `NewsReport`; 301 Tests grün, ruff/mypy
    fehlerfrei).
-8. **Offen — vor produktivem Einsatz nachzuholen (Milestone 2–5, ein
+8. ~~Milestone 6 („Portfolio und Exporte") umsetzen~~ — Implementierung
+   abgeschlossen am 2026-09-07 (`portfolio/`-Modul: Watchlist/Portfolio-
+   Import, Konzentration, Korrelation/Drawdown, Positionsgrößen-
+   Bandbreite; `reports/`-Modul: `ReportBundle`, JSON-/Excel-/
+   PDF-Export; 372 Tests grün, ruff/mypy fehlerfrei).
+9. **Offen — vor produktivem Einsatz nachzuholen (Milestone 2–6, ein
    gemeinsamer Blocker):** Live-Verifikation der Connectoren gegen die
    echten APIs mit mindestens zehn realen Unternehmen, Handrechnungs-
    Abgleich der Fundamentalkennzahlen mit mindestens drei davon,
    Handrechnungs-Abgleich von DCF/Multiples/Score mit denselben oder
-   weiteren realen Unternehmen, UND Verifikation der Duplikaterkennung
-   an einem realen Nachrichten-Testset (Auftrag-Abnahmekriterien
-   Milestone 2–5). In dieser Sandbox-Entwicklungsumgebung ist
-   ausgehender Netzwerkzugriff auf `sec.gov`, `alphavantage.co`,
-   `api.gdeltproject.org` und beliebige IR-RSS-Hosts durch die
-   Egress-Policy des Umgebungs-Proxys blockiert (verifiziert per
-   `curl`, siehe `PROGRESS.md`). Sobald eine Umgebung mit echtem
-   Internetzugang zur Verfügung steht (z. B. beim Nutzer über
+   weiteren realen Unternehmen, Verifikation der Duplikaterkennung an
+   einem realen Nachrichten-Testset, UND Verifikation von Portfolio-
+   Konzentration/Korrelation/Drawdown sowie der Export-Formate an einem
+   realen Portfolio (Auftrag-Abnahmekriterien Milestone 2–6). In dieser
+   Sandbox-Entwicklungsumgebung ist ausgehender Netzwerkzugriff auf
+   `sec.gov`, `alphavantage.co`, `api.gdeltproject.org` und beliebige
+   IR-RSS-Hosts durch die Egress-Policy des Umgebungs-Proxys blockiert
+   (verifiziert per `curl`, siehe `PROGRESS.md`). Sobald eine Umgebung
+   mit echtem Internetzugang zur Verfügung steht (z. B. beim Nutzer über
    `start.ps1`):
    - SEC EDGAR: benötigt nur eine gültige Kontaktadresse für den
      User-Agent-Header, kein API-Schlüssel — sollte direkt funktionieren.
@@ -46,23 +52,28 @@
    - GDELT: benötigt keinen API-Schlüssel, sollte direkt funktionieren.
    - IR-RSS: benötigt reale Feed-URLs einiger Testunternehmen (manuell
      ermitteln, da die Feed-URL-zu-Entity-Zuordnung noch nicht
-     automatisiert ist, siehe Punkt 10).
+     automatisiert ist, siehe Punkt 11).
    - Für den Handrechnungs-Abgleich: drei reale Unternehmen mit
      öffentlich einsehbaren Geschäftsberichten auswählen, Kennzahlen von
      Hand aus dem 10-K nachrechnen und mit `build_fundamentals_report()`
      vergleichen; anschließend DCF/Multiples/Score derselben Unternehmen
      von Hand nachrechnen und mit `build_valuation_report()`/
      `score_entity()` vergleichen.
-9. **Aktuell nächster inhaltlicher Schritt:** Milestone 6 (Portfolio und
-   Exporte) gemäß `PLAN.md` beginnen; anschließend die beiden in
-   Milestone 4 als nicht berechenbar dokumentierten Scoring-Komponenten
-   „Wettbewerbsvorteil" und „Nachrichten und Katalysatoren" auf Basis
-   des jetzt verfügbaren `news`-Moduls ergänzen (siehe ADR-17) sowie die
-   KI-Zusammenfassung mit Quellenverweis für Nachrichten-Cluster
-   implementieren (siehe ADR-19/`news/report.py`).
-10. Bei Gelegenheit, nicht blockierend für Milestone 6:
+   - Für Portfolio/Exporte: ein reales Musterportfolio (3-5 reale
+     Positionen mit echten Kursen über mehrere Tage) anlegen, Excel-/
+     PDF-/JSON-Export erzeugen und mit einer künftigen UI-Detailseite
+     abgleichen, sobald diese existiert (Milestone 8, siehe ADR-21).
+10. **Aktuell nächster inhaltlicher Schritt:** Milestone 7 (Backtesting)
+    gemäß `PLAN.md` beginnen; anschließend die beiden in Milestone 4 als
+    nicht berechenbar dokumentierten Scoring-Komponenten
+    „Wettbewerbsvorteil" und „Nachrichten und Katalysatoren" auf Basis
+    des jetzt verfügbaren `news`-Moduls ergänzen (siehe ADR-17) sowie die
+    KI-Zusammenfassung mit Quellenverweis für Nachrichten-Cluster
+    implementieren (siehe ADR-19/`news/report.py`).
+11. Bei Gelegenheit, nicht blockierend für Milestone 7:
     - Notierungswährung für Alpha-Vantage-Kurse auflösen (aus
-      Milestone 2 offen, weiterhin nicht erledigt).
+      Milestone 2 offen, weiterhin nicht erledigt — jetzt zusätzlich
+      relevant für die Portfolio-Konzentrationsanalyse, ADR-20).
     - Peer-Gruppen-Zuordnung um einen Größenfilter (Marktkapitalisierung)
       ergänzen (jetzt mit `PRICE_CLOSE`/Marktkapitalisierung verfügbar).
     - WACC-Standardwert durch unternehmensspezifische CAPM-Herleitung
@@ -74,6 +85,10 @@
       Nutzerprofil/Watchlist-Eintrag oder eigene Zuordnungstabelle).
     - Quellqualitäts-Heuristik für „Kommentar" (`news/classification.py`)
       bei Bedarf um weitere bekannte Domains erweitern.
+    - PDF-Export um Nachrichtentitel/-URLs als reine Tabellen-Zellen
+      erweitern (aktuell bewusst nur aggregierte Zahlen, siehe ADR-21).
+    - FX-Umrechnungsmodell für Portfolio-Konzentration bei gemischten
+      Bestandswährungen.
     - PostgreSQL-Migrationstest gegen eine echte Instanz, Test der
       Streamlit-Oberfläche in einem echten Browser (Sandbox hatte nur
       Headless-/HTTP-Verifikation zur Verfügung).

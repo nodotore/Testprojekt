@@ -256,13 +256,48 @@ Milestone 2/3/4 war eine Verifikation der Duplikaterkennung an einem
 realen Testset (Abnahmekriterium) in dieser Sandbox mangels
 Internetzugang nicht möglich (siehe `PROGRESS.md`).
 
-## Milestone 6 — Portfolio und Exporte
+## Milestone 6 — Portfolio und Exporte (abgeschlossen 2026-09-07)
 
-Watchlist/Portfolio-Import (manuell + CSV), Konzentrationsanalysen,
-Korrelation/Drawdown, Positionsgrößen-Bandbreiten, Excel/PDF/JSON-Export
-mit allen in Auftrag §10 geforderten Tabellenblättern. Abnahme: Export
-enthält exakt dieselben Werte wie die UI-Ansicht (automatisierter
-Abgleich) (frontend-agent + backend-agent + test-agent).
+**Erfüllt:** Neues Modul `portfolio/` (ADR-20) mit
+Watchlist-/Portfolio-Import (manuell über ORM-Modelle, CSV-Import mit
+Zeilen-genauer Fehlersammlung statt Abbruch oder stillem Überspringen),
+Branchen-/Länder-/Währungs-Konzentrationsanalyse (nach Marktwert,
+`ConcentrationBreakdown` liefert `computable=False` statt eines
+irreführenden Prozentsatzes bei gemischten Bestandswährungen),
+Korrelation (Pearson auf Tagesrenditen) und historischer Max-Drawdown
+als reine Funktionen mit expliziter „Datenlage unzureichend"-Markierung
+bei zu wenigen Kurspunkten, unverbindliche Positionsgrößen-Bandbreite
+(Auftrag §8) sowie konfigurierbare `PortfolioAssumptions`
+(Transaktionskosten/Steuersatz/Mindestliquidität). `PortfolioReport`-
+Orchestrierung fasst alles zusammen und dokumentiert jede Lücke explizit
+(`gaps`).
+
+Neues Modul `reports/` (bisher leerer Stub) mit `ReportBundle`
+(ADR-21) als einziger Quelle der Wahrheit — aggregiert
+FundamentalsReport/ValuationReport/ScoreResult/NewsReport zu einem
+Objekt, das JSON-, Excel- (`openpyxl`, alle sieben in Auftrag §10
+geforderten Tabellenblätter: Zusammenfassung, Kennzahlen, Bewertung,
+Risiken, Nachrichten, Quellen, Annahmen) und PDF-Export (`reportlab`)
+strukturell identisch versorgt — beide Formate lesen ausschließlich aus
+demselben `report_bundle_to_dict()`. Formel-Injection-Schutz im
+Excel-Export für Zellwerte aus externen Quellen (Nachrichtentitel/-URLs,
+Auftrag §12).
+
+**Bewusste, dokumentierte Lücke — Abnahmekriterium teilweise erfüllt:**
+Das Abnahmekriterium „Export enthält exakt dieselben Werte wie die
+UI-Ansicht (automatisierter Abgleich)" ist strukturell, aber nicht live
+erfüllt: Es existiert noch KEINE Streamlit-Detailseite, die Berichte
+anzeigt (nur die Start/Datenstatus-Seite aus Milestone 1) — ein
+automatisierter UI-vs.-Export-Abgleich kann daher erst erfolgen, sobald
+diese UI-Seite gebaut ist (voraussichtlich Milestone 8, „Benutzer-
+oberfläche"). Die strukturelle Garantie (ADR-21: ein einziges
+`ReportBundle` als Datenquelle für alle Formate) stellt sicher, dass
+eine künftige UI-Seite, sofern sie ebenfalls von einem `ReportBundle`
+rendert, automatisch dieselben Werte zeigt.
+
+60 neue Tests (insgesamt 372), `ruff`/`mypy` fehlerfrei. Wie in
+Milestone 2/3/4/5 war eine Verifikation mit echten Marktdaten in dieser
+Sandbox mangels Internetzugang nicht möglich (siehe `PROGRESS.md`).
 
 ## Milestone 7 — Backtesting
 
