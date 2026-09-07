@@ -120,11 +120,18 @@ Refinitiv/Bloomberg/FactSet + Visible Alpha o. Ä.
 - URL-Allowlist pro Connector, SSRF-Schutz (Auftrag §12, siehe
   `SECURITY.md`).
 
-## Offen (siehe `MILESTONE_0.md`)
+## Entscheidung (2026-09-07, siehe `MILESTONE_0.md` und ADR-8/ADR-9)
 
-- Welche Kostenvariante der Nutzer für den Start wählt.
+- **Start-Kostenvariante: Kostenlos.**
+- **Marktauswahl: breit** (USA, Deutschland, übriges Europa, weitere
+  global offen) — keine initiale Einschränkung.
+- **Milestone-2-Connectoren:** SEC EDGAR (Meldungen, Primärquelle) +
+  Alpha Vantage Free (Marktdaten). Bekannte Lücke: keine gleichwertige
+  kostenlose, strukturierte Meldungs-Primärquelle für DE/EU — wird im
+  UI als geringere Datenabdeckung/Konfidenz für EU-Werte ausgewiesen,
+  nicht verschwiegen. Upgrade auf „günstig" bleibt bei Bedarf möglich.
+
+## Weiterhin offen
+
 - Ob bereits eigene API-Schlüssel/Verträge existieren (z. B. FMP/EODHD),
-  die die obige Auswahl ändern.
-- Ob DE/EU-Abdeckung von Anfang an Priorität hat (beeinflusst, ob
-  Bundesanzeiger/DGAP-Anbindung schon in Milestone 2 oder erst später
-  gebaut wird).
+  die die obige Auswahl später ändern würden.

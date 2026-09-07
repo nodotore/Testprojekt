@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Nutzer hat die vier blockierenden Milestone-0-Fragen beantwortet
+  (Projektstruktur = Unterverzeichnis bestätigt, Kostenvariante =
+  Kostenlos, Prioritätsmärkte = breit/USA+DE+EU+global offen,
+  Deployment = lokal Windows + SQLite). Festgehalten als ADR-7–ADR-10 in
+  `DECISIONS.md`; Connector-Reihenfolge für Milestone 2 (SEC EDGAR +
+  Alpha Vantage Free) in `PLAN.md`/`DATA_SOURCES.md` konkretisiert.
+
 - Milestone 0 (Klärung und Datenlizenzen) umgesetzt: Projektauftrag
   vollständig referenziert (`AUFTRAG.md`), Fragenliste (`MILESTONE_0.md`),
   Quellen-/Lizenzmatrix mit drei Kostenvarianten (`DATA_SOURCES.md`),

@@ -6,9 +6,11 @@ Nutzerentscheidungen (siehe `MILESTONE_0.md`) an konkreten Stellen
 präzisiert (z. B. welche Connectoren in Milestone 2 zuerst kommen).
 
 **Grundregel:** Milestone 1 beginnt erst nach ausdrücklicher Freigabe des
-Nutzers zu den in `MILESTONE_0.md` gestellten Fragen. Bis dahin werden
-ausschließlich Planungs-/Dokumentationsdateien erstellt oder geändert,
-kein Produktivcode.
+Nutzers zu den in `MILESTONE_0.md` gestellten Fragen. Die vier
+blockierenden Fragen (Projektstruktur, Kostenvariante, Prioritätsmärkte,
+Deployment-Ziel) sind am 2026-09-07 beantwortet (siehe `MILESTONE_0.md`
+und ADR-7–ADR-10 in `DECISIONS.md`); der ausdrückliche Startbefehl für
+Milestone 1 steht noch aus.
 
 ## Milestone 0 — Klärung und Datenlizenzen (dieser Stand)
 
@@ -27,7 +29,9 @@ entschieden.
 
 **Abnahmekriterium Milestone 0:** Nutzer hat die Fragen in
 `MILESTONE_0.md` beantwortet (oder ausdrücklich auf die vorgeschlagenen
-Standardwerte verwiesen) und Milestone 1 freigegeben.
+Standardwerte verwiesen) und Milestone 1 freigegeben. Fragen
+beantwortet ✅ (2026-09-07); Freigabe zum Start von Milestone 1 steht
+noch aus.
 
 ## Milestone 1 — Grundgerüst
 
@@ -68,13 +72,14 @@ speichert ein Profil; mind. 5 Tests grün.
 Marktdatenquelle), vollständig mit Provenienz, Cache, Rate Limits,
 Datenalter getestet.
 
-**Geplante Schritte (Auswahl abhängig von Nutzerentscheidung
-Kostenvariante, siehe `MILESTONE_0.md`):**
+**Geplante Schritte (Connector-Auswahl bestätigt, siehe `MILESTONE_0.md`
+→ ADR-8/ADR-9: Kostenlos-Variante, breite Marktauswahl):**
 1. Connector-Basisklasse: Timeout, Retry+Backoff, Rate Limiting, Cache,
    Validierung, Fehlerprotokoll, Lizenzhinweis-Metadatum (data-source-agent)
-2. Connector A — SEC EDGAR (Primärquelle Meldungen, USA) (data-source-agent)
-3. Connector B — Marktdaten (Kandidat gemäß gewählter Kostenvariante:
-   Alpha Vantage Free oder FMP/EODHD) (data-source-agent)
+2. Connector A — SEC EDGAR (Primärquelle Meldungen, zunächst USA;
+   EU/DE-Meldungsquelle bekannte Lücke, siehe ADR-9) (data-source-agent)
+3. Connector B — Alpha Vantage Free (Marktdaten; enge Rate Limits von
+   5 req/min im Caching/Scheduling berücksichtigen) (data-source-agent)
 4. Normalisierung: Einheiten, Währungsumrechnung, Geschäftsjahresabgleich,
    Split-/Dividenden-Anpassung (normalization-Modul) (financial-analysis-agent)
 5. Entity Resolution: Ticker/ISIN/LEI → interne Entity-ID

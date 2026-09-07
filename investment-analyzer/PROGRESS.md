@@ -2,7 +2,13 @@
 
 ## Milestone 0 — Klärung und Datenlizenzen
 
-**Status: Dokumente erstellt, wartet auf Nutzer-Freigabe.**
+**Status: Fragen beantwortet, wartet auf ausdrückliche Freigabe für Milestone 1.**
+
+Nutzerantworten (2026-09-07): Projektstruktur = Unterverzeichnis in
+diesem Repo (bestätigt); Kostenvariante = Kostenlos; Prioritätsmärkte =
+breit (USA, Deutschland, übriges Europa, weitere global offen);
+Deployment = lokal Windows + SQLite. Festgehalten als ADR-7–ADR-10 in
+`DECISIONS.md`, Details in `MILESTONE_0.md`.
 
 Umgesetzt (dieser Agentenlauf, Hauptagent/project-orchestrator, keine
 Parallelisierung nötig für reine Dokumentation):
@@ -28,10 +34,8 @@ Parallelisierung nötig für reine Dokumentation):
 **Tests:** keine (reine Dokumentation, kein Code in Milestone 0).
 
 **Offene Risiken:**
-- Kostenvariante/Marktauswahl noch nicht final vom Nutzer bestätigt →
-  beeinflusst Reihenfolge der Connectoren in Milestone 2.
-- Projektstruktur-Entscheidung (Unterverzeichnis vs. eigenes Repo) noch
-  nicht final bestätigt.
+- EU/DE-Meldungsabdeckung strukturell schwächer als USA in der
+  Kostenlos-Variante (bekannte, dokumentierte Lücke, siehe ADR-9).
 - Konkrete Schwellenwerte (Mindestmarktkapitalisierung, Mindestliquidität,
   Mindestkonfidenz für Top-10) sind als Platzhalter benannt, aber noch
   nicht zahlenmäßig festgelegt — folgt in Milestone 1/4.

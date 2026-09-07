@@ -1,16 +1,14 @@
 # Nächste Schritte — Investment-Analysator
 
-1. **Blocker:** Nutzer beantwortet die vier blockierenden Fragen aus
-   `MILESTONE_0.md` (A1–A4: Projektstruktur, Kostenvariante,
-   Prioritätsmärkte, Deployment-Ziel) — wurde per Rückfrage im
-   Gespräch gestellt.
-2. Nach Antwort: `MILESTONE_0.md`-Antworttabelle ausfüllen,
-   `DECISIONS.md` um entsprechende ADR-Einträge ergänzen (insbesondere
-   falls Projektstruktur oder Deployment-Ziel von den in ADR-1/ADR-2
-   angenommenen Standardentscheidungen abweicht).
-3. Nutzer gibt Milestone 1 ausdrücklich frei.
-4. Erst danach: Milestone 1 („Grundgerüst") gemäß `PLAN.md` beginnen —
-   Reihenfolge und Agentenzuordnung dort vorbereitet.
-5. Vor Beginn von Milestone 2: konkrete Connector-Reihenfolge anhand der
-   dann bestätigten Kostenvariante/Marktauswahl aus `DATA_SOURCES.md`
-   festlegen.
+1. ~~Blocker: Nutzer beantwortet die vier blockierenden Fragen aus
+   `MILESTONE_0.md`~~ — erledigt am 2026-09-07 (siehe `MILESTONE_0.md`,
+   ADR-7–ADR-10 in `DECISIONS.md`).
+2. **Aktueller Blocker:** ausdrückliche Freigabe des Nutzers zum Start
+   von Milestone 1 („Grundgerüst").
+3. Nach Freigabe: Milestone 1 gemäß `PLAN.md` beginnen (Tooling-Setup,
+   Paketstruktur, Konfigurationssystem, SecretStore, DB-Schema,
+   Logging/Audit, Streamlit-Startseite, Windows-Startskripte,
+   Grundgerüst-Tests).
+4. Zu Beginn von Milestone 2: Connector-Reihenfolge wie in
+   `DATA_SOURCES.md`/`PLAN.md` festgelegt umsetzen (SEC EDGAR + Alpha
+   Vantage Free), EU/DE-Lücke im UI sichtbar machen statt verschweigen.

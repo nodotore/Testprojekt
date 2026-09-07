@@ -75,13 +75,33 @@ Standardwerte, sofern der Nutzer keine abweichende Präferenz nennt:
 
 ## Antworten des Nutzers
 
-*(wird nach Rückmeldung ausgefüllt und in `DECISIONS.md` als ADR-7ff.
-festgehalten)*
+Festgehalten als ADR-7 bis ADR-10 in `DECISIONS.md`.
 
 | Frage | Antwort | Datum |
 |---|---|---|
-| 1 | offen | — |
-| 2 | offen | — |
-| 3 | offen | — |
-| 4 | offen | — |
-| 5–16 | offen / Standardwerte vorgeschlagen | — |
+| 1 (Projektstruktur) | Unterverzeichnis in diesem Repo (wie in ADR-1 vorgeschlagen) | 2026-09-07 |
+| 2 (Kostenvariante) | Kostenlos, für den Start | 2026-09-07 |
+| 3 (Prioritätsmärkte) | Breit: USA, Deutschland, übriges Europa, weitere/global offen — keine Einschränkung | 2026-09-07 |
+| 4 (Deployment) | Rein lokal, Windows + SQLite | 2026-09-07 |
+| 5–16 | Vorgeschlagene Standardwerte akzeptiert (werden im Ersteinrichtungsdialog gemäß Auftrag §2 änderbar abgefragt) | 2026-09-07 |
+
+**Konsequenz für Milestone 2 (Connector-Reihenfolge):** Da die
+Kostenlos-Variante gewählt wurde und die Marktauswahl bewusst breit ist,
+aber Auftrag §14 für Milestone 2 nur *zwei* Connectoren verlangt
+(eine Primärquelle für Meldungen + eine Marktdatenquelle), werden die
+ersten beiden Connectoren so gewählt, dass sie in der Kostenlos-Variante
+die breiteste Basis liefern:
+
+- **Primärquelle Meldungen:** SEC EDGAR (USA) — beste strukturierte,
+  kostenlose Abdeckung; deckt zunächst nur US-Emittenten ab.
+- **Marktdatenquelle:** Alpha Vantage (Free Tier) — deckt auch
+  nicht-US-Ticker ab, wenn auch mit engen Rate Limits (5 req/min).
+
+**Bekannte Lücke:** DE/übriges Europa hat in der Kostenlos-Variante
+keine gleichwertige strukturierte Meldungs-Primärquelle zu SEC EDGAR
+(Bundesanzeiger/DGAP nur eingeschränkt automatisierbar, siehe
+`DATA_SOURCES.md`). Diese Lücke wird in Milestone 2 offen dokumentiert
+und ist ein Kandidat für ein Upgrade auf die „günstig"-Variante, sobald
+sich das als nötig erweist — keine stille Einschränkung, sondern
+sichtbar im UI als geringere Datenabdeckung für EU-Werte auszuweisen
+(Auftrag §10: „Datenabdeckung und Konfidenz" je Bericht).

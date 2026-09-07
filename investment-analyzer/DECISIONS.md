@@ -150,8 +150,58 @@ einfaches „letzter Wert gewinnt"-Schema, aber notwendige Voraussetzung
 für alle nachgelagerten Anforderungen (Backtesting ohne Look-ahead,
 Widerspruchsanzeige, Audit-Log).
 
+## ADR-7: Projektstruktur bestätigt
+
+**Entscheidung:** Nutzer hat ADR-1 (Unterverzeichnis `investment-analyzer/`
+in `nodotore/Testprojekt`, statt separatem Repository) am 2026-09-07
+bestätigt. Keine Änderung nötig.
+
+## ADR-8: Start-Kostenvariante = Kostenlos
+
+**Entscheidung:** Der Investment-Analysator startet mit der
+Kostenlos-Datenquellen-Variante aus `DATA_SOURCES.md` (SEC EDGAR, EZB
+SDW, Weltbank, GDELT, Alpha Vantage Free, Unternehmens-IR-Seiten/RSS).
+Vom Nutzer am 2026-09-07 bestätigt.
+
+**Konsequenzen:** Engere Rate Limits (insb. Alpha Vantage 5 req/min)
+müssen im Connector-Caching/Scheduling (Milestone 2) explizit
+berücksichtigt werden. EU/DE-Meldungsabdeckung ist strukturell
+schwächer als US-Abdeckung (siehe ADR-9); dies wird im UI als
+Datenabdeckungs-/Konfidenzhinweis sichtbar gemacht, nicht verschwiegen.
+Ein späteres Upgrade auf die „günstig"-Variante bleibt möglich und wird
+bei Bedarf als neuer ADR dokumentiert.
+
+## ADR-9: Marktauswahl breit, ohne initiale Einschränkung
+
+**Entscheidung:** Der Nutzer wünscht keine Vorfestlegung auf einzelne
+Märkte — USA, Deutschland, übriges Europa und weitere/globale Märkte
+sollen grundsätzlich unterstützt werden (bestätigt 2026-09-07). Die
+konkrete Filterung erfolgt weiterhin je nach Auftrag §2 individuell über
+das Nutzerprofil im Ersteinrichtungsdialog.
+
+**Konsequenzen für Milestone 2:** Da pro Auftrag §14 zunächst nur zwei
+Connectoren gebaut werden (eine Primärquelle Meldungen + eine
+Marktdatenquelle), wird mit der in der Kostenlos-Variante am breitesten
+tragfähigen Kombination begonnen: SEC EDGAR (Meldungen, zunächst nur
+USA) + Alpha Vantage Free (Marktdaten, technisch auch nicht-US-Ticker,
+aber mit engen Limits). Die Lücke bei EU/DE-Meldungsquellen ist bekannt
+und wird in `DATA_SOURCES.md`/`MILESTONE_0.md` offen dokumentiert statt
+stillschweigend übergangen.
+
+## ADR-10: Deployment-Ziel Version 1 = lokal, Windows + SQLite
+
+**Entscheidung:** Version 1 läuft rein lokal unter Windows mit SQLite,
+ohne Docker-Voraussetzung (bestätigt 2026-09-07). Dies bekräftigt die in
+ADR-2 bereits vorgesehene Dev-Konfiguration; PostgreSQL/Docker Compose
+bleiben als optionaler, späterer Produktionspfad im Code vorbereitet
+(SQLAlchemy-Dialektunabhängigkeit, siehe ADR-2), werden aber für V1
+nicht zwingend benötigt und nicht in den Windows-Startskripten
+vorausgesetzt.
+
 ## Noch zu treffende Entscheidungen
 
-Siehe `MILESTONE_0.md` (Fragenliste) und `NEXT_STEPS.md`. Diese Datei
-wird nach Rückmeldung des Nutzers um die entsprechenden ADRs ergänzt,
-bevor Milestone 1 beginnt.
+Keine blockierenden Entscheidungen mehr offen für den Start von
+Milestone 1. Verbleibende Detailfragen aus `MILESTONE_0.md` Abschnitt B
+(z. B. konkrete Zahlenwerte für Mindestmarktkapitalisierung) werden als
+konfigurierbare Standardwerte in Milestone 1 vorgeschlagen und im
+Ersteinrichtungsdialog vom Nutzer bestätigt/angepasst (Auftrag §2).

@@ -9,8 +9,8 @@
 - [x] Verbindlicher Implementierungsplan erstellt (`PLAN.md`)
 - [x] Methodik-Planungsstand dokumentiert (`METHODOLOGY.md`)
 - [x] Sicherheitsrichtlinie-Planungsstand dokumentiert (`SECURITY.md`)
-- [ ] Nutzer beantwortet die blockierenden Fragen A1–A4 in
-      `MILESTONE_0.md`
+- [x] Nutzer beantwortet die blockierenden Fragen A1–A4 in
+      `MILESTONE_0.md` (2026-09-07)
 - [ ] Nutzer gibt Milestone 1 ausdrücklich frei
 
 ## Milestone 1 (gesperrt bis Freigabe)
