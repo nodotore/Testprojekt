@@ -2,6 +2,25 @@
 
 ## Unreleased
 
+- Milestone 8 (Sicherheit und Abnahme, in Bearbeitung) — Ausfalltests
+  (ADR-24): echte Sicherheitslücke gefunden und behoben —
+  `connectors/ir_rss.py` parste externe RSS-/Atom-Feeds über die
+  ungehärtete Stdlib `xml.etree.ElementTree` (anfällig für „Billion
+  Laughs"-Entity-Expansion, von der HTTP-Größenobergrenze NICHT
+  abgedeckt); jetzt `defusedxml` (neue Abhängigkeit). Zwei Ausfalltests
+  bestätigen bereits bestehende Mechanismen end-to-end (kein Fund):
+  Prompt-Injection-Versuch in News-Inhalten bleibt reine Nutzdaten,
+  widersprüchliche/extreme Testdaten lösen sichtbar das Warnsignal-
+  System aus statt einer stillen Fehlkalkulation. Neuer Baustein:
+  `db/backup.py` (Sicherung/Wiederherstellung der lokalen SQLite-
+  Datenbankdatei), end-to-end getestet (Sicherung → simulierter
+  Datenverlust → Wiederherstellung → Daten vollständig da). Rate-
+  Limit-Überschreitung je Connector bereits durch bestehenden
+  gemeinsamen Test abgedeckt. Eine echte Datenlücke dokumentiert statt
+  verschwiegen: Auftrag-§3-„bei Widerspruch beide Werte zeigen" ist mit
+  dem aktuellen Kostenlos-Quellen-Set strukturell nicht auftretbar. 10
+  neue Tests (insgesamt 445), `ruff`/`mypy` fehlerfrei.
+
 - Milestone 8 (Sicherheit und Abnahme, in Bearbeitung) — Security-Review
   abgeschlossen (ADR-23): systematischer Abgleich jeder `SECURITY.md`-
   Behauptung mit dem tatsächlichen Codeverhalten. Drei echte Lücken

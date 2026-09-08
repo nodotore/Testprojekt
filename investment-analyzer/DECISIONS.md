@@ -657,6 +657,103 @@ known vulnerabilities found", Stand 2026-09-08).
 noch keine Screener-/Einstellungsseite, die einen API-Schlüssel
 entgegennimmt) — nachzuholen, sobald diese UI-Seite gebaut wird.
 
+## ADR-24: Milestone-8-Ausfalltests — Befunde und neue Bausteine
+
+**Kontext:** Auftrag §15/SECURITY.md „Offene Punkte für Milestone 8"
+verlangen gezielte Ausfalltests: manipulierte/böswillige Webinhalte
+(inkl. simulierter Prompt-Injection), absichtlich falsche/
+widersprüchliche Testdaten, Rate-Limit-Überschreitung je Connector, und
+einen end-to-end getesteten Restore-Prozess.
+
+**Befund — echte Sicherheitslücke, behoben: XML-Entity-Expansion
+(„Billion Laughs") im IR-RSS-Connector.** `connectors/ir_rss.py`
+parste RSS-/Atom-Feeds (externe, nicht vertrauenswürdige Quelle) über
+die Python-Stdlib `xml.etree.ElementTree`. Laut Python-Dokumentation
+ist diese NICHT gegen böswillig konstruiertes XML gehärtet — eine
+wenige hundert Bytes große Payload mit rekursiven Entity-Definitionen
+kann beim Parsen mehrere Gigabyte Speicher belegen (Denial-of-Service).
+Die bereits vorhandene HTTP-Größenobergrenze
+(`ConnectorConfig.max_response_bytes`, siehe ADR-23) schützt davor
+NICHT, da der Angriff erst beim Parsen entsteht, nicht beim Download —
+die Payload selbst ist klein. Behoben durch Ersetzen von
+`xml.etree.ElementTree` durch `defusedxml.ElementTree` (neue
+Abhängigkeit, `pyproject.toml`); Entity-Definitionen werden dort
+grundsätzlich abgelehnt (`defusedxml.common.DefusedXmlException`,
+konkret `EntitiesForbidden`) statt verarbeitet. Test mit einer
+klassischen „Billion Laughs"-Payload beweist die Ablehnung
+(`tests/connectors/test_ir_rss.py::
+test_parse_feed_lehnt_billion_laughs_angriff_ab`). Andere Connectoren
+(SEC EDGAR, Alpha Vantage, GDELT) sind reine JSON-Konsumenten — JSON
+kennt kein Entity-Konstrukt, dieselbe Angriffsklasse existiert dort
+nicht.
+
+**Befund — kein Fund, verifiziert: Prompt-Injection in News-Inhalten.**
+Neuer End-to-End-Test
+(`tests/news/test_ingest.py::
+test_prompt_injection_versuch_landet_als_reine_nutzdaten`) belegt: ein
+Titel/Zusammenfassungstext mit einem klassischen Prompt-Injection-
+Versuch („Ignoriere alle bisherigen Anweisungen...") durchläuft die
+gesamte Ingestion-Pipeline unverändert als reine Zeichenkette — HTML-
+Markup darin wird entfernt (`news/sanitize.py`), der Text selbst wird
+nirgends geparst/ausgeführt/interpretiert. Bestätigt praktisch, was
+ADR-23 Befund 5 bereits strukturell feststellte.
+
+**Befund — kein Fund, verifiziert: widersprüchliche/extreme Daten
+führen zu sichtbarer Warnung.** Neuer End-to-End-Test
+(`tests/scoring/test_score.py::
+test_score_entity_widerspruechliche_daten_fuehren_zu_sichtbarer_warnung`)
+belegt am vollständigen Fundamentals→Scoring-Pipeline-Durchlauf: eine
+absichtlich implausible Eingabe (Versechsfachung der verwässerten
+Aktienanzahl in drei Jahren) löst das bereits bestehende
+Warnsignal-System aus (`risk_deductions` nicht leer,
+`total_score < raw_score`, `top_risks` nicht leer) — keine stille
+Fehlkalkulation. Bestätigt die in Milestone 3/4 gebaute Mechanik
+(`risk/warning_signals.py`, `scoring/score.py`) end-to-end statt nur
+auf Komponentenebene.
+
+**Befund — kein Fund, nicht implementiert (aus Datenlage strukturell
+nicht möglich): Auftrag-§3-„bei Widerspruch beide Werte zeigen".** Es
+existiert derzeit kein Mechanismus, der bei zwei unabhängigen Quellen
+mit widersprüchlichem Wert für dieselbe Kennzahl+Periode beide Werte
+sichtbar macht — `fundamentals/series.py` löst mehrere `DataPoint`-
+Zeilen je Periode nach „zuletzt bekannt gewordener Wert gewinnt" auf
+(Restatement-Semantik, siehe ADR-6), nicht nach „mehrere gleichzeitig
+gültige Quellen". Mit den aktuell angebundenen Quellen (SEC EDGAR
+liefert Fundamentaldaten, Alpha Vantage liefert ausschließlich Kurse)
+gibt es strukturell noch keine zwei sich überschneidenden Quellen für
+dieselbe Fundamentalkennzahl — das Szenario kann mit dem aktuellen
+Kostenlos-Quellen-Set nicht auftreten. Als offene, dokumentierte Lücke
+festgehalten (nicht verschwiegen) für den Zeitpunkt, an dem eine zweite
+Fundamentaldatenquelle hinzukommt (siehe `TODO.md`).
+
+**Neuer Baustein — Restore-Prozess (Backup/Wiederherstellung):**
+`db/backup.py` (`backup_database`/`restore_database`). Bei lokalem
+Betrieb (SQLite als einzelne Datei, Milestone-0-Entscheidung) bedeutet
+Sicherung eine atomare, zeitgestempelte Dateikopie unter
+`data_dir/backups/` (Kopie über temporäre Datei + `Path.replace`, um
+eine sichtbare halbgeschriebene Zieldatei bei Abbruch zu vermeiden),
+Wiederherstellung das Zurückkopieren derselben Datei über die aktuelle
+Datenbankdatei. Bewusst NICHT für eine konfigurierte
+Nicht-SQLite-`database_url` (z. B. künftiges PostgreSQL) implementiert
+— dort übernimmt die jeweilige Datenbank ihr eigenes Backup-Tooling;
+ein Aufruf wird mit `BackupError` klar abgelehnt statt eine falsche
+Aktion vorzutäuschen. End-to-end getestet
+(`tests/db/test_backup.py`): Sicherung → simulierter Datenverlust
+(Live-Datei wird überschrieben) → Wiederherstellung → Daten sind
+vollständig wieder da (`test_end_zu_end_restore_prozess_stellt_daten_
+nach_datenverlust_wieder_her`).
+
+**Rate-Limit-Überschreitung je Connector:** bereits durch den
+bestehenden generischen Test
+`tests/connectors/test_base_connector.py::
+test_429_wird_als_rate_limit_fehler_gemeldet` abgedeckt — da alle
+Connectoren (SEC EDGAR, Alpha Vantage, GDELT, IR-RSS) auf derselben
+`Connector._request_with_retry`-Implementierung aufbauen, gilt der
+Nachweis für jeden von ihnen; kein connectorspezifischer Sonderfall
+gefunden. Der `RateLimiter` selbst ist bereits umfassend auf
+Fensterlogik/Wartezeit getestet (`tests/connectors/
+test_rate_limiter.py`, aus Milestone 1/2).
+
 ## Noch zu treffende Entscheidungen
 
 Keine blockierenden Entscheidungen mehr offen für Milestone 1–7 (alle

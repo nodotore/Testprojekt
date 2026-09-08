@@ -531,6 +531,81 @@ def test_score_entity_end_to_end_gegen_datenbank(tmp_path: Path) -> None:
     assert 1 <= len(result.invalidation_conditions) <= 5
 
 
+def test_score_entity_widerspruechliche_daten_fuehren_zu_sichtbarer_warnung(tmp_path: Path) -> None:
+    """Milestone-8-Ausfalltest (SECURITY.md: „absichtlich falsche/
+    widersprüchliche Testdaten [...] muss zu sichtbarer Warnung führen,
+    nicht zu stiller Fehlkalkulation").
+
+    Ansonsten identisch zu ``test_score_entity_end_to_end_gegen_datenbank``
+    (dieselbe „saubere" Basis), aber mit einer stark widersprüchlichen
+    Zusatzangabe: die verwässerte Aktienanzahl versechsfacht sich
+    innerhalb von drei Jahren (Auftrag-widriges Ausreißer-Datum, wie es
+    z. B. bei einem Dateneingabefehler oder einer manipulierten Quelle
+    entstehen könnte). Das Ergebnis MUSS sichtbar (``risk_deductions``,
+    ``top_risks``, reduzierter ``total_score``) reagieren, statt die
+    Verwässerung stillschweigend zu ignorieren oder einen unauffällig
+    hohen Score auszugeben."""
+
+    fetched_at = datetime(2024, 3, 1, tzinfo=UTC)
+    session_factory = _session_factory(tmp_path)
+    with session_factory() as session:
+        sources = ensure_default_sources(session)
+        entity = find_or_create_entity(
+            session, name="Firma I (widersprüchliche Testdaten)",
+            identifiers=[IdentifierSpec(id_type=IdentifierType.CIK, id_value="0000000010")],
+        )
+        session.flush()
+        source = sources["sec_edgar"]
+
+        jahre = [date(2020, 12, 31), date(2021, 12, 31), date(2022, 12, 31), date(2023, 12, 31)]
+        umsatz = [1000.0, 1100.0, 1210.0, 1331.0]
+        for d, u in zip(jahre, umsatz, strict=True):
+            session.add(_dp(entity=entity, source=source, metric=Metric.REVENUE, period_end=d, value=u, retrieved_at_utc=fetched_at))
+            session.add(_dp(entity=entity, source=source, metric=Metric.NET_INCOME, period_end=d, value=u * 0.1, retrieved_at_utc=fetched_at))
+            session.add(_dp(entity=entity, source=source, metric=Metric.GROSS_PROFIT, period_end=d, value=u * 0.4, retrieved_at_utc=fetched_at))
+            session.add(_dp(entity=entity, source=source, metric=Metric.OPERATING_INCOME, period_end=d, value=u * 0.2, retrieved_at_utc=fetched_at))
+            session.add(_dp(entity=entity, source=source, metric=Metric.OPERATING_CASH_FLOW, period_end=d, value=u * 0.15, retrieved_at_utc=fetched_at))
+            session.add(_dp(entity=entity, source=source, metric=Metric.CAPEX, period_end=d, value=-u * 0.05, retrieved_at_utc=fetched_at))
+
+        session.add(_dp(entity=entity, source=source, metric=Metric.TOTAL_EQUITY, period_end=date(2022, 12, 31), value=800.0, retrieved_at_utc=fetched_at))
+        session.add(_dp(entity=entity, source=source, metric=Metric.TOTAL_EQUITY, period_end=date(2023, 12, 31), value=900.0, retrieved_at_utc=fetched_at))
+        session.add(_dp(entity=entity, source=source, metric=Metric.LONG_TERM_DEBT, period_end=date(2023, 12, 31), value=300.0, retrieved_at_utc=fetched_at))
+        session.add(_dp(entity=entity, source=source, metric=Metric.SHORT_TERM_DEBT, period_end=date(2023, 12, 31), value=50.0, retrieved_at_utc=fetched_at))
+        session.add(_dp(entity=entity, source=source, metric=Metric.CASH_AND_EQUIVALENTS, period_end=date(2023, 12, 31), value=150.0, retrieved_at_utc=fetched_at))
+        session.add(_dp(entity=entity, source=source, metric=Metric.CURRENT_ASSETS, period_end=date(2023, 12, 31), value=500.0, retrieved_at_utc=fetched_at))
+        session.add(_dp(entity=entity, source=source, metric=Metric.CURRENT_LIABILITIES, period_end=date(2023, 12, 31), value=300.0, retrieved_at_utc=fetched_at))
+        session.add(_dp(entity=entity, source=source, metric=Metric.DEPRECIATION_AND_AMORTIZATION, period_end=date(2023, 12, 31), value=40.0, retrieved_at_utc=fetched_at))
+        session.add(_dp(entity=entity, source=source, metric=Metric.INTEREST_EXPENSE, period_end=date(2023, 12, 31), value=20.0, retrieved_at_utc=fetched_at))
+        # Widersprüchlich/extrem: Versechsfachung der verwässerten Aktienanzahl
+        # in drei Jahren (Schwelle für "starke Verwässerung": 3 %/Jahr).
+        session.add(_dp(entity=entity, source=source, metric=Metric.SHARES_DILUTED, period_end=date(2020, 12, 31), value=1000.0, retrieved_at_utc=fetched_at))
+        session.add(_dp(entity=entity, source=source, metric=Metric.SHARES_DILUTED, period_end=date(2023, 12, 31), value=6000.0, retrieved_at_utc=fetched_at))
+        session.add(
+            _dp(
+                entity=entity, source=source, metric=Metric.PRICE_CLOSE,
+                period_end=date(2024, 1, 15), value=1.00,
+                retrieved_at_utc=datetime(2024, 1, 15, tzinfo=UTC),
+            )
+        )
+        session.commit()
+        entity_id = entity.id
+
+    with session_factory() as session:
+        entity = session.get(Entity, entity_id)
+        assert entity is not None
+        result = score_entity(session, entity)
+
+    # Sichtbare Warnung, kein stilles Ignorieren:
+    assert result.risk_deductions != ()
+    assert any(d.code == "strong_dilution" for d in result.risk_deductions)
+    assert result.top_risks  # mindestens ein Risiko wird in der Kurzfassung genannt
+
+    # Der Score wird sichtbar reduziert (kein unbeeinflusster "sauberer" Score):
+    assert result.total_score is not None
+    assert result.raw_score is not None
+    assert result.total_score < result.raw_score
+
+
 def test_score_entity_ohne_jegliche_daten_ist_datenlage_unzureichend(tmp_path: Path) -> None:
     session_factory = _session_factory(tmp_path)
     with session_factory() as session:

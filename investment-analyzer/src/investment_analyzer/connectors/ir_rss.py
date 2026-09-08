@@ -23,17 +23,30 @@ verwendeten Formate für IR-Feeds. Der Feed-Inhalt (insbesondere
 ``description``/``summary``) ist unbereinigtes HTML aus einer externen
 Quelle und wird als nicht vertrauenswürdig behandelt (Auftrag §12) —
 die Bereinigung erfolgt in ``news/sanitize.py``, nicht hier.
+
+**Sicherheitshinweis (Auftrag §12, Milestone-8-Security-Review):** Das
+XML selbst kommt ebenfalls von einer nicht vertrauenswürdigen externen
+Quelle. Die Stdlib ``xml.etree.ElementTree`` ist laut Python-
+Dokumentation NICHT gegen böswillig konstruiertes XML gehärtet
+(insbesondere „Billion Laughs"/Entity-Expansion-Angriffe — eine
+wenige Bytes große Payload kann beim Parsen mehrere Gigabyte Speicher
+belegen; die HTTP-Größenobergrenze aus ``connectors/base.py`` schützt
+davor NICHT, da der Angriff erst beim Parsen entsteht, nicht beim
+Download). Dieses Modul verwendet daher ``defusedxml`` statt der
+Stdlib — Entity-Definitionen/-Expansion werden dort grundsätzlich
+abgelehnt (``DefusedXmlException``) statt verarbeitet.
 """
 
 from __future__ import annotations
 
-import xml.etree.ElementTree as ET
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from email.utils import parsedate_to_datetime
 from urllib.parse import urlsplit
 
 import httpx
+from defusedxml import ElementTree as ET
+from defusedxml.common import DefusedXmlException
 
 from investment_analyzer.connectors.base import Connector, ConnectorConfig
 from investment_analyzer.connectors.cache import FileCache
@@ -137,6 +150,12 @@ def parse_feed(raw_xml: str) -> tuple[RssItem, ...]:
         root = ET.fromstring(raw_xml)
     except ET.ParseError as exc:
         raise ConnectorValidationError(f"Feed ist kein gültiges XML: {exc}") from exc
+    except DefusedXmlException as exc:
+        # z. B. EntitiesForbidden ("Billion Laughs") — kein ParseError,
+        # sondern eine eigene defusedxml-Exception-Hierarchie.
+        raise ConnectorValidationError(
+            f"Feed enthält nicht erlaubte XML-Konstrukte (z. B. Entity-Definitionen): {exc}"
+        ) from exc
 
     root_tag = _local_tag(root.tag)
     items: list[RssItem] = []

@@ -81,14 +81,19 @@
     fehlender Pflichthinweis in Berichtsexporten), ein
     Dokumentationsfehler korrigiert (Redirect-Verhalten), `pip-audit`
     ohne Befund. 435 Tests grün, ruff/mypy fehlerfrei.
-11a. **Aktuell nächster inhaltlicher Schritt:** Milestone 8 fortsetzen —
-    Ausfalltests (manipulierte/böswillige Webinhalte, absichtlich
-    falsche/widersprüchliche Testdaten, Rate-Limit-Überschreitung je
-    Connector, Restore-Prozess/Alembic-Up-Down-Zyklus end-to-end),
-    danach Windows-Setup härten + `BENUTZERHANDBUCH.md` schreiben,
-    danach die finale Abnahme-Checkliste gegen Auftrag §15 (neun
-    Kriterien, ehrlich als erfüllt/teilweise/nicht erfüllt bewerten)
-    und den Projekt-Doku-Abschluss. Danach — falls vom Nutzer
+11a. ~~Milestone 8 Ausfalltests durchführen~~ — abgeschlossen am
+    2026-09-08 (siehe `PROGRESS.md`/ADR-24): echte Sicherheitslücke
+    gefunden und behoben (XML-Entity-Expansion im IR-RSS-Connector,
+    Wechsel auf `defusedxml`), Prompt-Injection- und widersprüchliche-
+    Daten-Ausfalltests bestätigen bestehende Mechanismen end-to-end,
+    neuer Restore-Prozess-Baustein (`db/backup.py`) end-to-end
+    getestet, Rate-Limit-Überschreitung je Connector bereits abgedeckt.
+    445 Tests grün, ruff/mypy fehlerfrei.
+11b. **Aktuell nächster inhaltlicher Schritt:** Milestone 8 fortsetzen —
+    Windows-Setup härten (`start.ps1`/`start.bat`) + `BENUTZERHANDBUCH.md`
+    schreiben, danach die finale Abnahme-Checkliste gegen Auftrag §15
+    (neun Kriterien, ehrlich als erfüllt/teilweise/nicht erfüllt
+    bewerten) und den Projekt-Doku-Abschluss. Danach — falls vom Nutzer
     priorisiert und nicht Teil der Milestone-8-Abnahme — die beiden in
     Milestone 4 als nicht berechenbar dokumentierten Scoring-
     Komponenten „Wettbewerbsvorteil" und „Nachrichten und Katalysatoren"

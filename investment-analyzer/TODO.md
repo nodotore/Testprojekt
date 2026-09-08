@@ -202,9 +202,22 @@
       aktuell im Code; `news/sanitize.py` entfernt HTML/Skripte vor
       jeder Speicherung. Erneut zu prüfen, sobald die KI-Zusammenfassung
       (ADR-19) implementiert wird.
-- [ ] Ausfalltests: manipulierte/böswillige Webinhalte, absichtlich
-      falsche/widersprüchliche Testdaten, Rate-Limit-Überschreitung je
-      Connector, Restore-Prozess (Alembic Up-/Downgrade-Zyklus) end-to-end.
+- [x] Ausfalltests (siehe ADR-24): XML-Entity-Expansion („Billion
+      Laughs") im IR-RSS-Connector gefunden und behoben (Wechsel von
+      `xml.etree.ElementTree` auf `defusedxml`, neue Abhängigkeit);
+      Prompt-Injection-Versuch in News-Inhalten end-to-end als reine
+      Nutzdaten bestätigt; widersprüchliche/extreme Testdaten (starke
+      Verwässerung) end-to-end als sichtbare Score-Warnung bestätigt
+      (kein stiller Fehlwert); Rate-Limit-Überschreitung je Connector
+      durch bestehenden gemeinsamen Basis-Test abgedeckt; Restore-
+      Prozess neu gebaut und end-to-end getestet
+      (`db/backup.py::backup_database`/`restore_database` — Sicherung/
+      Wiederherstellung der SQLite-Datenbankdatei, zusätzlich zum
+      bereits bestehenden Alembic-Up-/Downgrade-Test). Eine echte
+      Datenlücke dokumentiert statt verschwiegen: Auftrag-§3-„bei
+      Widerspruch beide Werte zeigen" ist mit dem aktuellen
+      Kostenlos-Quellen-Set strukturell nicht auftretbar (nur eine
+      Fundamentaldatenquelle angebunden) und daher nicht implementiert.
 - [ ] Windows-Setup vervollständigen (`start.ps1`/`start.bat` härten);
       Windows-Installer-Binärdatei (.exe/.msi) wird NICHT gebaut — in
       dieser Linux-Sandbox keine Windows-Build-Tools verfügbar; als

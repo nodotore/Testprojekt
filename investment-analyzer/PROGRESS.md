@@ -724,11 +724,57 @@ den Pflichthinweis in allen drei Exportformaten
 `reports/bundle.py`, `reports/excel_export.py`, `reports/pdf_export.py`,
 `SECURITY.md`, zugehörige Tests.
 
-**Offene Risiken/nächste Schritte:** Ausfalltests (manipulierte
-Webinhalte, falsche Testdaten, Rate-Limit-Überschreitung,
-Restore-Prozess), Windows-Setup-Härtung + `BENUTZERHANDBUCH.md`, sowie
-die finale Abnahme-Checkliste gegen Auftrag §15 stehen noch aus (siehe
-`TODO.md`/`NEXT_STEPS.md`).
+**Umgesetzt (Ausfalltests, siehe ADR-24):**
 
-**Nächster Schritt:** Ausfalltests (Milestone 8, Fortsetzung) — siehe
-`NEXT_STEPS.md`.
+- **Echte Sicherheitslücke gefunden und behoben:** `connectors/
+  ir_rss.py` parste externe RSS-/Atom-Feeds über die Stdlib
+  `xml.etree.ElementTree`, die laut Python-Dokumentation nicht gegen
+  „Billion Laughs"-Entity-Expansion gehärtet ist (winzige Payload →
+  mehrere GB Speicherverbrauch beim Parsen; die bestehende HTTP-
+  Größenobergrenze schützt NICHT davor, da der Angriff erst beim
+  Parsen entsteht). Behoben durch Wechsel auf `defusedxml`
+  (neue Abhängigkeit in `pyproject.toml`). Test mit echter „Billion
+  Laughs"-Payload beweist die Ablehnung.
+- **Zwei Ausfalltests bestätigen bereits bestehende Mechanismen
+  end-to-end statt nur auf Komponentenebene, kein Fund:**
+  Prompt-Injection-Versuch in News-Titel/-Zusammenfassung durchläuft
+  die komplette Ingestion-Pipeline unverändert als reine Nutzdaten
+  (`tests/news/test_ingest.py`); absichtlich widersprüchliche/extreme
+  Testdaten (Versechsfachung der verwässerten Aktienanzahl) lösen das
+  bestehende Warnsignal-System sichtbar aus (`risk_deductions`,
+  reduzierter `total_score`, `top_risks`) statt einer stillen
+  Fehlkalkulation (`tests/scoring/test_score.py`).
+- **Neuer Baustein — Restore-Prozess:** `db/backup.py`
+  (`backup_database`/`restore_database`) für die lokale SQLite-
+  Datenbankdatei (atomare, zeitgestempelte Dateikopie); end-to-end
+  getestet: Sicherung → simulierter Datenverlust → Wiederherstellung →
+  Daten vollständig wieder da (`tests/db/test_backup.py`, 7 neue
+  Tests). Ergänzt den bereits bestehenden Alembic-Up-/Downgrade-Test
+  (`tests/db/test_schema.py::test_alembic_migration_gegen_sqlite`).
+- Rate-Limit-Überschreitung je Connector: bereits durch den
+  bestehenden gemeinsamen Basis-Connector-Test abgedeckt (alle
+  Connectoren teilen sich dieselbe `_request_with_retry`-
+  Implementierung) — kein connectorspezifischer Sonderfall gefunden.
+- **Offene, dokumentierte Lücke statt stillschweigend übergangen:**
+  Auftrag §3 „bei Widerspruch beide Werte zeigen" (zwei unabhängige
+  Quellen mit unterschiedlichem Wert für dieselbe Kennzahl) ist mit
+  dem aktuellen Kostenlos-Quellen-Set strukturell nicht auftretbar (nur
+  SEC EDGAR liefert Fundamentaldaten) und daher nicht implementiert —
+  nachzuholen, sobald eine zweite Fundamentaldatenquelle angebunden wird.
+
+**Tests:** 10 neue Tests (insgesamt 445, alle grün) — 1 für die
+Billion-Laughs-Ablehnung, 1 für den Prompt-Injection-Ausfalltest, 1 für
+den widersprüchliche-Daten-Ausfalltest, 7 für Backup/Restore. `ruff
+check .` und `mypy src` beide fehlerfrei.
+
+**Geänderte/neue Dateien:** `connectors/ir_rss.py` (defusedxml),
+`pyproject.toml` (neue Abhängigkeit `defusedxml`), neues Modul
+`db/backup.py`, zugehörige Tests unter `tests/connectors/`,
+`tests/news/`, `tests/scoring/`, neues `tests/db/test_backup.py`.
+
+**Offene Risiken/nächste Schritte:** Windows-Setup-Härtung +
+`BENUTZERHANDBUCH.md`, sowie die finale Abnahme-Checkliste gegen
+Auftrag §15 stehen noch aus (siehe `TODO.md`/`NEXT_STEPS.md`).
+
+**Nächster Schritt:** Windows-Setup vervollständigen + Benutzerhandbuch
+(Milestone 8, Fortsetzung) — siehe `NEXT_STEPS.md`.

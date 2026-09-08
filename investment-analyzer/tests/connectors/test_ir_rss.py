@@ -93,6 +93,29 @@ def test_parse_feed_unbekanntes_root_element_wirft_validierungsfehler() -> None:
         parse_feed("<html><body>Keine Feed-Datei</body></html>")
 
 
+def test_parse_feed_lehnt_billion_laughs_angriff_ab() -> None:
+    """Milestone-8-Ausfalltest (manipulierte Webinhalte): ein böswilliger IR-
+    Feed-Betreiber könnte eine winzige XML-Payload mit rekursiver Entity-
+    Expansion senden ("Billion Laughs"), die beim Parsen mehrere Gigabyte
+    Speicher belegt. Die HTTP-Größenobergrenze (ConnectorConfig.
+    max_response_bytes) schützt davor NICHT, da die Payload selbst winzig
+    ist -- der Angriff entsteht erst beim XML-Parsen. ``defusedxml`` lehnt
+    Entity-Definitionen grundsätzlich ab, statt sie zu expandieren."""
+
+    billion_laughs = (
+        '<?xml version="1.0"?>'
+        "<!DOCTYPE rss ["
+        '<!ENTITY lol "lol">'
+        '<!ENTITY lol2 "&lol;&lol;&lol;&lol;&lol;&lol;&lol;&lol;&lol;&lol;">'
+        '<!ENTITY lol3 "&lol2;&lol2;&lol2;&lol2;&lol2;&lol2;&lol2;&lol2;&lol2;&lol2;">'
+        "]>"
+        "<rss><channel><item><title>&lol3;</title>"
+        "<link>https://evil.test/x</link></item></channel></rss>"
+    )
+    with pytest.raises(ConnectorValidationError, match="nicht erlaubte XML-Konstrukte"):
+        parse_feed(billion_laughs)
+
+
 def test_fetch_feed_ruft_ueber_https_ab_und_parst() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         assert request.url.host == "ir.firma-e.test"
