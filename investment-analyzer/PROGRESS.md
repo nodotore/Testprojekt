@@ -772,9 +772,47 @@ check .` und `mypy src` beide fehlerfrei.
 `db/backup.py`, zugehörige Tests unter `tests/connectors/`,
 `tests/news/`, `tests/scoring/`, neues `tests/db/test_backup.py`.
 
-**Offene Risiken/nächste Schritte:** Windows-Setup-Härtung +
-`BENUTZERHANDBUCH.md`, sowie die finale Abnahme-Checkliste gegen
-Auftrag §15 stehen noch aus (siehe `TODO.md`/`NEXT_STEPS.md`).
+**Umgesetzt (Windows-Setup + Benutzerhandbuch):**
 
-**Nächster Schritt:** Windows-Setup vervollständigen + Benutzerhandbuch
-(Milestone 8, Fortsetzung) — siehe `NEXT_STEPS.md`.
+- `start.ps1` sichert die Datenbankdatei jetzt automatisch vor jeder
+  Alembic-Migration (neuer `db/backup.py`-Baustein aus dem
+  Ausfalltest-Schritt wird hier erstmals in den echten Nutzerablauf
+  eingebunden, nicht nur in Tests) — best-effort: ein Fehlschlag (z. B.
+  beim allerersten Start ohne bestehende Datenbank) bricht den
+  Programmstart NICHT ab, sondern erscheint nur als Hinweis.
+  Überspringbar mit `-NoBackup`.
+- Neue Endnutzer-Skripte `scripts/backup-database.ps1`/
+  `scripts/restore-database.ps1`, die auf ein neues CLI-Werkzeug
+  `db/backup_cli.py` (`sichern`/`wiederherstellen`/`auflisten`)
+  aufsetzen — bislang war Backup/Restore nur über die Python-API
+  nutzbar (`tests/db/test_backup.py`), jetzt auch für Endnutzer ohne
+  Python-Kenntnisse per Doppelklick-Skript.
+- `BENUTZERHANDBUCH.md` neu geschrieben: Installation/erster Start,
+  Speicherorte, Analyseprofil, Datenschutz/Sicherheit, Datensicherung,
+  Fehlerbehebung, weiterführende Dokumente. Enthält einen bewusst
+  ehrlichen Abschnitt „Was die Oberfläche heute zeigt — und was noch
+  nicht": nur die Start-/Datenstatus-Seite existiert als Bildschirmseite,
+  die übrigen neun Auftrag-§10-Seiten (Screener, Rangliste,
+  Unternehmensdetail, Peer-Vergleich, DCF, Nachrichten, Portfolio,
+  Backtest, Einstellungen) sind noch nicht gebaut — der komplette
+  Analysemotor dahinter (Datenabruf, Kennzahlen, Bewertung, Scoring,
+  Nachrichten, Portfolio, Backtesting, Exporte) ist implementiert und
+  getestet, aber aktuell nur über die Python-API bzw. die Testsuite
+  aufrufbar, nicht über einen Bedienknopf. Kein Doppelklick-Installer
+  (.exe/.msi) — als bewusste Einschränkung dokumentiert (kein Zugriff
+  auf Windows-Build-Werkzeuge in dieser Entwicklungsumgebung).
+- `README.md` aktualisiert: Projektstand-Hinweis (Milestone 8 statt
+  „Milestone 1"), Verweis auf `BENUTZERHANDBUCH.md`, neuer Abschnitt
+  „Datensicherung", Hinweis auf den fehlenden nativen Installer,
+  Projektstruktur-Baum ergänzt.
+
+**Tests:** 5 neue Tests (insgesamt 450, alle grün) für
+`db/backup_cli.py`. `ruff check .` und `mypy src` beide fehlerfrei.
+
+**Geänderte/neue Dateien:** `start.ps1`, neue Skripte
+`scripts/backup-database.ps1`/`scripts/restore-database.ps1`, neues
+Modul `db/backup_cli.py`, neues `tests/db/test_backup_cli.py`, neues
+`BENUTZERHANDBUCH.md`, `README.md`.
+
+**Nächster Schritt:** Finale Abnahme-Checkliste gegen Auftrag §15 +
+Milestone-8-/Projekt-Doku-Abschluss — siehe `NEXT_STEPS.md`.

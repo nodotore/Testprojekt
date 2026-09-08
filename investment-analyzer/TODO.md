@@ -218,12 +218,24 @@
       Widerspruch beide Werte zeigen" ist mit dem aktuellen
       Kostenlos-Quellen-Set strukturell nicht auftretbar (nur eine
       Fundamentaldatenquelle angebunden) und daher nicht implementiert.
-- [ ] Windows-Setup vervollständigen (`start.ps1`/`start.bat` härten);
-      Windows-Installer-Binärdatei (.exe/.msi) wird NICHT gebaut — in
-      dieser Linux-Sandbox keine Windows-Build-Tools verfügbar; als
-      bewusste, dokumentierte Einschränkung festgehalten.
-- [ ] `BENUTZERHANDBUCH.md` (Installation, Ersteinrichtung, alle Module,
-      Datenschutz/Sicherheit, Haftungsausschluss, Fehlerbehebung).
+- [x] Windows-Setup vervollständigt: `start.ps1` sichert die Datenbank
+      jetzt automatisch vor jeder Migration (`-NoBackup` zum
+      Überspringen, best-effort — Fehlschlag bricht den Start nicht
+      ab); neue Skripte `scripts/backup-database.ps1`/
+      `scripts/restore-database.ps1`; neues CLI-Werkzeug
+      `db/backup_cli.py` (`sichern`/`wiederherstellen`/`auflisten`,
+      5 neue Tests). Windows-Installer-Binärdatei (.exe/.msi) wird
+      weiterhin NICHT gebaut — in dieser Linux-Sandbox keine Windows-
+      Build-Tools verfügbar; als bewusste, dokumentierte Einschränkung
+      in `README.md`/`BENUTZERHANDBUCH.md` festgehalten.
+- [x] `BENUTZERHANDBUCH.md` geschrieben (Installation, Ersteinrichtung,
+      Datenspeicherorte, Datenschutz/Sicherheit, Datensicherung,
+      Fehlerbehebung, weiterführende Dokumente). Enthält einen
+      ausdrücklich ehrlichen Abschnitt „Was die Oberfläche heute zeigt
+      — und was noch nicht": nur die Start-/Datenstatus-Seite ist als
+      Bildschirmseite gebaut, die übrigen neun Auftrag-§10-Seiten
+      fehlen noch (Analysemotor selbst ist vollständig implementiert
+      und getestet, nur noch nicht über die Oberfläche erreichbar).
 - [ ] Abnahme-Checkliste gegen Auftrag §15 (neun Kriterien) ehrlich
       durchgehen (erfüllt/teilweise/nicht erfüllt), Ergebnis in
       `PROGRESS.md`/`README.md` dokumentieren.

@@ -89,11 +89,17 @@
     neuer Restore-Prozess-Baustein (`db/backup.py`) end-to-end
     getestet, Rate-Limit-Überschreitung je Connector bereits abgedeckt.
     445 Tests grün, ruff/mypy fehlerfrei.
-11b. **Aktuell nächster inhaltlicher Schritt:** Milestone 8 fortsetzen —
-    Windows-Setup härten (`start.ps1`/`start.bat`) + `BENUTZERHANDBUCH.md`
-    schreiben, danach die finale Abnahme-Checkliste gegen Auftrag §15
-    (neun Kriterien, ehrlich als erfüllt/teilweise/nicht erfüllt
-    bewerten) und den Projekt-Doku-Abschluss. Danach — falls vom Nutzer
+11b. ~~Milestone 8 Windows-Setup vervollständigen + Benutzerhandbuch~~ —
+    abgeschlossen am 2026-09-08 (siehe `PROGRESS.md`): `start.ps1`
+    sichert die Datenbank jetzt automatisch vor jeder Migration, neue
+    Endnutzer-Skripte `scripts/backup-database.ps1`/
+    `scripts/restore-database.ps1`, neues `BENUTZERHANDBUCH.md` (inkl.
+    ehrlicher Abschnitt zum aktuellen UI-Stand), `README.md`
+    aktualisiert. 450 Tests grün, ruff/mypy fehlerfrei.
+11c. **Aktuell nächster inhaltlicher Schritt:** Milestone 8 abschließen
+    — finale Abnahme-Checkliste gegen Auftrag §15 (neun Kriterien,
+    ehrlich als erfüllt/teilweise/nicht erfüllt bewerten) und den
+    Projekt-Doku-Abschluss. Danach — falls vom Nutzer
     priorisiert und nicht Teil der Milestone-8-Abnahme — die beiden in
     Milestone 4 als nicht berechenbar dokumentierten Scoring-
     Komponenten „Wettbewerbsvorteil" und „Nachrichten und Katalysatoren"

@@ -2,6 +2,23 @@
 
 ## Unreleased
 
+- Milestone 8 (Sicherheit und Abnahme, in Bearbeitung) — Windows-Setup
+  vervollständigt + `BENUTZERHANDBUCH.md`: `start.ps1` sichert die
+  Datenbank jetzt automatisch vor jeder Migration (`db/backup.py` aus
+  dem Ausfalltest-Schritt erstmals in den echten Nutzerablauf
+  eingebunden, überspringbar mit `-NoBackup`, best-effort); neue
+  Endnutzer-Skripte `scripts/backup-database.ps1`/
+  `scripts/restore-database.ps1` und CLI-Werkzeug `db/backup_cli.py`.
+  Neues `BENUTZERHANDBUCH.md` (Installation, Datenschutz/Sicherheit,
+  Datensicherung, Fehlerbehebung) mit einem bewusst ehrlichen
+  Abschnitt zum aktuellen UI-Stand: nur die Start-/Datenstatus-Seite
+  ist als Bildschirmseite gebaut, der vollständige Analysemotor
+  dahinter ist implementiert/getestet, aber noch nicht über die
+  Oberfläche bedienbar. Kein nativer Windows-Installer (.exe/.msi) —
+  als bewusste, dokumentierte Einschränkung festgehalten. `README.md`
+  aktualisiert (Projektstand, Datensicherung). 5 neue Tests (insgesamt
+  450), `ruff`/`mypy` fehlerfrei.
+
 - Milestone 8 (Sicherheit und Abnahme, in Bearbeitung) — Ausfalltests
   (ADR-24): echte Sicherheitslücke gefunden und behoben —
   `connectors/ir_rss.py` parste externe RSS-/Atom-Feeds über die

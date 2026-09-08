@@ -5,10 +5,10 @@ systematischen Recherche und zum Vergleich börsennotierter Unternehmen.
 **Kein Anlageberatungs- oder Autotrading-Tool** — reiner Research-/
 Simulationsmodus, siehe Hinweis unten und `SECURITY.md`.
 
-> **Projektstand:** Milestone 1 (Grundgerüst). Es sind noch keine
-> Datenquellen angebunden (folgt in Milestone 2) — die Oberfläche zeigt
-> daher bewusst noch keine Analyseergebnisse, sondern nur den
-> tatsächlichen (leeren) Datenstatus. Siehe `PROGRESS.md`/`PLAN.md`.
+> **Projektstand:** Milestone 8 (Sicherheit und Abnahme, letzte
+> Milestone) in Bearbeitung — alle Fachmodule (Milestone 1–7) sind
+> implementiert und getestet. Ausführliche Bedienungsanleitung:
+> `BENUTZERHANDBUCH.md`. Details/offene Punkte: `PROGRESS.md`/`TODO.md`.
 
 ## Wichtiger Hinweis
 
@@ -43,6 +43,24 @@ Für die Entwicklungsabhängigkeiten (Tests, Linter):
 .\start.ps1 -Dev
 ```
 
+Ein Doppelklick-Installer (`.exe`/`.msi`) wird bewusst NICHT
+mitgeliefert — die Entwicklungsumgebung dieses Projekts hat keinen
+Zugriff auf Windows-Build-Werkzeuge, um ein solches Installationspaket
+zu erzeugen und zu testen (siehe `PROGRESS.md`/`BENUTZERHANDBUCH.md`).
+Start und Abhängigkeitsinstallation laufen stattdessen vollständig über
+`start.ps1`/`start.bat`.
+
+## Datensicherung
+
+```powershell
+.\scripts\backup-database.ps1
+.\scripts\restore-database.ps1 <Sicherungsdatei>
+```
+
+`start.ps1` sichert die Datenbank vor jeder Migration automatisch
+(überspringbar mit `-NoBackup`). Details: `BENUTZERHANDBUCH.md`,
+Abschnitt „Datensicherung".
+
 ## Tests ausführen
 
 ```powershell
@@ -68,12 +86,15 @@ investment-analyzer/
 ├── METHODOLOGY.md          Kennzahlen-/Bewertungs-/Scoring-Methodik
 ├── SECURITY.md             Sicherheitsrichtlinie
 ├── MILESTONE_0.md          Fragenliste + Nutzerantworten
+├── BENUTZERHANDBUCH.md      Bedienungsanleitung für Endnutzer
 ├── start.ps1 / start.bat   Windows-Startskripte
 ├── scripts/run-tests.ps1   Test-/Lint-/Typprüfungsskript
+├── scripts/backup-database.ps1    Datenbank sichern
+├── scripts/restore-database.ps1   Datenbank wiederherstellen
 ├── alembic/                Datenbankmigrationen
 ├── src/investment_analyzer/
 │   ├── config/              Nutzerprofil, App-Einstellungen, Secret-Store
-│   ├── db/                  SQLAlchemy-Grundgerüst
+│   ├── db/                  SQLAlchemy-Grundgerüst, Sicherung/Wiederherstellung
 │   ├── entity_resolution/   Stabile Unternehmens-Identität (Entity, Ticker/ISIN/LEI)
 │   ├── connectors/          Datenquellen (ab Milestone 2)
 │   ├── normalization/       Provenienzbehaftete Datenpunkte, Normalisierung

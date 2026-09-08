@@ -17,6 +17,13 @@
     Neustarts während der Entwicklung, wenn sich das Schema nicht
     geändert hat).
 
+.PARAMETER NoBackup
+    Überspringt die automatische Sicherung der Datenbankdatei vor der
+    Migration (siehe BENUTZERHANDBUCH.md, Abschnitt "Datensicherung").
+    Die Sicherung ist best-effort: schlägt sie fehl, wird nur gewarnt,
+    der Start wird NICHT abgebrochen (z. B. beim allerersten Start, wenn
+    noch keine Datenbankdatei existiert).
+
 .EXAMPLE
     .\start.ps1
 .EXAMPLE
@@ -26,7 +33,8 @@
 [CmdletBinding()]
 param(
     [switch]$Dev,
-    [switch]$SkipMigrate
+    [switch]$SkipMigrate,
+    [switch]$NoBackup
 )
 
 $ErrorActionPreference = "Stop"
@@ -95,6 +103,13 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 if (-not $SkipMigrate) {
+    if (-not $NoBackup) {
+        Write-Host "Sichere Datenbank vor der Migration..."
+        & $venvPython -m investment_analyzer.db.backup_cli sichern
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "Hinweis: Sicherung übersprungen (vermutlich erster Start, noch keine Datenbankdatei vorhanden)." -ForegroundColor Yellow
+        }
+    }
     Write-Host "Führe Datenbankmigrationen aus (Alembic)..."
     & $venvPython -m alembic upgrade head
     if ($LASTEXITCODE -ne 0) {
