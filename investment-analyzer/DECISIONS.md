@@ -526,17 +526,83 @@ generierter Text (Score-Begründungen, Annahmen) durch reportlabs
 (Nachrichtentitel) wird aktuell nur aggregiert (Anzahl), nicht über
 `Paragraph` gerendert.
 
+## ADR-22: Point-in-time-Backtest — Universum, Strategie und dokumentierte Lücken
+
+**Kontext:** Auftrag §9 stellt für Backtests die striktesten
+Anti-Bias-Anforderungen des gesamten Auftrags: Point-in-time-Universum,
+Vermeidung von Look-ahead-, Survivorship- und Selection-Bias,
+Berücksichtigung von Kosten/Dividenden/Währungen, Train-/Validierungs-/
+Out-of-Sample-Trennung, und ausdrücklich „keine Optimierung akzeptieren,
+die nur auf einem Zeitraum oder wenigen Aktien funktioniert".
+
+**Entscheidung — Punkt-in-Zeit-Universum:** `backtesting/universe.py::
+get_point_in_time_universe(session, as_of)` definiert „zum Stichtag
+bekannt" streng als „mindestens ein `DataPoint` mit `retrieved_at_utc
+<= as_of`" — dieselbe Provenienz-Grundlage wie jede andere
+Point-in-time-Abfrage in diesem Projekt (ADR-6). Der Nachweis „kein
+Look-ahead" (Auftrag §9/PLAN.md-Abnahmekriterium) wird zweistufig
+geführt: `tests/backtesting/test_universe.py` zeigt auf Ebene des
+Universums, dass ein später hinzugefügter Kandidat ein früher
+berechnetes Universum nicht verändert; `tests/backtesting/test_engine.py::
+test_spaeter_bekannt_gewordener_kandidat_veraendert_frueheres_backtest_
+ergebnis_nicht` zeigt dasselbe auf Ebene eines vollständigen
+Backtest-Laufs (Auswahl UND Portfoliorendite bit-identisch vor/nach dem
+Eintreffen der späteren Daten).
+
+**Entscheidung — Strategie ohne fittbaren Parameter:**
+`backtesting/strategy.py::select_top_n` wählt je Rebalancing-Stichtag
+die Kandidaten mit dem höchsten Score aus dem bereits bestehenden,
+festen Scoring-System (Milestone 4, Startgewichtung gemäß Auftrag §7).
+Es gibt in dieser Strategie keinen auf den Backtest-Zeitraum gefitteten
+Parameter — eine strukturelle statt nachträglich geprüfte Absicherung
+gegen „Optimierung, die nur auf einem Zeitraum funktioniert". Kandidaten
+mit `total_score is None` ODER der Klassifikation „Datenlage
+unzureichend" werden ausgeschlossen — `total_score` allein genügt nicht
+als Filter, da die Datenqualitäts-Komponente (`_score_datenqualitaet`)
+auch bei vollständig fehlenden Fundamentaldaten einen Zahlenwert (0)
+liefert, keinen `None`; erst die bereits vorhandene Konfidenz-
+Einstufung aus `compute_score` (ADR-17) macht diesen Fall zuverlässig
+erkennbar.
+
+**Konsequenz — drei bewusst offene Lücken, benannt statt verschwiegen**
+(`backtesting/report.py::NOT_YET_IMPLEMENTABLE_BACKTEST_FEATURES`):
+1. **Kein Benchmark-Vergleich:** Die Kostenlos-Datenquellen-Variante
+   bindet keine Index-/Benchmark-Kursquelle an (Alpha Vantage Free
+   liefert nur Einzelwerte je Symbol, siehe `DATA_SOURCES.md`).
+   `build_backtest_report` akzeptiert optional eine bereits vorliegende
+   Benchmark-Renditereihe; ohne sie bleibt der Vergleich `None`.
+2. **Keine Währungsumrechnung:** dieselbe strukturelle Lücke wie
+   ADR-16/ADR-20 — eine Portfoliorendite wird in der Kurswährung der
+   zugrunde liegenden Positionen berechnet, nie umgerechnet.
+3. **Unvollständiges Survivorship-Universum:** SEC EDGAR/Alpha Vantage
+   liefern im Kostenlos-Paket keine systematische Delisting-Historie —
+   das Punkt-in-Zeit-Universum umfasst „was das System zum Stichtag
+   bereits erfasst hatte", nicht „was zum Stichtag historisch am Markt
+   existierte". Ein tatsächlich delistetes, nie erfasstes Unternehmen
+   fehlt weiterhin.
+
+**Konsequenz — Dividendenrendite ist eine Schätzung:**
+`backtesting/period_return.py::estimate_dividends_per_share` nähert die
+Dividende je Aktie als `DIVIDENDS_PAID / SHARES_DILUTED` der jeweils
+zuletzt bekannten Jahresperiode an — angewendet auf jede (i. d. R.
+kürzere) Rebalancing-Periode, nicht anteilig aufgeteilt. Fehlt eine der
+beiden Größen, wird 0 statt eines geratenen Werts angenommen. Dieselbe
+Vereinfachung wie die bereits in Milestone 3 dokumentierte
+Non-GAAP-/Ausschüttungsquote-Vereinfachung.
+
 ## Noch zu treffende Entscheidungen
 
-Keine blockierenden Entscheidungen mehr offen für Milestone 1–6 (alle
+Keine blockierenden Entscheidungen mehr offen für Milestone 1–7 (alle
 abgeschlossen, siehe `PROGRESS.md`). Verbleibende Detailfragen aus
 `MILESTONE_0.md` Abschnitt B (z. B. weitere Feinjustierung der
 Mindestmarktkapitalisierung) bleiben über den Ersteinrichtungsdialog im
 laufenden Betrieb änderbar (Auftrag §2). Weiterhin offen: Priorisierung
 der EU/DE-Meldungsquellen-Lücke (ADR-9), Auflösung der
 Notierungswährung für Alpha-Vantage-Kurse (jetzt zusätzlich relevant für
-die Portfolio-Konzentrationsanalyse, ADR-20), unternehmensspezifische
-CAPM-Herleitung des WACC statt des groben Standardwerts, ob die
-Peer-Gruppen-Zuordnung um einen Größenfilter ergänzt werden soll, wie
-die Zuordnung „IR-RSS-Feed-URL ↔ Entity"
-gepflegt werden soll (siehe `TODO.md`).
+die Portfolio-Konzentrationsanalyse, ADR-20, und für Backtest-
+Währungsumrechnung, ADR-22), unternehmensspezifische CAPM-Herleitung
+des WACC statt des groben Standardwerts, ob die Peer-Gruppen-Zuordnung
+um einen Größenfilter ergänzt werden soll, wie die Zuordnung
+„IR-RSS-Feed-URL ↔ Entity" gepflegt werden soll, sowie — neu aus
+Milestone 7 — ob/wie eine Benchmark-/Index-Kursquelle künftig
+angebunden werden soll (siehe `TODO.md`).

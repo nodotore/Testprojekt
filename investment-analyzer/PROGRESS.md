@@ -580,3 +580,96 @@ position_sizing, assumptions, risk_metrics, report) und `reports/`
 
 **Nächster Schritt:** Milestone 7 (Backtesting) gemäß `PLAN.md` — siehe
 `NEXT_STEPS.md`.
+
+## Milestone 7 — Backtesting
+
+**Status:** Implementierung abgeschlossen (2026-09-07).
+
+**Umgesetzt:**
+
+- Point-in-time-Universum (`backtesting/universe.py`, ADR-22): eine
+  Entity gilt als „zum Stichtag bekannt", wenn mindestens ein
+  `DataPoint` mit `retrieved_at_utc <= as_of` existiert — dieselbe
+  Provenienz-Grundlage wie jede andere Point-in-time-Abfrage (ADR-6).
+- Perioden-Rendite (`backtesting/period_return.py`): Kursänderung +
+  geschätzte Dividende je Aktie (`DIVIDENDS_PAID / SHARES_DILUTED`,
+  als Näherung dokumentiert) abzüglich Transaktionskosten
+  (`portfolio.assumptions.PortfolioAssumptions`, Milestone 6).
+- Train-/Validierungs-/Out-of-Sample-Split (`backtesting/splits.py`):
+  reine, chronologische Dreiteilung eines Datumsbereichs.
+- Kennzahlen (`backtesting/metrics.py`): CAGR, annualisierte
+  Volatilität, Sharpe/Sortino (konfigurierbarer risikofreier Zins),
+  Turnover. Maximaler Drawdown wird aus `portfolio/risk_metrics.py`
+  (Milestone 6) wiederverwendet, nicht neu implementiert.
+- Deterministische Top-N-Auswahlstrategie (`backtesting/strategy.py`):
+  nutzt ausschließlich das bereits bestehende, feste Scoring-System
+  (Milestone 4) — kein auf den Backtest-Zeitraum gefitteter Parameter,
+  strukturelle Absicherung gegen Overfitting (Auftrag §9). Schließt
+  Kandidaten mit `total_score is None` ODER Klassifikation „Datenlage
+  unzureichend" aus (nicht `total_score` allein, da die
+  Datenqualitäts-Komponente auch bei fehlenden Daten einen Zahlenwert
+  liefert — beim ersten Testlauf entdeckt und korrigiert).
+- Rebalancing-Engine (`backtesting/engine.py`): führt die Strategie
+  über eine Folge von Stichtagen aus, gleichgewichtete Portfoliorendite
+  je Periode, NAV-Zeitreihe. Positionen ohne berechenbaren Kurs werden
+  je Periode ausgeschlossen, nicht geraten.
+- `BacktestReport`-Orchestrierung (`backtesting/report.py`): aggregiert
+  alle Kennzahlen, dokumentiert offene Lücken explizit
+  (`NOT_YET_IMPLEMENTABLE_BACKTEST_FEATURES`).
+
+**Abnahmekriterium „kein Look-ahead" — zweistufig nachgewiesen:**
+1. Universums-Ebene (`tests/backtesting/test_universe.py`): ein
+   Backtest-Universum zu einem Stichtag ist identisch, bevor und
+   nachdem ein erst später bekannt gewordener Kandidat in die
+   Datenbank aufgenommen wurde.
+2. Vollständiger Backtest-Lauf (`tests/backtesting/test_engine.py::
+   test_spaeter_bekannt_gewordener_kandidat_veraendert_frueheres_
+   backtest_ergebnis_nicht`): Auswahl UND Portfoliorendite einer
+   bereits abgeschlossenen Periode sind bit-identisch, bevor und
+   nachdem ein neuer, erst später bekannt gewordener Kandidat mit
+   einem auffällig hohen Kurs hinzugefügt wurde.
+
+**Bewusste, dokumentierte Lücken (ADR-22):**
+- Kein Benchmark-/Index-Kursvergleich — keine Index-Datenquelle im
+  Kostenlos-Paket angebunden (Alpha Vantage Free liefert nur
+  Einzelwerte je Symbol). `build_backtest_report` akzeptiert optional
+  eine extern gelieferte Benchmark-Renditereihe.
+- Keine Währungsumrechnung — dieselbe strukturelle Lücke wie ADR-16/
+  ADR-20.
+- Unvollständiges Survivorship-Universum — keine systematische
+  Delisting-Historie verfügbar; das Punkt-in-Zeit-Universum umfasst
+  „was das System zum Stichtag bereits erfasst hatte", nicht „was zum
+  Stichtag historisch am Markt existierte".
+- Dividende je Aktie ist eine Schätzung (Gesamt-Dividende / verwässerte
+  Aktienanzahl der zuletzt bekannten Jahresperiode), keine gemeldete
+  Größe.
+
+**Tests:** 61 neue Tests (insgesamt 425, alle grün) — Punkt-in-Zeit-
+Universums-Tests, hand-nachrechenbare Perioden-Renditen/Kennzahlen
+(u. a. CAGR/Sharpe/Sortino mit exakt konstruierten Beispielen),
+Train/Validation/OOS-Split-Tests, Strategie-Rankingtest (starke vs.
+schwache synthetische Firma), Engine-Integrationstests gegen die
+Datenbank (inkl. der beiden Look-ahead-Nachweis-Tests),
+BacktestReport-Tests. `ruff check .` und `mypy src` beide fehlerfrei.
+
+**Geänderte/neue Dateien:** ausschließlich unter `investment-analyzer/`
+— neue Module in `backtesting/` (universe, period_return, splits,
+metrics, strategy, engine, report); zugehörige Tests unter
+`tests/backtesting/` (inkl. gemeinsamer Testdaten-Hilfsfunktionen in
+`_fixtures.py`).
+
+**Offene Risiken:**
+- Verifikation mit echten Marktdaten/realer Benchmark-Kursreihe
+  mangels Internetzugang in dieser Sandbox nicht möglich (dieselbe
+  Einschränkung wie Milestone 2–6).
+- Kein Index-/Benchmark-Datenquelle angebunden (s. o.) — Auftrag-§9-
+  Anforderung „Ergebnisse gegen einfache Indizes vergleichen" ist nur
+  strukturell (Parameter-Schnittstelle), nicht mit echten Daten erfüllt.
+- Survivorship-Bias nicht vollständig ausgeschlossen (s. o.).
+- Dividendenrendite ist eine grobe Jahres-Näherung, nicht periodengenau.
+- Sharpe/Sortino nutzen einen konfigurierbaren, aber standardmäßig
+  auf 0 gesetzten risikofreien Zins — keine automatisch bezogene
+  Zinsreihe (z. B. aus EZB/FRED-Daten) hinterlegt.
+
+**Nächster Schritt:** Milestone 8 (Sicherheit und Abnahme) gemäß
+`PLAN.md` — siehe `NEXT_STEPS.md`.

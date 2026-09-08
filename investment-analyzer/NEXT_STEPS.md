@@ -28,52 +28,66 @@
    Import, Konzentration, Korrelation/Drawdown, Positionsgrößen-
    Bandbreite; `reports/`-Modul: `ReportBundle`, JSON-/Excel-/
    PDF-Export; 372 Tests grün, ruff/mypy fehlerfrei).
-9. **Offen — vor produktivem Einsatz nachzuholen (Milestone 2–6, ein
-   gemeinsamer Blocker):** Live-Verifikation der Connectoren gegen die
-   echten APIs mit mindestens zehn realen Unternehmen, Handrechnungs-
-   Abgleich der Fundamentalkennzahlen mit mindestens drei davon,
-   Handrechnungs-Abgleich von DCF/Multiples/Score mit denselben oder
-   weiteren realen Unternehmen, Verifikation der Duplikaterkennung an
-   einem realen Nachrichten-Testset, UND Verifikation von Portfolio-
-   Konzentration/Korrelation/Drawdown sowie der Export-Formate an einem
-   realen Portfolio (Auftrag-Abnahmekriterien Milestone 2–6). In dieser
-   Sandbox-Entwicklungsumgebung ist ausgehender Netzwerkzugriff auf
-   `sec.gov`, `alphavantage.co`, `api.gdeltproject.org` und beliebige
-   IR-RSS-Hosts durch die Egress-Policy des Umgebungs-Proxys blockiert
-   (verifiziert per `curl`, siehe `PROGRESS.md`). Sobald eine Umgebung
-   mit echtem Internetzugang zur Verfügung steht (z. B. beim Nutzer über
-   `start.ps1`):
-   - SEC EDGAR: benötigt nur eine gültige Kontaktadresse für den
-     User-Agent-Header, kein API-Schlüssel — sollte direkt funktionieren.
-   - Alpha Vantage: benötigt einen echten API-Schlüssel vom Nutzer
-     (kostenlos erhältlich unter alphavantage.co); der öffentliche
-     „demo"-Schlüssel deckt nur das Testsymbol IBM ab, nicht zehn
-     beliebige Unternehmen.
-   - GDELT: benötigt keinen API-Schlüssel, sollte direkt funktionieren.
-   - IR-RSS: benötigt reale Feed-URLs einiger Testunternehmen (manuell
-     ermitteln, da die Feed-URL-zu-Entity-Zuordnung noch nicht
-     automatisiert ist, siehe Punkt 11).
-   - Für den Handrechnungs-Abgleich: drei reale Unternehmen mit
-     öffentlich einsehbaren Geschäftsberichten auswählen, Kennzahlen von
-     Hand aus dem 10-K nachrechnen und mit `build_fundamentals_report()`
-     vergleichen; anschließend DCF/Multiples/Score derselben Unternehmen
-     von Hand nachrechnen und mit `build_valuation_report()`/
-     `score_entity()` vergleichen.
-   - Für Portfolio/Exporte: ein reales Musterportfolio (3-5 reale
-     Positionen mit echten Kursen über mehrere Tage) anlegen, Excel-/
-     PDF-/JSON-Export erzeugen und mit einer künftigen UI-Detailseite
-     abgleichen, sobald diese existiert (Milestone 8, siehe ADR-21).
-10. **Aktuell nächster inhaltlicher Schritt:** Milestone 7 (Backtesting)
-    gemäß `PLAN.md` beginnen; anschließend die beiden in Milestone 4 als
-    nicht berechenbar dokumentierten Scoring-Komponenten
-    „Wettbewerbsvorteil" und „Nachrichten und Katalysatoren" auf Basis
-    des jetzt verfügbaren `news`-Moduls ergänzen (siehe ADR-17) sowie die
-    KI-Zusammenfassung mit Quellenverweis für Nachrichten-Cluster
-    implementieren (siehe ADR-19/`news/report.py`).
-11. Bei Gelegenheit, nicht blockierend für Milestone 7:
+9. ~~Milestone 7 („Backtesting") umsetzen~~ — Implementierung
+   abgeschlossen am 2026-09-07 (Point-in-time-Universum,
+   Rebalancing-Engine, Top-N-Score-Strategie, CAGR/Vola/Sharpe/Sortino/
+   Turnover/MaxDD, zweistufig nachgewiesener Look-ahead-Schutz;
+   425 Tests grün, ruff/mypy fehlerfrei).
+10. **Offen — vor produktivem Einsatz nachzuholen (Milestone 2–7, ein
+    gemeinsamer Blocker):** Live-Verifikation der Connectoren gegen die
+    echten APIs mit mindestens zehn realen Unternehmen, Handrechnungs-
+    Abgleich der Fundamentalkennzahlen mit mindestens drei davon,
+    Handrechnungs-Abgleich von DCF/Multiples/Score mit denselben oder
+    weiteren realen Unternehmen, Verifikation der Duplikaterkennung an
+    einem realen Nachrichten-Testset, Verifikation von Portfolio-
+    Konzentration/Korrelation/Drawdown sowie der Export-Formate an einem
+    realen Portfolio, UND ein realer Backtest-Lauf mit echten
+    Kurshistorien über mehrere Rebalancing-Perioden (Auftrag-
+    Abnahmekriterien Milestone 2–7). In dieser Sandbox-
+    Entwicklungsumgebung ist ausgehender Netzwerkzugriff auf `sec.gov`,
+    `alphavantage.co`, `api.gdeltproject.org` und beliebige IR-RSS-Hosts
+    durch die Egress-Policy des Umgebungs-Proxys blockiert (verifiziert
+    per `curl`, siehe `PROGRESS.md`). Sobald eine Umgebung mit echtem
+    Internetzugang zur Verfügung steht (z. B. beim Nutzer über
+    `start.ps1`):
+    - SEC EDGAR: benötigt nur eine gültige Kontaktadresse für den
+      User-Agent-Header, kein API-Schlüssel — sollte direkt funktionieren.
+    - Alpha Vantage: benötigt einen echten API-Schlüssel vom Nutzer
+      (kostenlos erhältlich unter alphavantage.co); der öffentliche
+      „demo"-Schlüssel deckt nur das Testsymbol IBM ab, nicht zehn
+      beliebige Unternehmen.
+    - GDELT: benötigt keinen API-Schlüssel, sollte direkt funktionieren.
+    - IR-RSS: benötigt reale Feed-URLs einiger Testunternehmen (manuell
+      ermitteln, da die Feed-URL-zu-Entity-Zuordnung noch nicht
+      automatisiert ist, siehe Punkt 12).
+    - Für den Handrechnungs-Abgleich: drei reale Unternehmen mit
+      öffentlich einsehbaren Geschäftsberichten auswählen, Kennzahlen von
+      Hand aus dem 10-K nachrechnen und mit `build_fundamentals_report()`
+      vergleichen; anschließend DCF/Multiples/Score derselben Unternehmen
+      von Hand nachrechnen und mit `build_valuation_report()`/
+      `score_entity()` vergleichen.
+    - Für Portfolio/Exporte: ein reales Musterportfolio (3-5 reale
+      Positionen mit echten Kursen über mehrere Tage) anlegen, Excel-/
+      PDF-/JSON-Export erzeugen und mit einer künftigen UI-Detailseite
+      abgleichen, sobald diese existiert (Milestone 8, siehe ADR-21).
+    - Für Backtesting: über mehrere Wochen/Monate echte
+      Alpha-Vantage-Kurs-Snapshots für 5-10 Unternehmen akkumulieren
+      (täglicher Abruf), dann `run_backtest()`/`build_backtest_report()`
+      über mehrere Rebalancing-Stichtage ausführen und die Kennzahlen
+      stichprobenartig von Hand nachrechnen.
+11. **Aktuell nächster inhaltlicher Schritt:** Milestone 8 (Sicherheit
+    und Abnahme, letzte Milestone) gemäß `PLAN.md` beginnen;
+    anschließend die beiden in Milestone 4 als nicht berechenbar
+    dokumentierten Scoring-Komponenten „Wettbewerbsvorteil" und
+    „Nachrichten und Katalysatoren" auf Basis des jetzt verfügbaren
+    `news`-Moduls ergänzen (siehe ADR-17) sowie die KI-Zusammenfassung
+    mit Quellenverweis für Nachrichten-Cluster implementieren (siehe
+    ADR-19/`news/report.py`).
+12. Bei Gelegenheit, nicht blockierend für Milestone 8:
     - Notierungswährung für Alpha-Vantage-Kurse auflösen (aus
       Milestone 2 offen, weiterhin nicht erledigt — jetzt zusätzlich
-      relevant für die Portfolio-Konzentrationsanalyse, ADR-20).
+      relevant für die Portfolio-Konzentrationsanalyse, ADR-20, und die
+      Backtest-Währungsumrechnung, ADR-22).
     - Peer-Gruppen-Zuordnung um einen Größenfilter (Marktkapitalisierung)
       ergänzen (jetzt mit `PRICE_CLOSE`/Marktkapitalisierung verfügbar).
     - WACC-Standardwert durch unternehmensspezifische CAPM-Herleitung
@@ -87,8 +101,11 @@
       bei Bedarf um weitere bekannte Domains erweitern.
     - PDF-Export um Nachrichtentitel/-URLs als reine Tabellen-Zellen
       erweitern (aktuell bewusst nur aggregierte Zahlen, siehe ADR-21).
-    - FX-Umrechnungsmodell für Portfolio-Konzentration bei gemischten
-      Bestandswährungen.
+    - FX-Umrechnungsmodell für Portfolio-Konzentration und Backtest-
+      Renditen bei gemischten Bestandswährungen.
+    - Benchmark-/Index-Kursquelle für den Backtest-Vergleich anbinden.
+    - Risikofreien Zins für Sharpe/Sortino aus einer echten Zinsreihe
+      (z. B. EZB/FRED) beziehen statt Default 0.
     - PostgreSQL-Migrationstest gegen eine echte Instanz, Test der
       Streamlit-Oberfläche in einem echten Browser (Sandbox hatte nur
       Headless-/HTTP-Verifikation zur Verfügung).

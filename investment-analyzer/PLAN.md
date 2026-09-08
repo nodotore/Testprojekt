@@ -299,15 +299,44 @@ rendert, automatisch dieselben Werte zeigt.
 Milestone 2/3/4/5 war eine Verifikation mit echten Marktdaten in dieser
 Sandbox mangels Internetzugang nicht möglich (siehe `PROGRESS.md`).
 
-## Milestone 7 — Backtesting
+## Milestone 7 — Backtesting (abgeschlossen 2026-09-07)
 
-Point-in-time-Universum, Bias-Vermeidung (Look-ahead/Survivorship/
-Selection), Kosten/Spreads/Dividenden/Währungen, Train/Validierung/
-Out-of-Sample-Trennung, Kennzahlen (CAGR, Vola, Sharpe/Sortino, MaxDD,
-Turnover) gegen Indexvergleich. Abnahme: dokumentierter Nachweis „kein
-Look-ahead" durch gezielten Test (Kandidat, der erst nach Stichtag
-bekannt wurde, darf Ergebnis vor Stichtag nicht beeinflussen)
-(backtest-agent + test-agent).
+**Erfüllt:** Point-in-time-Universum (`backtesting/universe.py`,
+ADR-22) — eine Entity gilt als „zum Stichtag bekannt", wenn mindestens
+ein `DataPoint` mit `retrieved_at_utc <= as_of` existiert. Deterministische
+Top-N-Auswahlstrategie (`backtesting/strategy.py`) auf Basis des
+bereits bestehenden, festen Scoring-Systems — kein auf den Backtest-
+Zeitraum gefitteter Parameter, damit strukturell gegen die in Auftrag §9
+verbotene „Optimierung, die nur auf einem Zeitraum funktioniert"
+abgesichert. Rebalancing-Engine (`backtesting/engine.py`) mit
+gleichgewichteter Portfoliorendite je Periode (Kursänderung +
+geschätzte Dividende − Transaktionskosten, `period_return.py`).
+Train-/Validierungs-/Out-of-Sample-Split (`splits.py`) sowie CAGR,
+Volatilität, Sharpe/Sortino, Turnover (`metrics.py`) — maximaler
+Drawdown wird aus `portfolio/risk_metrics.py` (Milestone 6)
+wiederverwendet statt neu implementiert. `BacktestReport`-
+Orchestrierung (`report.py`) mit vollständiger Lücken-Dokumentation.
+
+**Abnahmekriterium „kein Look-ahead" erfüllt, zweistufig nachgewiesen:**
+`tests/backtesting/test_universe.py::
+test_spaeter_eintreffende_daten_veraendern_frueheres_universum_nicht`
+(Universums-Ebene) und `tests/backtesting/test_engine.py::
+test_spaeter_bekannt_gewordener_kandidat_veraendert_frueheres_backtest_
+ergebnis_nicht` (vollständiger Backtest-Lauf: Auswahl UND
+Portfoliorendite bit-identisch vor/nach dem Eintreffen der späteren
+Daten).
+
+**Bewusste, dokumentierte Lücken (ADR-22):** kein Benchmark-/Index-
+Kursvergleich (keine Datenquelle im Kostenlos-Paket angebunden — die
+Funktion akzeptiert optional eine extern gelieferte Benchmark-
+Renditereihe), keine Währungsumrechnung (dieselbe Lücke wie ADR-16/
+ADR-20), unvollständiges Survivorship-Universum (keine Delisting-
+Historie verfügbar — das Universum umfasst „was das System bereits
+erfasst hatte", nicht „was historisch existierte").
+
+61 neue Tests (insgesamt 425), `ruff`/`mypy` fehlerfrei. Wie in
+Milestone 2–6 war eine Verifikation mit echten Marktdaten in dieser
+Sandbox mangels Internetzugang nicht möglich (siehe `PROGRESS.md`).
 
 ## Milestone 8 — Sicherheit und Abnahme
 

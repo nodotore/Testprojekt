@@ -1,16 +1,18 @@
-# Methodik (Stand nach Milestone 6)
+# Methodik (Stand nach Milestone 7)
 
 **Status:** Die Abschnitte „Fundamentalkennzahlen" (seit Milestone 3),
 „Bewertung"/„Scoring" (seit Milestone 4), „Nachrichten" (seit
-Milestone 5) und „Portfolio und Exporte" (seit Milestone 6) sind im Code
-umgesetzt (`fundamentals/calculations.py`, `series.py`, `report.py`;
+Milestone 5), „Portfolio und Exporte" (seit Milestone 6) und
+„Backtesting-Prinzipien" (seit Milestone 7) sind im Code umgesetzt
+(`fundamentals/calculations.py`, `series.py`, `report.py`;
 `valuation/multiples.py`, `dcf.py`, `report.py`; `scoring/score.py`;
 `news/classification.py`, `clustering.py`, `report.py`;
 `portfolio/concentration.py`, `risk_metrics.py`, `position_sizing.py`,
-`report.py`; `reports/bundle.py`, `excel_export.py`, `pdf_export.py`) —
-Details und Abweichungen von der ursprünglichen Planung siehe dort. Die
-Abschnitte „Zukunfts-/Trendanalyse", „Top-10-Rangliste" und
-„Backtesting-Prinzipien" sind weiterhin reine Planung für die jeweils
+`report.py`; `reports/bundle.py`, `excel_export.py`, `pdf_export.py`;
+`backtesting/universe.py`, `strategy.py`, `engine.py`, `metrics.py`,
+`report.py`) — Details und Abweichungen von der ursprünglichen Planung
+siehe dort. Die Abschnitte „Zukunfts-/Trendanalyse" und
+„Top-10-Rangliste" sind weiterhin reine Planung für die jeweils
 zuständige künftige Milestone.
 Diese Datei dient als verbindliche Referenz für alle Agenten, damit
 Kennzahlenberechnung, Scoring und Prognosen konsistent und
@@ -263,22 +265,46 @@ entsprechend höherem Risiko. Vergleich zum Vorlauf (Auf-/Absteiger, neue/
 entfernte Kandidaten) wird bei jeder Neuberechnung dokumentiert;
 vergangene Prognosen werden unveränderlich archiviert.
 
-## Backtesting-Prinzipien (Milestone 7, Auftrag §9)
+## Backtesting-Prinzipien (Milestone 7, Auftrag §9 — implementiert)
 
-- Point-in-time-Universum inkl. delisteter Unternehmen, soweit Daten
-  verfügbar.
-- Explizite Vermeidung von Look-ahead-, Survivorship- und
-  Selection-Bias (technisch: jede Query im Backtest ist zeitlich
-  parametrisiert und darf nur Daten mit Abrufzeitpunkt ≤ Stichtag sehen).
-- Rebalancing, Gebühren, Spreads, Dividenden, Währungseffekte werden
-  modelliert, nicht ignoriert.
-- Trennung Train-/Validierungs-/Out-of-Sample-Zeitraum verbindlich vor
-  jeder Parameteroptimierung.
-- Kennzahlen: CAGR, Volatilität, Sharpe/Sortino, maximaler Drawdown,
-  Turnover — immer im Vergleich zu einem einfachen Referenzindex.
+- Point-in-time-Universum (`backtesting/universe.py::
+  get_point_in_time_universe`): eine Entity gilt als „zum Stichtag
+  bekannt", wenn mindestens ein `DataPoint` mit `retrieved_at_utc <=
+  as_of` existiert — jede Abfrage im Backtest ist zeitlich
+  parametrisiert und sieht ausschließlich Daten mit Abrufzeitpunkt ≤
+  Stichtag. **Abweichung von der ursprünglichen Planung:** „inkl.
+  delisteter Unternehmen" ist NICHT umgesetzt — SEC EDGAR/Alpha Vantage
+  liefern im Kostenlos-Paket keine systematische Delisting-Historie
+  (siehe ADR-22). Der Look-ahead-Schutz selbst ist vollständig und
+  zweistufig nachgewiesen (Universums-Ebene und vollständiger
+  Backtest-Lauf, siehe `tests/backtesting/test_universe.py`/
+  `test_engine.py`); Survivorship-Bias bleibt eine offene, dokumentierte
+  Lücke.
+- Rebalancing (`backtesting/engine.py`), Gebühren
+  (`portfolio.assumptions.PortfolioAssumptions.transaction_cost_pct`,
+  Milestone 6), Dividenden (geschätzt aus `DIVIDENDS_PAID /
+  SHARES_DILUTED`, `backtesting/period_return.py`) werden modelliert.
+  **Abweichung:** Spreads und Währungseffekte werden NICHT modelliert —
+  keine Orderbuch-/Tick-Datenquelle bzw. kein FX-Umrechnungsmodell im
+  Kostenlos-Paket vorhanden (dieselbe Lücke wie ADR-16/ADR-20).
+- Trennung Train-/Validierungs-/Out-of-Sample-Zeitraum
+  (`backtesting/splits.py::split_train_validation_out_of_sample`) als
+  reine, chronologische Dreiteilung — verbindlich vor jeder
+  Parameteroptimierung anzuwenden.
+- Kennzahlen (`backtesting/metrics.py`, `report.py`): CAGR, annualisierte
+  Volatilität, Sharpe/Sortino (konfigurierbarer risikofreier Zins,
+  Default 0), Turnover; maximaler Drawdown aus `portfolio/
+  risk_metrics.py` (Milestone 6) wiederverwendet. **Abweichung:** der
+  Vergleich „immer gegen einen einfachen Referenzindex" ist NICHT mit
+  echten Daten möglich — keine Index-/Benchmark-Kursquelle im
+  Kostenlos-Paket angebunden; `build_backtest_report` akzeptiert
+  stattdessen optional eine extern gelieferte Benchmark-Renditereihe.
 - Keine Optimierung wird akzeptiert, die nur auf einem Zeitraum oder
-  wenigen Aktien funktioniert (Overfitting-Check verbindlich vor
-  Abnahme).
+  wenigen Aktien funktioniert: strukturell umgesetzt über
+  `backtesting/strategy.py::select_top_n`, das ausschließlich das
+  bereits bestehende, feste Scoring-System (Milestone 4, Startgewichtung
+  Auftrag §7) nutzt — es gibt keinen auf den Backtest-Zeitraum
+  gefitteten Parameter, der überangepasst werden könnte.
 
 ## Belegprüfung vor jeder Ausgabe (Auftrag §11)
 

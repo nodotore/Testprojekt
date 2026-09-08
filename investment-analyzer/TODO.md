@@ -159,12 +159,36 @@
 - [ ] IR-RSS-Feed-URL-zu-Entity-Zuordnung lösen (aus Milestone 5
       weiterhin offen).
 
-## Milestone 7 — Backtesting (nächster Schritt)
+## Milestone 7 — Backtesting (Implementierung abgeschlossen)
+
+- [x] Point-in-time-Universum (`backtesting/universe.py`, ADR-22)
+- [x] Perioden-Rendite inkl. geschätzter Dividende + Transaktionskosten
+      (`backtesting/period_return.py`)
+- [x] Train-/Validierungs-/Out-of-Sample-Split (`backtesting/splits.py`)
+- [x] Kennzahlen: CAGR, Volatilität, Sharpe/Sortino, Turnover
+      (`backtesting/metrics.py`); Max-Drawdown aus Milestone 6
+      wiederverwendet
+- [x] Deterministische Top-N-Score-Strategie (`backtesting/strategy.py`)
+- [x] Rebalancing-Engine (`backtesting/engine.py`) + BacktestReport-
+      Orchestrierung (`backtesting/report.py`)
+- [x] Abnahmekriterium „kein Look-ahead" zweistufig nachgewiesen
+      (Universum + vollständiger Backtest-Lauf)
+- [x] Tests: 61 neue (insgesamt 425 grün), `ruff`/`mypy` fehlerfrei
+- [ ] **Offen:** Verifikation mit echten Marktdaten (Auftrag-
+      Abnahmekriterium) — in dieser Sandbox mangels Internetzugang
+      nicht möglich (siehe `PROGRESS.md`).
+- [ ] Benchmark-/Index-Kursquelle anbinden, damit „Ergebnisse gegen
+      einfache Indizes vergleichen" mit echten Daten statt nur
+      strukturell (Parameter-Schnittstelle) erfüllt ist.
+- [ ] Survivorship-Bias vollständig schließen — dafür wäre eine
+      Delisting-Historie-Quelle nötig, die im Kostenlos-Paket nicht
+      existiert.
+- [ ] Dividendenrendite periodengenauer schätzen statt grober
+      Jahres-Näherung.
+- [ ] Risikofreien Zins für Sharpe/Sortino aus einer echten Zinsreihe
+      (z. B. EZB/FRED) beziehen statt Default 0.
+
+## Milestone 8 — Sicherheit und Abnahme (nächster Schritt, letzte Milestone)
 
 Siehe `PLAN.md` für Details; wird hier aufgeschlüsselt, sobald die
 Milestone beginnt.
-
-## Spätere Milestones
-
-Siehe `PLAN.md` für Milestone 8; werden hier erst als Einzelaufgaben
-aufgeschlüsselt, wenn die jeweilige Milestone beginnt.

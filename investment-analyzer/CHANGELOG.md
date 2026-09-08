@@ -2,6 +2,27 @@
 
 ## Unreleased
 
+- Milestone 7 (Backtesting) umgesetzt: Point-in-time-Universum
+  (`backtesting/universe.py`, ADR-22 — eine Entity gilt als „zum
+  Stichtag bekannt", wenn mindestens ein `DataPoint` mit
+  `retrieved_at_utc <= as_of` existiert), Perioden-Rendite inkl.
+  geschätzter Dividende je Aktie und Transaktionskosten
+  (`period_return.py`), Train-/Validierungs-/Out-of-Sample-Split
+  (`splits.py`), Kennzahlen CAGR/Volatilität/Sharpe/Sortino/Turnover
+  (`metrics.py`, Max-Drawdown aus Milestone 6 wiederverwendet),
+  deterministische Top-N-Auswahlstrategie auf Basis des bereits
+  bestehenden, festen Scoring-Systems ohne auf den Backtest-Zeitraum
+  gefitteten Parameter (`strategy.py`), Rebalancing-Engine
+  (`engine.py`) und `BacktestReport`-Orchestrierung (`report.py`) mit
+  vollständiger Lücken-Dokumentation. Abnahmekriterium „kein
+  Look-ahead" zweistufig nachgewiesen (Universums-Ebene und
+  vollständiger Backtest-Lauf: Auswahl und Portfoliorendite
+  bit-identisch vor/nach dem Eintreffen später bekannt gewordener
+  Kandidaten). 61 neue Tests (insgesamt 425), `ruff`/`mypy` fehlerfrei.
+  Bewusste, dokumentierte Lücken: kein Benchmark-/Index-Kursvergleich
+  (keine Datenquelle im Kostenlos-Paket), keine Währungsumrechnung,
+  unvollständiges Survivorship-Universum (siehe PROGRESS.md/ADR-22).
+
 - Milestone 6 (Portfolio und Exporte) umgesetzt: neues Modul
   `portfolio/` (ADR-20) mit Watchlist-/Portfolio-CSV-Import
   (zeilengenaue Fehlersammlung, idempotent, dieselbe Entity-Auflösung
