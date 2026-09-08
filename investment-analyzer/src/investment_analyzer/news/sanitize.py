@@ -20,7 +20,16 @@ Stelle, die diesen Text später einem Sprachmodell übergibt.
 from __future__ import annotations
 
 import html
+import re
 from html.parser import HTMLParser
+
+#: Grobes Sicherheitsnetz für den (praktisch nie erreichten) Ausnahmefall,
+#: dass ``HTMLParser`` selbst eine Ausnahme wirft — entfernt zumindest jedes
+#: ``<...>``-Tag, statt den Rohtext unverändert durchzulassen (Milestone-8-
+#: Security-Review, unabhängige Prüfung: die vorherige Rückfallvariante
+#: `text = raw` widersprach der eigenen Modul-Zusicherung „kein Markup
+#: bleibt erhalten", siehe DECISIONS.md ADR-25).
+_TAG_PATTERN = re.compile(r"<[^>]*>")
 
 #: Innerhalb dieser Tags wird der Inhalt komplett verworfen — Skript-/
 #: Stilinhalte sind kein Nachrichtentext und werden nie ausgeführt oder
@@ -64,8 +73,10 @@ def sanitize_html_to_text(raw: str | None, *, max_length: int = DEFAULT_MAX_LENG
 
     Kaputtes/unvollständiges HTML löst KEINEN Fehler aus (Nachrichten-
     Ingestion darf an einem einzelnen fehlerhaften Feed-Eintrag nicht
-    insgesamt scheitern) — im Zweifel wird der Rohtext ohne
-    Tag-Erkennung als Klartext übernommen.
+    insgesamt scheitern) — im (praktisch nie eintretenden) Ausnahmefall,
+    dass ``HTMLParser`` selbst wirft, wird ersatzweise über einen groben
+    Regex-Tag-Entferner bereinigt statt des unveränderten Rohtexts, damit
+    die Zusicherung „kein Markup bleibt erhalten" auch auf diesem Pfad gilt.
     """
 
     if not raw or not raw.strip():
@@ -77,7 +88,7 @@ def sanitize_html_to_text(raw: str | None, *, max_length: int = DEFAULT_MAX_LENG
         parser.close()
         text = parser.text()
     except Exception:  # noqa: BLE001 — Ingestion darf hierdurch nie abbrechen.
-        text = raw
+        text = _TAG_PATTERN.sub(" ", raw)
 
     text = html.unescape(text)
     collapsed = " ".join(text.split())

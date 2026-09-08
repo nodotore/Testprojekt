@@ -188,7 +188,7 @@
 - [ ] Risikofreien Zins für Sharpe/Sortino aus einer echten Zinsreihe
       (z. B. EZB/FRED) beziehen statt Default 0.
 
-## Milestone 8 — Sicherheit und Abnahme (in Bearbeitung, letzte Milestone)
+## Milestone 8 — Sicherheit und Abnahme (abgeschlossen 2026-09-08, mit offenen Punkten, siehe ABNAHME.md)
 
 - [x] Security-Review: jede `SECURITY.md`-Behauptung gegen den Code
       geprüft (siehe ADR-23). Drei echte Lücken gefunden und behoben:
@@ -236,8 +236,25 @@
       Bildschirmseite gebaut, die übrigen neun Auftrag-§10-Seiten
       fehlen noch (Analysemotor selbst ist vollständig implementiert
       und getestet, nur noch nicht über die Oberfläche erreichbar).
-- [ ] Abnahme-Checkliste gegen Auftrag §15 (neun Kriterien) ehrlich
-      durchgehen (erfüllt/teilweise/nicht erfüllt), Ergebnis in
-      `PROGRESS.md`/`README.md` dokumentieren.
-- [ ] Finaler Doku-Abschluss (alle Pflichtdateien), `pytest`/`ruff`/
-      `mypy` grün, Commit + Push.
+- [x] Unabhängiger Security-/Plausibilitätscheck (Auftrag §15
+      Kriterium 9): separater Agentendurchlauf ohne Kenntnis der
+      Implementierungsentscheidungen, fand einen echten, blockierenden
+      Look-ahead-Bias in `risk/warning_signals.py` (fehlendes `as_of`
+      in allen Warnsignal-Checks — floss über `total_score` direkt in
+      `backtesting/strategy.py::select_top_n` ein) sowie zwei weitere
+      Härtungspunkte (Downloadgrößen-Prüfung jetzt gestreamt statt
+      erst nach vollständiger Pufferung; HTML-Sanitizing-Fallback
+      entfernt jetzt auch im Ausnahmefall Markup) und eine bewusst
+      nicht behobene, ehrlich dokumentierte SSRF-Restlücke
+      (Time-of-check-to-time-of-use). Alles in `DECISIONS.md` ADR-25
+      dokumentiert, die ersten drei Funde behoben und mit neuen
+      Regressionstests abgesichert (453 Tests, zuvor 450).
+- [x] Abnahme-Checkliste gegen Auftrag §15 (neun Kriterien) ehrlich
+      durchgegangen: `ABNAHME.md`. Sechs Kriterien vollständig erfüllt,
+      eines teilweise (Handrechnung nur an synthetischen Daten), zwei
+      strukturell fundiert aber empirisch nicht abschließend
+      nachweisbar (kompletter Lauf mit echten Daten; Exporte = UI-Werte,
+      da noch keine UI-Detailseite existiert) — ehrlich als offen
+      geführt, nicht stillschweigend als erfüllt behandelt.
+- [x] Finaler Doku-Abschluss (alle Pflichtdateien), `pytest`/`ruff`/
+      `mypy` grün (453 Tests), Commit + Push.

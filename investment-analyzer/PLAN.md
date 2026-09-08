@@ -338,14 +338,34 @@ erfasst hatte", nicht „was historisch existierte").
 Milestone 2–6 war eine Verifikation mit echten Marktdaten in dieser
 Sandbox mangels Internetzugang nicht möglich (siehe `PROGRESS.md`).
 
-## Milestone 8 — Sicherheit und Abnahme
+## Milestone 8 — Sicherheit und Abnahme (abgeschlossen 2026-09-08, mit offenen Punkten)
 
-Security-Review (Secrets, Webinhalte/Prompt-Injection, SSRF,
-Abhängigkeits-Scan), Ausfalltests (manipulierte Webseiten, falsche
-Daten, Rate-Limit-Überschreitung, Restore-Prozess), Windows-Installer,
-Benutzerhandbuch. Abnahme: alle Kriterien aus Auftrag §15 erfüllt,
-unabhängiger Security-/Plausibilitätscheck dokumentiert
-(security-reviewer + test-agent + project-orchestrator).
+**Umgesetzt:** Security-Review in zwei Stufen — eigener Review
+(ADR-23: Downloadgrößen-Begrenzung, Log-Redaction, Pflichthinweis in
+Exporten, Redirect-Dokumentation; ADR-24: Ausfalltests inkl. echtem
+XML-Entity-Expansion-Fund im IR-RSS-Connector, Restore-Prozess neu
+gebaut) und ein separater, unabhängiger Review-Durchlauf (ADR-25), der
+einen echten, für Auftrag §15 blockierenden Look-ahead-Bias in den
+Warnsignal-Checks fand — noch in dieser Milestone-Runde behoben und
+mit Regressionstests abgesichert — sowie zwei weitere Härtungen
+(Downloadgrößen-Prüfung per Streaming, HTML-Sanitizing-Fallback) und
+eine ehrlich dokumentierte Restlücke (SSRF-Time-of-check-to-time-of-
+use). Windows-Setup vervollständigt (`start.ps1` sichert die Datenbank
+automatisch vor jeder Migration, neue Backup-/Restore-Skripte),
+`BENUTZERHANDBUCH.md` geschrieben. Kein nativer Windows-Installer
+(.exe/.msi) — bewusste, dokumentierte Einschränkung (keine Windows-
+Build-Werkzeuge in dieser Entwicklungsumgebung verfügbar).
+
+**Abnahme:** ehrliche, kriterienweise Bewertung aller neun
+Auftrag-§15-Kriterien in `ABNAHME.md`. Sechs von neun Kriterien
+vollständig erfüllt, ein Kriterium teilweise (DCF/Kernkennzahlen nur an
+Handrechnungen mit synthetischen Daten geprüft, nicht an echten
+Unternehmenszahlen), zwei Kriterien strukturell fundiert aber empirisch
+nicht abschließend nachweisbar (kompletter Lauf mit echten Daten;
+Exporte = Oberflächenwerte, da noch keine UI-Detailseite existiert).
+Unabhängiger Security-/Plausibilitätscheck dokumentiert (ADR-25) —
+dieser fand einen echten Fehler, der noch behoben wurde, kein
+Alibi-Durchlauf. 453 Tests grün, `ruff`/`mypy` fehlerfrei.
 
 ## Agenteneinsatz pro Milestone
 

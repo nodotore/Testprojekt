@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-from investment_analyzer.news.sanitize import sanitize_html_to_text
+from unittest.mock import patch
+
+from investment_analyzer.news.sanitize import _TextExtractor, sanitize_html_to_text
 
 
 def test_none_und_leerer_input_liefert_none() -> None:
@@ -53,3 +55,21 @@ def test_verschachtelte_escaped_markup_wird_nicht_erneut_ausgefuehrt() -> None:
     # zweiter Parse-Durchlauf (Sicherheitsrelevanz: kein Bypass-Risiko).
     result = sanitize_html_to_text("&lt;script&gt;alert(1)&lt;/script&gt;")
     assert result == "<script>alert(1)</script>"
+
+
+def test_ausnahme_im_parser_laesst_kein_rohes_markup_durch() -> None:
+    """Regressionstest (Milestone-8-Security-Review, unabhängige Prüfung,
+    siehe DECISIONS.md ADR-25): löst ``HTMLParser`` selbst eine Ausnahme
+    aus (im Normalbetrieb praktisch nie der Fall), darf NICHT der
+    unveränderte Rohtext zurückgegeben werden -- das widerspräche der
+    Modul-Zusicherung „kein Markup bleibt erhalten". Der Regex-Fallback
+    muss zumindest Tags entfernen."""
+
+    with patch.object(_TextExtractor, "feed", side_effect=RuntimeError("simulierter Parser-Absturz")):
+        result = sanitize_html_to_text("<div>Text<script>alert('x')</script> Ende</div>")
+
+    assert result is not None
+    assert "<script>" not in result
+    assert "<div>" not in result
+    assert "Text" in result
+    assert "Ende" in result

@@ -606,6 +606,100 @@ def test_score_entity_widerspruechliche_daten_fuehren_zu_sichtbarer_warnung(tmp_
     assert result.total_score < result.raw_score
 
 
+def test_score_entity_ignoriert_zum_stichtag_noch_unbekanntes_warnsignal(tmp_path: Path) -> None:
+    """Regressionstest für einen vom unabhängigen Milestone-8-Review gefundenen
+    Look-ahead-Bias (siehe DECISIONS.md ADR-25): ``score_entity``s
+    Risikoabzüge (``risk_deductions``, aus den Warnsignal-Checks in
+    ``risk/warning_signals.py``) hingen vor der Behebung NICHT vom
+    übergebenen ``as_of`` ab, sondern immer vom aktuellen Zeitpunkt --
+    genau der Kanal, über den ``backtesting/strategy.py::select_top_n``
+    seine Kandidaten je Rebalancing-Stichtag rankt. Dieser Test prüft die
+    vollständige Integration (score_entity -> build_fundamentals_report ->
+    run_all_checks), nicht nur die isolierte Warnsignal-Funktion (siehe
+    dafür tests/risk/test_warning_signals.py)."""
+
+    fetched_at = datetime(2024, 3, 1, tzinfo=UTC)
+    stichtag = datetime(2024, 3, 1, tzinfo=UTC)
+    session_factory = _session_factory(tmp_path)
+    with session_factory() as session:
+        sources = ensure_default_sources(session)
+        entity = find_or_create_entity(
+            session, name="Firma K (spätes Restatement)",
+            identifiers=[IdentifierSpec(id_type=IdentifierType.CIK, id_value="0000000011")],
+        )
+        session.flush()
+        source = sources["sec_edgar"]
+
+        jahre = [date(2020, 12, 31), date(2021, 12, 31), date(2022, 12, 31), date(2023, 12, 31)]
+        umsatz = [1000.0, 1100.0, 1210.0, 1331.0]
+        for d, u in zip(jahre, umsatz, strict=True):
+            session.add(_dp(entity=entity, source=source, metric=Metric.REVENUE, period_end=d, value=u, retrieved_at_utc=fetched_at))
+            session.add(_dp(entity=entity, source=source, metric=Metric.NET_INCOME, period_end=d, value=u * 0.1, retrieved_at_utc=fetched_at))
+            session.add(_dp(entity=entity, source=source, metric=Metric.GROSS_PROFIT, period_end=d, value=u * 0.4, retrieved_at_utc=fetched_at))
+            session.add(_dp(entity=entity, source=source, metric=Metric.OPERATING_INCOME, period_end=d, value=u * 0.2, retrieved_at_utc=fetched_at))
+            session.add(_dp(entity=entity, source=source, metric=Metric.OPERATING_CASH_FLOW, period_end=d, value=u * 0.15, retrieved_at_utc=fetched_at))
+            session.add(_dp(entity=entity, source=source, metric=Metric.CAPEX, period_end=d, value=-u * 0.05, retrieved_at_utc=fetched_at))
+
+        session.add(_dp(entity=entity, source=source, metric=Metric.TOTAL_EQUITY, period_end=date(2022, 12, 31), value=800.0, retrieved_at_utc=fetched_at))
+        session.add(_dp(entity=entity, source=source, metric=Metric.TOTAL_EQUITY, period_end=date(2023, 12, 31), value=900.0, retrieved_at_utc=fetched_at))
+        session.add(_dp(entity=entity, source=source, metric=Metric.LONG_TERM_DEBT, period_end=date(2023, 12, 31), value=300.0, retrieved_at_utc=fetched_at))
+        session.add(_dp(entity=entity, source=source, metric=Metric.SHORT_TERM_DEBT, period_end=date(2023, 12, 31), value=50.0, retrieved_at_utc=fetched_at))
+        session.add(_dp(entity=entity, source=source, metric=Metric.CASH_AND_EQUIVALENTS, period_end=date(2023, 12, 31), value=150.0, retrieved_at_utc=fetched_at))
+        session.add(_dp(entity=entity, source=source, metric=Metric.CURRENT_ASSETS, period_end=date(2023, 12, 31), value=500.0, retrieved_at_utc=fetched_at))
+        session.add(_dp(entity=entity, source=source, metric=Metric.CURRENT_LIABILITIES, period_end=date(2023, 12, 31), value=300.0, retrieved_at_utc=fetched_at))
+        session.add(_dp(entity=entity, source=source, metric=Metric.DEPRECIATION_AND_AMORTIZATION, period_end=date(2023, 12, 31), value=40.0, retrieved_at_utc=fetched_at))
+        session.add(_dp(entity=entity, source=source, metric=Metric.INTEREST_EXPENSE, period_end=date(2023, 12, 31), value=20.0, retrieved_at_utc=fetched_at))
+        # Zum Stichtag bereits bekannt: unauffällige Verwässerung.
+        session.add(_dp(entity=entity, source=source, metric=Metric.SHARES_DILUTED, period_end=date(2020, 12, 31), value=1000.0, retrieved_at_utc=fetched_at))
+        session.add(_dp(entity=entity, source=source, metric=Metric.SHARES_DILUTED, period_end=date(2023, 12, 31), value=1030.301, retrieved_at_utc=fetched_at))
+        session.add(
+            _dp(
+                entity=entity, source=source, metric=Metric.PRICE_CLOSE,
+                period_end=date(2024, 1, 15), value=1.00,
+                retrieved_at_utc=datetime(2024, 1, 15, tzinfo=UTC),
+            )
+        )
+        session.commit()
+        entity_id = entity.id
+
+    with session_factory() as session:
+        entity = session.get(Entity, entity_id)
+        assert entity is not None
+        ergebnis_vorher = score_entity(session, entity, as_of=stichtag)
+
+    assert ergebnis_vorher.risk_deductions == ()
+
+    # Erst NACH dem Analysestichtag trifft eine Korrektur ein, die dieselbe
+    # Periode auf eine starke Verwässerung revidiert (z. B. 10-K/A).
+    with session_factory() as session:
+        entity = session.get(Entity, entity_id)
+        assert entity is not None
+        session.add(
+            _dp(
+                entity=entity, source=source, metric=Metric.SHARES_DILUTED,
+                period_end=date(2023, 12, 31), value=1157.625,
+                retrieved_at_utc=datetime(2024, 6, 1, tzinfo=UTC),
+            )
+        )
+        session.commit()
+
+    with session_factory() as session:
+        entity = session.get(Entity, entity_id)
+        assert entity is not None
+        ergebnis_nachher_gleicher_stichtag = score_entity(session, entity, as_of=stichtag)
+        ergebnis_nachher_spaeterer_stichtag = score_entity(
+            session, entity, as_of=datetime(2024, 7, 1, tzinfo=UTC)
+        )
+
+    # Derselbe (frühere) Stichtag liefert weiterhin dasselbe Ergebnis -- die
+    # später eingetroffene Korrektur darf ihn nicht rückwirkend verändern.
+    assert ergebnis_nachher_gleicher_stichtag.risk_deductions == ()
+    assert ergebnis_nachher_gleicher_stichtag.total_score == ergebnis_vorher.total_score
+    # Zu einem Stichtag NACH der Korrektur ist der Risikoabzug dagegen sichtbar.
+    assert any(d.code == "strong_dilution" for d in ergebnis_nachher_spaeterer_stichtag.risk_deductions)
+    assert ergebnis_nachher_spaeterer_stichtag.total_score < ergebnis_vorher.total_score
+
+
 def test_score_entity_ohne_jegliche_daten_ist_datenlage_unzureichend(tmp_path: Path) -> None:
     session_factory = _session_factory(tmp_path)
     with session_factory() as session:

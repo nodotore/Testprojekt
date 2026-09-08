@@ -1,8 +1,14 @@
-# Sicherheitsrichtlinie (Planungsstand Milestone 0)
+# Sicherheitsrichtlinie (Stand Milestone 8, Security-Review abgeschlossen)
 
-**Status: geplant, wird ab Milestone 1 sukzessive umgesetzt und ab
-Milestone 8 einem eigenen Security-Review unterzogen.** Verbindliche
-Leitplanken gemäß Auftrag §12.
+**Status: umgesetzt.** Verbindliche Leitplanken gemäß Auftrag §12,
+seit Milestone 1 sukzessive implementiert und in Milestone 8 durch
+einen zweistufigen Security-Review geprüft — zunächst ein eigener
+Review (`DECISIONS.md` ADR-23/ADR-24), anschließend ein unabhängiger,
+separater Review-Durchlauf (ADR-25), der einen echten, in Auftrag §15
+relevanten Look-ahead-Bias fand (seither behoben) sowie zwei weitere
+Härtungen anstieß. Dieses Dokument beschreibt den TATSÄCHLICHEN Stand,
+nicht mehr nur die Planung — jede Behauptung hier wurde gegen den
+Code verifiziert.
 
 ## Geltungsbereich Version 1
 
@@ -35,10 +41,15 @@ Leitplanken gemäß Auftrag §12.
   kein `innerHTML` mit Rohinhalt, siehe bereits bestehende Konvention in
   diesem Repo unter `kontakt.html`).
 - Downloadgrößen werden je Connector begrenzt (`ConnectorConfig.
-  max_response_bytes`, Default 10 MB) — eine übergroße Antwort wird
-  abgelehnt (`ConnectorValidationError`), bevor sie geparst oder gecacht
-  wird; kein Retry, da eine Wiederholung dieselbe Größe liefert
-  (`connectors/base.py::_request_with_retry`, Test in
+  max_response_bytes`, Default 10 MB) — die Antwort wird gestreamt
+  gelesen und der Download WÄHREND des Empfangs abgebrochen, sobald die
+  Grenze überschritten wird (`ConnectorValidationError`, kein Retry, da
+  eine Wiederholung dieselbe Größe liefert; kein Cache-Eintrag für eine
+  abgebrochene Antwort). Ursprünglich wurde die Antwort erst vollständig
+  gepuffert und danach geprüft — das begrenzte die Verarbeitung, aber
+  nicht den Speicherverbrauch während des Downloads selbst; auf Befund
+  des unabhängigen Reviews (ADR-25) auf echtes Streaming umgestellt
+  (`connectors/base.py::_request_with_retry`, Tests in
   `tests/connectors/test_base_connector.py`).
 - JSON-Antworten werden über `response.json()` geparst — ein
   strukturell ungültiges Ergebnis (auch absichtlich manipulierter
@@ -53,6 +64,23 @@ Leitplanken gemäß Auftrag §12.
   Loopback, Link-Local) — DNS-Antworten werden vor dem Verbindungsaufbau
   geprüft, nicht nur die ursprüngliche Host-Angabe (Schutz gegen
   DNS-Rebinding).
+- **Bekannte, bewusst nicht behobene Restlücke (ADR-25):** Die DNS-
+  Prüfung (`connectors/ssrf.py::assert_safe_url`) löst den Hostnamen
+  selbst auf und validiert die IP — die anschließende tatsächliche
+  HTTP-Anfrage (`httpx.Client`) führt danach ihre EIGENE, erneute
+  DNS-Auflösung durch. Zwischen Prüfung und Verbindungsaufbau liegt ein
+  theoretisches Zeitfenster (u. a. Rate-Limiter-Wartezeit,
+  Retry-Backoff), in dem sich der DNS-Eintrag ändern könnte
+  (Time-of-check-to-time-of-use). Ein Angreifer bräuchte dafür Kontrolle
+  über die DNS-Auflösung eines bereits erlaubten Hosts — am ehesten
+  relevant bei `ir_rss.py`, dessen Host je Emittent variiert. Für dieses
+  lokale Ein-Nutzer-Werkzeug (kein Mehrbenutzer-/Internet-Dienst)
+  bewusst als tragbares Restrisiko eingestuft statt eines riskanten,
+  kurzfristigen Umbaus der HTTP-Transportschicht (IP-Pinning würde eine
+  eigene `httpx`-Transport-Implementierung erfordern). Empfohlene
+  künftige Behebung: validierte IP über einen eigenen Transport/Resolver
+  fest an die tatsächliche Verbindung binden, dokumentiert in
+  `NEXT_STEPS.md`.
 - Umleitungen (HTTP-Redirects) werden grundsätzlich NICHT automatisch
   verfolgt (`httpx.Client` mit `follow_redirects=False`, dem Default —
   verifiziert im Security-Review Milestone 8). Das ist strenger als eine
@@ -82,12 +110,18 @@ Leitplanken gemäß Auftrag §12.
 
 ## Abhängigkeiten und Software-Lieferkette
 
-- `ruff`/`mypy` als Pflicht-Checks vor jedem Merge.
-- Abhängigkeits-Scan (z. B. `pip-audit`) wird spätestens in Milestone 8
-  in den Testlauf aufgenommen; bekannte kritische CVEs blockieren den
-  Merge.
-- Pinning der Abhängigkeitsversionen (Lockfile), keine ungeprüften
-  „latest"-Installationen im Windows-Startskript.
+- `ruff`/`mypy` als Pflicht-Checks vor jedem Merge (durchgängig grün
+  gehalten, 453 Tests, Stand 2026-09-08).
+- Abhängigkeits-Scan per `pip-audit` in Milestone 8 durchgeführt:
+  „No known vulnerabilities found" (Stand 2026-09-08, siehe ADR-23).
+  Noch NICHT automatisiert in den regulären Testlauf integriert (kein
+  CI-System in diesem Projekt) — bei jedem künftigen Abhängigkeits-
+  Update manuell erneut auszuführen.
+- **Offen:** Pinning der Abhängigkeitsversionen über ein echtes
+  Lockfile (z. B. `pip-compile`/`uv lock`) ist NICHT umgesetzt —
+  `pyproject.toml` verwendet ausschließlich `>=`-Untergrenzen, `start.
+  ps1` installiert ohne Lockfile. Als offener Punkt dokumentiert statt
+  stillschweigend als erledigt behandelt (siehe `NEXT_STEPS.md`).
 
 ## Fehlerverhalten bei Quellenausfall
 
@@ -96,14 +130,23 @@ Leitplanken gemäß Auftrag §12.
   stillschweigend veralteter Wert, der als aktuell dargestellt wird
   (Auftrag §4, §15).
 
-## Offene Punkte für Milestone 8 (Security-Review)
+## Milestone-8-Security-Review — Abschluss
 
-- Penetrationsartige Tests mit manipulierten/böswilligen Webinhalten
-  (simulierte Prompt-Injection, überlange/fehlerhafte HTML-Antworten).
-- Test mit absichtlich falschen/widersprüchlichen Testdaten (muss zu
-  sichtbarer Warnung führen, nicht zu stiller Fehlkalkulation).
-- Rate-Limit-Überschreitungstest je Connector.
-- Restore-Prozess (Backup/Wiederherstellung der Datenbank) end-to-end
-  getestet.
-- Unabhängiger Security- und Plausibilitätscheck, dokumentiert
-  (Auftrag §15).
+Alle ursprünglich hier gelisteten Prüfpunkte wurden durchgeführt; siehe
+`DECISIONS.md` ADR-23 (eigener Review: Downloadgrößen-Begrenzung,
+Log-Redaction, Pflichthinweis in Exporten, Redirect-Dokumentation),
+ADR-24 (Ausfalltests: XML-Entity-Expansion im IR-RSS-Connector
+gefunden und behoben, Prompt-Injection- und Widerspruchsdaten-
+Ausfalltests, Restore-Prozess neu gebaut und getestet) und ADR-25
+(unabhängiger, separater Review-Durchlauf: ein echter Look-ahead-Bias
+in den Warnsignal-Checks gefunden und behoben, Downloadgrößen-Prüfung
+auf echtes Streaming umgestellt, HTML-Sanitizing-Fallback gehärtet,
+SSRF-Restlücke ehrlich dokumentiert statt verschwiegen).
+
+**Verbleibende, bewusst offene Punkte** (siehe `NEXT_STEPS.md` für
+Details): Lockfile für Abhängigkeits-Pinning, SSRF-IP-Pinning bis zur
+tatsächlichen Verbindung (siehe Abschnitt „SSRF-Schutz" oben),
+Auftrag-§3-„bei Widerspruch beide Werte zeigen" (mit dem aktuellen
+Kostenlos-Quellen-Set strukturell nicht auftretbar, siehe ADR-24).
+Ehrliche Gesamtbewertung gegen alle neun Auftrag-§15-Abnahmekriterien:
+`ABNAHME.md`.

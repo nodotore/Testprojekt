@@ -2,6 +2,25 @@
 
 ## Unreleased
 
+- Milestone 8 (Sicherheit und Abnahme) abgeschlossen — unabhängiger
+  Security-/Plausibilitätscheck (ADR-25): ein separater Agentenlauf
+  ohne Kenntnis der Implementierungsentscheidungen fand einen echten,
+  für Auftrag §15 blockierenden Look-ahead-Bias in
+  `risk/warning_signals.py` (Warnsignal-Checks nutzten den aktuellen
+  statt den Analysestichtag-Zeitpunkt, floss über `total_score` in die
+  Backtest-Kandidatenauswahl ein) — noch in dieser Runde behoben und
+  mit zwei neuen Regressionstests abgesichert. Zwei weitere Härtungen:
+  Downloadgrößen-Prüfung jetzt per Streaming statt erst nach
+  vollständiger Pufferung; HTML-Sanitizing-Fallback lässt kein rohes
+  Markup mehr durch. Eine SSRF-Time-of-check-to-time-of-use-Restlücke
+  bewusst nicht behoben, aber ehrlich dokumentiert (`SECURITY.md`
+  entsprechend korrigiert). Ehrliche Abnahme-Checkliste gegen alle
+  neun Auftrag-§15-Kriterien: `ABNAHME.md` (6/9 vollständig erfüllt,
+  1/9 teilweise, 2/9 strukturell fundiert aber noch nicht empirisch
+  nachweisbar — v. a. mangels Internetzugang in dieser Sandbox und
+  fehlender UI-Detailseite, beides seit früheren Milestones
+  dokumentiert). 3 neue Tests (insgesamt 453), `ruff`/`mypy` fehlerfrei.
+
 - Milestone 8 (Sicherheit und Abnahme, in Bearbeitung) — Windows-Setup
   vervollständigt + `BENUTZERHANDBUCH.md`: `start.ps1` sichert die
   Datenbank jetzt automatisch vor jeder Migration (`db/backup.py` aus

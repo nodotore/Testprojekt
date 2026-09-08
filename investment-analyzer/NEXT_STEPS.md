@@ -96,19 +96,52 @@
     `scripts/restore-database.ps1`, neues `BENUTZERHANDBUCH.md` (inkl.
     ehrlicher Abschnitt zum aktuellen UI-Stand), `README.md`
     aktualisiert. 450 Tests grün, ruff/mypy fehlerfrei.
-11c. **Aktuell nächster inhaltlicher Schritt:** Milestone 8 abschließen
-    — finale Abnahme-Checkliste gegen Auftrag §15 (neun Kriterien,
-    ehrlich als erfüllt/teilweise/nicht erfüllt bewerten) und den
-    Projekt-Doku-Abschluss. Danach — falls vom Nutzer
-    priorisiert und nicht Teil der Milestone-8-Abnahme — die beiden in
-    Milestone 4 als nicht berechenbar dokumentierten Scoring-
-    Komponenten „Wettbewerbsvorteil" und „Nachrichten und Katalysatoren"
-    auf Basis des jetzt verfügbaren `news`-Moduls ergänzen (siehe
-    ADR-17) sowie die KI-Zusammenfassung mit Quellenverweis für
-    Nachrichten-Cluster implementieren (siehe ADR-19/`news/report.py`;
-    danach ist der Prompt-Injection-Schutz aus ADR-23 Befund 5 erneut
-    zu prüfen, da dann erstmals ein LLM-Aufruf existiert).
-12. Bei Gelegenheit, nicht blockierend für Milestone 8:
+11c. ~~Milestone 8 abschließen: unabhängiger Review + Abnahme-
+    Checkliste~~ — abgeschlossen am 2026-09-08 (siehe `PROGRESS.md`/
+    ADR-25/`ABNAHME.md`). Separater, unabhängiger Agentenlauf fand
+    einen echten, blockierenden Look-ahead-Bias in
+    `risk/warning_signals.py` (fehlendes `as_of`, floss über
+    `total_score` in die Backtest-Kandidatenauswahl ein) — noch in
+    dieser Runde behoben und mit zwei Regressionstests abgesichert.
+    Zwei weitere Härtungen behoben (Downloadgrößen-Prüfung per
+    Streaming, HTML-Sanitizing-Fallback). Eine SSRF-Restlücke bewusst
+    nicht behoben, ehrlich dokumentiert. Abnahme-Checkliste gegen alle
+    neun Auftrag-§15-Kriterien in `ABNAHME.md`: 6/9 vollständig
+    erfüllt, 1/9 teilweise, 2/9 strukturell fundiert aber noch nicht
+    empirisch nachweisbar. 453 Tests grün, ruff/mypy fehlerfrei. **Damit
+    ist der ursprüngliche Milestone-0–8-Plan aus `AUFTRAG.md`/`PLAN.md`
+    vollständig durchlaufen.**
+12. **Nächste Schritte — nicht mehr Teil des ursprünglichen
+    Milestone-Plans, priorisiert nach Auftrag-Relevanz:**
+    - **Vor jedem produktiven Einsatz zwingend nachzuholen** (siehe
+      Punkt 10 oben): Live-Verifikation mit echten Datenquellen inkl.
+      Hand-Verifikation an realen Unternehmenszahlen — die einzige
+      verbleibende Lücke, die Auftrag-§15-Kriterien nicht als
+      vollständig erfüllt gelten lässt (Kriterien 1, 6, 8 in
+      `ABNAHME.md`). Sobald Internetzugang verfügbar ist: Reihenfolge
+      und konkrete Schritte siehe Punkt 10.
+    - **Ausbau der restlichen neun Auftrag-§10-UI-Seiten**
+      (Marktscreener, Kandidaten-Rangliste, Unternehmensdetail,
+      Peer-Vergleich, DCF-/Szenarioanalyse, Nachrichten/Ereignisse,
+      Watchlist/Portfolio, Backtest, Einstellungen/Quellen/
+      Prüfprotokoll) — schließt zugleich Auftrag-§15-Kriterium 8
+      („Exporte = Oberflächenwerte", aktuell nicht verifizierbar mangels
+      UI-Detailseite, siehe `ABNAHME.md`).
+    - SSRF-IP-Pinning bis zur tatsächlichen HTTP-Verbindung (ADR-25
+      Befund 4, `SECURITY.md`) — behebt die dokumentierte Time-of-
+      check-to-time-of-use-Restlücke; erfordert einen eigenen
+      `httpx`-Transport/Resolver, bewusst nicht kurzfristig umgesetzt.
+    - Lockfile für Abhängigkeits-Pinning (`SECURITY.md`, aktuell nur
+      `>=`-Untergrenzen in `pyproject.toml`).
+    - Die beiden in Milestone 4 als nicht berechenbar dokumentierten
+      Scoring-Komponenten „Wettbewerbsvorteil" und „Nachrichten und
+      Katalysatoren" auf Basis des jetzt verfügbaren `news`-Moduls
+      ergänzen (siehe ADR-17) sowie die KI-Zusammenfassung mit
+      Quellenverweis für Nachrichten-Cluster implementieren (siehe
+      ADR-19/`news/report.py`; danach ist der Prompt-Injection-Schutz
+      aus ADR-23 Befund 5 erneut zu prüfen, da dann erstmals ein
+      LLM-Aufruf existiert).
+13. Bei Gelegenheit, weiterhin nicht blockierend:
     - Notierungswährung für Alpha-Vantage-Kurse auflösen (aus
       Milestone 2 offen, weiterhin nicht erledigt — jetzt zusätzlich
       relevant für die Portfolio-Konzentrationsanalyse, ADR-20, und die

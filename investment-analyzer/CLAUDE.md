@@ -26,11 +26,12 @@ können.
 
 ## Aktueller Stand
 
-**Milestone 0 (Klärung und Datenlizenzen) — in Bearbeitung.**
-Noch keine Produktivimplementierung. Milestone 1 beginnt erst nach
-ausdrücklicher Freigabe durch den Nutzer (Auftrag §16). Siehe
-`MILESTONE_0.md` für die Fragenliste und `NEXT_STEPS.md` für den
-aktuellen Blocker.
+**Milestone 8 (Sicherheit und Abnahme, letzte Milestone) — in
+Bearbeitung.** Milestone 1–7 vollständig implementiert und getestet
+(450 automatisierte Tests, `ruff`/`mypy` fehlerfrei). Ehrliche
+Abnahmebewertung gegen alle neun Auftrag-§15-Kriterien: `ABNAHME.md`.
+Bedienungsanleitung für Endnutzer: `BENUTZERHANDBUCH.md`. Details/
+offene Punkte: `PROGRESS.md`/`TODO.md`/`NEXT_STEPS.md`.
 
 ## Nicht verhandelbare Leitplanken
 

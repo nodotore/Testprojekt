@@ -216,22 +216,31 @@ class Connector:
                 self._rate_limiter.acquire()
 
             try:
-                response = self._client.get(url, headers=self.config.default_headers)
+                # Gestreamt statt ``self._client.get(...)`` (das die komplette Antwort
+                # erst vollständig puffert, BEVOR die Größe geprüft wird) — eine
+                # böswillige/fehlerhafte Quelle könnte sonst über die
+                # Größenobergrenze hinaus Arbeitsspeicher belegen, bevor der Check
+                # überhaupt greift (Milestone-8-Security-Review, unabhängige
+                # Prüfung, siehe DECISIONS.md ADR-25). Der Abbruch erfolgt jetzt
+                # WÄHREND des Downloads, sobald die Grenze überschritten wird.
+                with self._client.stream("GET", url, headers=self.config.default_headers) as response:
+                    total_bytes = 0
+                    for chunk in response.iter_bytes():
+                        total_bytes += len(chunk)
+                        if total_bytes > self.config.max_response_bytes:
+                            # Fail loud statt eine übergroße Antwort zu verarbeiten/zu
+                            # cachen (Auftrag §12) — kein Retry, da eine Wiederholung
+                            # dieselbe übergroße Antwort nicht kleiner macht.
+                            raise ConnectorValidationError(
+                                f"Antwort von {url} überschreitet die Größenobergrenze "
+                                f"({total_bytes} > {self.config.max_response_bytes} Bytes, "
+                                "Abbruch während des Downloads) — Verarbeitung abgelehnt."
+                            )
             except httpx.TimeoutException as exc:
                 last_error = ConnectorTimeoutError(f"Timeout bei {url}: {exc}")
             except httpx.TransportError as exc:
                 last_error = ConnectorError(f"Transportfehler bei {url}: {exc}")
             else:
-                content_length = len(response.content)
-                if content_length > self.config.max_response_bytes:
-                    # Fail loud statt eine übergroße Antwort zu verarbeiten/zu
-                    # cachen (Auftrag §12) — kein Retry, da eine Wiederholung
-                    # dieselbe übergroße Antwort nicht kleiner macht.
-                    raise ConnectorValidationError(
-                        f"Antwort von {url} überschreitet die Größenobergrenze "
-                        f"({content_length} > {self.config.max_response_bytes} Bytes) — "
-                        "Verarbeitung abgelehnt."
-                    )
                 if response.status_code == 429:
                     last_error = ConnectorRateLimitedError(
                         f"Rate-Limit von {url} überschritten (HTTP 429)."

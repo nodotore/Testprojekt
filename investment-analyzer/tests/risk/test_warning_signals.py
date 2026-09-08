@@ -329,3 +329,70 @@ def test_run_all_checks_sammelt_mehrere_signale(tmp_path: Path) -> None:
 
     codes = {s.code for s in signale}
     assert codes == {"cashflow_divergence", "strong_dilution"}
+
+
+def test_run_all_checks_ignoriert_zum_stichtag_noch_unbekannte_daten(tmp_path: Path) -> None:
+    """Regressionstest für einen vom unabhängigen Milestone-8-Review gefundenen
+    Look-ahead-Bias (siehe DECISIONS.md ADR-25): ``run_all_checks`` (und jeder
+    einzelne Check) muss ``as_of`` konsequent durchreichen. Vorher griff jeder
+    Check ohne ``as_of``-Parameter intern auf den AKTUELLEN Zeitpunkt zurück
+    (``series.get_*``-Default), sodass ein Warnsignal-Ausschlag von einem
+    Datenpunkt abhing, der zum eigentlichen Analysestichtag noch gar nicht
+    bekannt war -- genau das Szenario, das Auftrag §9 (kein Look-ahead)
+    verbietet, hier aber nicht über eine neue Entity (wie im bereits
+    bestehenden Backtest-Test), sondern über eine SPÄTER eintreffende
+    Zeile für eine bereits bekannte Entity."""
+
+    session_factory, entity_id, source = _setup_entity(tmp_path)
+    stichtag = datetime(2024, 3, 1, tzinfo=UTC)
+
+    with session_factory() as session:
+        entity = session.get(Entity, entity_id)
+        assert entity is not None
+        # Zum Stichtag bereits bekannt: unauffällige Verwässerung (1 %/Jahr).
+        session.add_all(
+            [
+                _dp(
+                    entity=entity, source=source, metric=Metric.SHARES_DILUTED,
+                    period_end=date(2020, 12, 31), value=1000.0, retrieved_at_utc=FETCHED_AT,
+                ),
+                _dp(
+                    entity=entity, source=source, metric=Metric.SHARES_DILUTED,
+                    period_end=date(2023, 12, 31), value=1030.301, retrieved_at_utc=FETCHED_AT,
+                ),
+            ]
+        )
+        session.commit()
+
+    with session_factory() as session:
+        entity = session.get(Entity, entity_id)
+        assert entity is not None
+        vor_restatement = run_all_checks(session, entity, as_of=stichtag)
+
+    assert vor_restatement == []  # unauffällig -- unterhalb der Verwässerungsschwelle
+
+    # Erst NACH dem Analysestichtag trifft eine Korrektur ein (z. B. 10-K/A),
+    # die dieselbe Periode auf eine starke Verwässerung revidiert.
+    with session_factory() as session:
+        entity = session.get(Entity, entity_id)
+        assert entity is not None
+        session.add(
+            _dp(
+                entity=entity, source=source, metric=Metric.SHARES_DILUTED,
+                period_end=date(2023, 12, 31), value=1157.625,
+                retrieved_at_utc=datetime(2024, 6, 1, tzinfo=UTC),
+            )
+        )
+        session.commit()
+
+    with session_factory() as session:
+        entity = session.get(Entity, entity_id)
+        assert entity is not None
+        nach_restatement_alter_stichtag = run_all_checks(session, entity, as_of=stichtag)
+        nach_restatement_neuer_stichtag = run_all_checks(session, entity, as_of=datetime(2024, 7, 1, tzinfo=UTC))
+
+    # Derselbe (frühere) Stichtag liefert weiterhin dasselbe Ergebnis --
+    # die später eingetroffene Korrektur darf ihn nicht rückwirkend verändern.
+    assert nach_restatement_alter_stichtag == vor_restatement == []
+    # Zu einem Stichtag NACH der Korrektur ist das Signal dagegen sichtbar.
+    assert {s.code for s in nach_restatement_neuer_stichtag} == {"strong_dilution"}

@@ -270,7 +270,7 @@ def build_fundamentals_report(
         shares_diluted_growth=shares_growth,
     )
 
-    warning_signals = run_all_checks(session, entity)
+    warning_signals = run_all_checks(session, entity, as_of=reference)
     peers = find_peers(session, entity)
 
     scalar_fields: dict[str, float | None] = {

@@ -754,6 +754,125 @@ gefunden. Der `RateLimiter` selbst ist bereits umfassend auf
 Fensterlogik/Wartezeit getestet (`tests/connectors/
 test_rate_limiter.py`, aus Milestone 1/2).
 
+## ADR-25: Unabhängiger Security-/Plausibilitätscheck (Auftrag §15, Kriterium 9)
+
+**Kontext:** Auftrag §15 verlangt „ein unabhängiger Security- und
+Plausibilitätscheck ist dokumentiert". Der eigene Review des
+implementierenden Agenten (ADR-23/ADR-24) ist gründlich, aber nicht
+unabhängig — derselbe Akteur, der den Code schrieb, kann dieselben
+blinden Flecken haben. Daher wurde ein separater, eigenständiger
+Agentenlauf ohne Kenntnis der vorherigen Implementierungsentscheidungen
+beauftragt, denselben Codestand mit frischem Blick gegen `SECURITY.md`,
+`METHODOLOGY.md` und die Backtesting-Look-ahead-Garantie zu prüfen —
+die in `PLAN.md` (Milestone 8) vorgesehene Rollentrennung
+(„security-reviewer" + „test-agent"), hier umgesetzt über einen
+zweiten, unabhängigen Agentendurchlauf statt formal getrennter
+Sub-Agenten-Rollen.
+
+**Befund 1 — BLOCKIEREND, gefunden und behoben: Look-ahead-Bias in den
+Warnsignal-Checks.** `risk/warning_signals.py::run_all_checks` nahm
+KEIN `as_of`-Argument entgegen; jeder einzelne Check (`check_cashflow_
+divergence`, `check_strong_dilution`, `check_high_stock_based_
+compensation`, `check_unusual_receivables_growth`, `check_unusual_
+inventory_growth`, `check_late_filing`) griff dadurch intern auf den
+Default in `series.get_*()` zurück — den AKTUELLEN Zeitpunkt, nicht den
+Analysestichtag. `fundamentals/report.py::build_fundamentals_report`
+rief `run_all_checks(session, entity)` ohne `as_of` auf, obwohl JEDE
+andere Abfrage in derselben Funktion `reference` korrekt durchreicht.
+Da `FundamentalsReport.warning_signals` direkt in
+`scoring/score.py::compute_score`s `risk_deductions`/`total_score`
+einfließt und `total_score` wiederum das Ranking-Kriterium von
+`backtesting/strategy.py::select_top_n` ist, konnte ein Backtest „per
+Februar" durch Warnsignal-relevante Daten beeinflusst werden, die erst
+NACH Februar bekannt wurden (z. B. eine spätere Restatement-Zeile) —
+ein struktureller Verstoß gegen das Point-in-time-Prinzip (Auftrag §9)
+und damit gegen genau das Auftrag-§15-Kriterium „Backtests nachweislich
+kein Look-ahead", das Milestone 8 abnehmen soll.
+
+Warum der bereits bestehende Backtest-Look-ahead-Test
+(`tests/backtesting/test_engine.py::
+test_spaeter_bekannt_gewordener_kandidat_veraendert_frueheres_
+backtest_ergebnis_nicht`) das nicht auffing: er fügt eine komplett NEUE
+Entity erst später hinzu, nie eine später eintreffende Zeile für eine
+BEREITS bekannte Entity — genau die vom Fehler betroffene Konstellation
+blieb dadurch ungetestet. Eine Lücke im Testdesign, kein reiner
+Implementierungsfehler.
+
+**Behoben:** `run_all_checks` und jede einzelne `check_*`-Funktion in
+`risk/warning_signals.py` nehmen jetzt ein `as_of`-Schlüsselwortargument
+entgegen und reichen es an jede `series.get_*`-Abfrage durch;
+`fundamentals/report.py` ruft `run_all_checks(session, entity,
+as_of=reference)` auf. Zwei neue Regressionstests decken exakt das vom
+Review benannte Szenario ab: eine später eintreffende Korrektur für
+eine bereits bekannte Entity darf ein früheres Ergebnis nicht verändern
+— einmal auf Ebene der isolierten Warnsignal-Funktion
+(`tests/risk/test_warning_signals.py::
+test_run_all_checks_ignoriert_zum_stichtag_noch_unbekannte_daten`) und
+einmal auf Ebene der vollständigen Score-Integration
+(`tests/scoring/test_score.py::
+test_score_entity_ignoriert_zum_stichtag_noch_unbekanntes_
+warnsignal`).
+
+**Befund 2 — sollte behoben werden, behoben: Downloadgrößen-Prüfung
+puffert erst vollständig, bevor sie greift.** `_request_with_retry`
+rief `self._client.get(url, ...)` (nicht gestreamt) auf und prüfte
+`len(response.content) > max_response_bytes` erst DANACH — zu diesem
+Zeitpunkt hatte `httpx` die komplette Antwort bereits vollständig in
+den Speicher gelesen. Die „10-MB-Obergrenze" begrenzte damit nicht den
+Speicherverbrauch gegen eine böswillige/fehlerhafte Quelle, sondern
+lehnte nur nachträglich ab. Behoben: `_request_with_retry` nutzt jetzt
+`self._client.stream("GET", url, ...)` und bricht den Download ab,
+sobald die kumulierte Byte-Anzahl die Grenze überschreitet — VOR
+vollständigem Empfang. Bestehende Tests
+(`tests/connectors/test_base_connector.py`) bestätigen unverändertes
+Verhalten nach außen (Ablehnung, kein Retry, kein Cache-Eintrag).
+
+**Befund 3 — sollte behoben werden, behoben: HTML-Sanitizing-Fallback
+widersprach der eigenen Zusicherung.** `news/sanitize.py::
+sanitize_html_to_text` fiel im (praktisch nie eintretenden) Fall einer
+Ausnahme in `HTMLParser` auf `text = raw` zurück — den UNVERÄNDERTEN
+Rohtext inklusive jeglichen Markups, obwohl die Modul-Zusicherung
+„kein Markup bleibt erhalten" lautet. Kein akutes Risiko (kein
+`unsafe_allow_html` irgendwo im Code, siehe ADR-23 Befund 6), aber eine
+latente Falle für künftigen UI-Code, der sich auf diese Zusicherung
+verlässt. Behoben: Fallback nutzt jetzt einen groben Regex-Tag-
+Entferner (`_TAG_PATTERN`) statt des Rohtexts. Regressionstest erzwingt
+eine `HTMLParser`-Ausnahme künstlich (`unittest.mock.patch.object`) und
+prüft, dass kein Markup mehr durchrutscht
+(`tests/news/test_sanitize.py::
+test_ausnahme_im_parser_laesst_kein_rohes_markup_durch`).
+
+**Befund 4 — bewusst NICHT behoben, ehrlich dokumentiert:
+SSRF-Time-of-check-to-time-of-use-Lücke.** `connectors/ssrf.py::
+assert_safe_url` löst den Hostnamen selbst auf und validiert die IP;
+die tatsächliche HTTP-Anfrage über `httpx.Client` führt danach ihre
+EIGENE, erneute DNS-Auflösung durch — zwischen Prüfung und
+Verbindungsaufbau liegt ein theoretisches Zeitfenster (Rate-Limiter-
+Wartezeit, Retry-Backoff), in dem sich ein DNS-Eintrag ändern könnte.
+Eine robuste Behebung (validierte IP über einen eigenen Transport/
+Resolver fest an die tatsächliche Verbindung binden) erfordert einen
+nicht trivialen Umbau der HTTP-Transportschicht — als riskante,
+kurzfristige Änderung an sicherheitskritischem Code bewusst NICHT in
+dieser Sitzung umgesetzt, um kein neues, ungetestetes Risiko
+einzuführen. Für dieses lokale Ein-Nutzer-Werkzeug (keine
+Mehrbenutzer-/Internet-Dienst-Exposition) als tragbares Restrisiko
+eingestuft, aber die vorherige Dokumentation (die dies implizit als
+vollständig geschlossen darstellte) in `SECURITY.md` korrigiert.
+Empfohlene künftige Behebung dort und in `NEXT_STEPS.md` festgehalten.
+
+**Befund 5 — bestätigt, kein Fund:** Finanzmathematik (DCF, Multiples,
+Fundamentalkennzahlen, Scoring) wurde als stimmig mit `METHODOLOGY.md`
+und mit Standard-Finanzanalyse-Definitionen bewertet. Der
+defusedxml-Fix aus ADR-24 wurde als korrekt eingebunden bestätigt.
+
+**Gesamturteil des unabhängigen Reviews:** Vor Behebung von Befund 1
+wäre eine Milestone-8-Abnahme nicht zu rechtfertigen gewesen — das
+Look-ahead-Kriterium (Auftrag §15) war faktisch verletzt. Nach
+Behebung aller vier Befunde (453 Tests grün, `ruff`/`mypy` fehlerfrei)
+gilt Auftrag-§15-Kriterium 7 („Backtests nachweislich kein Look-ahead")
+als erfüllt — siehe `ABNAHME.md` für die vollständige, kriterienweise
+Abnahmebewertung.
+
 ## Noch zu treffende Entscheidungen
 
 Keine blockierenden Entscheidungen mehr offen für Milestone 1–7 (alle

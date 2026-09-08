@@ -816,3 +816,93 @@ Modul `db/backup_cli.py`, neues `tests/db/test_backup_cli.py`, neues
 
 **Nächster Schritt:** Finale Abnahme-Checkliste gegen Auftrag §15 +
 Milestone-8-/Projekt-Doku-Abschluss — siehe `NEXT_STEPS.md`.
+
+## Milestone 8 — Abschluss: unabhängiger Review + Abnahme-Checkliste
+
+**Status:** Milestone 8 abgeschlossen (2026-09-08), mit ehrlich
+dokumentierten offenen Punkten (siehe `ABNAHME.md`).
+
+**Unabhängiger Security-/Plausibilitätscheck (Auftrag §15 Kriterium
+9):** Der eigene Review (ADR-23/24) ist gründlich, aber nicht
+unabhängig — derselbe Akteur, der den Code baute, kann dieselben
+blinden Flecken haben. Deshalb wurde ein separater Agentenlauf ohne
+Kenntnis der vorherigen Implementierungsentscheidungen beauftragt,
+denselben Codestand mit frischem Blick zu prüfen (Sicherheit + Code-
+und Finanzmathematik-Plausibilität). Das war kein Alibi-Durchlauf:
+
+- **Blockierender Fund, noch in dieser Runde behoben:**
+  `risk/warning_signals.py::run_all_checks` nahm kein `as_of` entgegen
+  — jeder Warnsignal-Check griff dadurch auf den AKTUELLEN Zeitpunkt
+  statt den Analysestichtag zurück. Da Warnsignale direkt in
+  `total_score` einfließen und `total_score` das Ranking-Kriterium von
+  `backtesting/strategy.py::select_top_n` ist, konnte ein Backtest
+  „per Februar" durch erst nach Februar bekannt gewordene Daten
+  beeinflusst werden — ein struktureller Verstoß gegen Auftrag §9, den
+  der bestehende Look-ahead-Test nicht abdeckte (er testet eine neue
+  Entity, nicht eine später eintreffende Zeile für eine bereits
+  bekannte Entity). Behoben: `as_of` wird jetzt durch jeden Warnsignal-
+  Check gereicht; zwei neue Regressionstests beweisen exakt das
+  gefundene Szenario.
+- **Zwei weitere Härtungen, behoben:** Downloadgrößen-Prüfung puffert
+  nicht mehr erst vollständig, bevor sie greift (jetzt `httpx`-
+  Streaming mit Abbruch während des Downloads). HTML-Sanitizing-
+  Fallback (`news/sanitize.py`) lässt im Ausnahmefall kein rohes
+  Markup mehr durch (Regex-Tag-Entferner statt Rohtext-Rückfall).
+- **Eine Restlücke, bewusst nicht behoben, ehrlich dokumentiert:**
+  SSRF-Time-of-check-to-time-of-use — die DNS-Validierung und die
+  tatsächliche Verbindung nutzen zwei getrennte DNS-Auflösungen; ein
+  robuster Fix (IP-Pinning über einen eigenen Transport) hätte einen
+  riskanten Umbau der HTTP-Transportschicht ohne ausreichende Testzeit
+  bedeutet. Als tragbares Restrisiko für dieses lokale
+  Ein-Nutzer-Werkzeug eingestuft, `SECURITY.md` entsprechend korrigiert
+  (vorherige Formulierung stellte den Schutz als vollständiger dar, als
+  er tatsächlich ist).
+- **Finanzmathematik (DCF, Multiples, Fundamentalkennzahlen, Scoring)
+  bestätigt:** stimmig mit `METHODOLOGY.md`, keine Fehlbezeichnungen
+  oder Vorzeichenfehler gefunden.
+
+Vollständig dokumentiert in `DECISIONS.md` ADR-25.
+
+**Abnahme-Checkliste (`ABNAHME.md`):** ehrliche, kriterienweise
+Bewertung aller neun Auftrag-§15-Kriterien. Ergebnis:
+- **Vollständig erfüllt (6/9):** keine unbelegte Kennzahl (strukturell),
+  Datenalter/Marktdatenverzögerung sichtbar, klarer Fehler bei
+  Quellenausfall, ≥30 Tests (453 statt 30), Backtests ohne Look-ahead
+  (nach Behebung des o. g. Fundes), unabhängiger Security-Check
+  dokumentiert.
+- **Teilweise erfüllt (1/9):** DCF/Kernkennzahlen nur an präzisen
+  synthetischen Testfällen hand-verifiziert, nicht an echten,
+  veröffentlichten Geschäftszahlen (Internetzugang in dieser Sandbox
+  weiterhin blockiert, dieselbe Einschränkung seit Milestone 2).
+- **Nicht erfüllt/nicht verifizierbar (2/9):** „kompletter Lauf
+  reproduzierbar" — nur mit synthetischen Daten nachgewiesen, nie mit
+  echten externen Quellen tatsächlich ausgeführt; „Exporte = UI-Werte"
+  — strukturell abgesichert (ADR-21), aber es existiert noch keine
+  UI-Seite, die Berichtswerte überhaupt anzeigt, also nichts zum
+  Vergleichen.
+
+**Tests:** 3 neue Tests (insgesamt 453, alle grün) — Look-ahead-
+Regressionstest auf Warnsignal-Ebene, auf Score-Integrationsebene, und
+HTML-Sanitizing-Fallback-Regressionstest. `ruff check .` und
+`mypy src` beide fehlerfrei.
+
+**Geänderte/neue Dateien:** `risk/warning_signals.py`,
+`fundamentals/report.py`, `connectors/base.py`, `news/sanitize.py`,
+`SECURITY.md`, `DECISIONS.md` (ADR-25), neues `ABNAHME.md`, zugehörige
+Tests.
+
+**Verbleibende offene Punkte** (ehrlich dokumentiert, nicht
+blockierend für den Abschluss dieser Entwicklungssession):
+Lockfile für Abhängigkeits-Pinning, SSRF-IP-Pinning, Live-Verifikation
+mit echten Daten/API-Schlüsseln, Hand-Verifikation an realen
+Unternehmenszahlen, restliche neun UI-Seiten aus Auftrag §10, Auftrag-
+§3-Mehrquellen-Widerspruchsanzeige (strukturell mit dem aktuellen
+Kostenlos-Quellen-Set nicht auftretbar). Alle in `TODO.md`/
+`NEXT_STEPS.md`/`SECURITY.md` geführt.
+
+**Nächster Schritt:** Keiner innerhalb des ursprünglichen
+Milestone-0–8-Plans — alle acht Milestones sind implementiert,
+getestet und ehrlich abgenommen. Siehe `NEXT_STEPS.md` für die
+Prioritätenliste künftiger, nicht mehr durch den ursprünglichen
+Auftragsplan vorgegebener Arbeit (Live-Datenverifikation, restliche
+UI-Seiten, KI-Zusammenfassung).

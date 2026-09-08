@@ -27,6 +27,7 @@ nachvollziehbar bleibt (Auftrag §11).
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime
 
 from sqlalchemy.orm import Session
 
@@ -62,15 +63,16 @@ class WarningSignal:
 
 
 def check_cashflow_divergence(
-    session: Session, entity: Entity, *, horizon_years: int = 1
+    session: Session, entity: Entity, *, horizon_years: int = 1, as_of: datetime | None = None
 ) -> WarningSignal | None:
     """Sinkender operativer Cashflow trotz steigendem Nettogewinn (Auftrag §6)."""
 
     net_income_growth = growth_rate(
-        series.get_annual_series(session, entity, Metric.NET_INCOME), horizon_years=horizon_years
+        series.get_annual_series(session, entity, Metric.NET_INCOME, as_of=as_of),
+        horizon_years=horizon_years,
     )
     ocf_growth = growth_rate(
-        series.get_annual_series(session, entity, Metric.OPERATING_CASH_FLOW),
+        series.get_annual_series(session, entity, Metric.OPERATING_CASH_FLOW, as_of=as_of),
         horizon_years=horizon_years,
     )
     if net_income_growth is None or ocf_growth is None:
@@ -95,11 +97,13 @@ def check_strong_dilution(
     *,
     horizon_years: int = 3,
     threshold: float = DEFAULT_DILUTION_THRESHOLD,
+    as_of: datetime | None = None,
 ) -> WarningSignal | None:
     """Starke Aktienverwässerung (Auftrag §6)."""
 
     dilution = growth_rate(
-        series.get_annual_series(session, entity, Metric.SHARES_DILUTED), horizon_years=horizon_years
+        series.get_annual_series(session, entity, Metric.SHARES_DILUTED, as_of=as_of),
+        horizon_years=horizon_years,
     )
     if dilution is None or dilution <= threshold:
         return None
@@ -116,12 +120,18 @@ def check_strong_dilution(
 
 
 def check_high_stock_based_compensation(
-    session: Session, entity: Entity, *, threshold: float = DEFAULT_SBC_REVENUE_THRESHOLD
+    session: Session,
+    entity: Entity,
+    *,
+    threshold: float = DEFAULT_SBC_REVENUE_THRESHOLD,
+    as_of: datetime | None = None,
 ) -> WarningSignal | None:
     """Hohe aktienbasierte Vergütung im Verhältnis zum Umsatz (Auftrag §6)."""
 
-    sbc_point = series.get_latest_annual_value(session, entity, Metric.STOCK_BASED_COMPENSATION)
-    revenue_point = series.get_latest_annual_value(session, entity, Metric.REVENUE)
+    sbc_point = series.get_latest_annual_value(
+        session, entity, Metric.STOCK_BASED_COMPENSATION, as_of=as_of
+    )
+    revenue_point = series.get_latest_annual_value(session, entity, Metric.REVENUE, as_of=as_of)
     if sbc_point is None or revenue_point is None:
         return None
 
@@ -151,12 +161,14 @@ def _unusual_stock_growth_vs_revenue(
     label: str,
     horizon_years: int,
     gap_threshold: float,
+    as_of: datetime | None = None,
 ) -> WarningSignal | None:
     metric_growth = growth_rate(
-        series.get_annual_series(session, entity, metric), horizon_years=horizon_years
+        series.get_annual_series(session, entity, metric, as_of=as_of), horizon_years=horizon_years
     )
     revenue_growth = growth_rate(
-        series.get_annual_series(session, entity, Metric.REVENUE), horizon_years=horizon_years
+        series.get_annual_series(session, entity, Metric.REVENUE, as_of=as_of),
+        horizon_years=horizon_years,
     )
     if metric_growth is None or revenue_growth is None:
         return None
@@ -182,6 +194,7 @@ def check_unusual_receivables_growth(
     *,
     horizon_years: int = 1,
     gap_threshold: float = DEFAULT_UNUSUAL_GROWTH_GAP,
+    as_of: datetime | None = None,
 ) -> WarningSignal | None:
     """Ungewöhnliches Forderungswachstum relativ zum Umsatz (Auftrag §6)."""
 
@@ -193,6 +206,7 @@ def check_unusual_receivables_growth(
         label="Forderungen",
         horizon_years=horizon_years,
         gap_threshold=gap_threshold,
+        as_of=as_of,
     )
 
 
@@ -202,6 +216,7 @@ def check_unusual_inventory_growth(
     *,
     horizon_years: int = 1,
     gap_threshold: float = DEFAULT_UNUSUAL_GROWTH_GAP,
+    as_of: datetime | None = None,
 ) -> WarningSignal | None:
     """Ungewöhnliches Vorratswachstum relativ zum Umsatz (Auftrag §6)."""
 
@@ -213,11 +228,16 @@ def check_unusual_inventory_growth(
         label="Vorräte",
         horizon_years=horizon_years,
         gap_threshold=gap_threshold,
+        as_of=as_of,
     )
 
 
 def check_late_filing(
-    session: Session, entity: Entity, *, threshold_days: int = DEFAULT_LATE_FILING_DAYS
+    session: Session,
+    entity: Entity,
+    *,
+    threshold_days: int = DEFAULT_LATE_FILING_DAYS,
+    as_of: datetime | None = None,
 ) -> WarningSignal | None:
     """Möglicherweise verspätete jüngste Jahreseinreichung (Auftrag §6).
 
@@ -228,7 +248,7 @@ def check_late_filing(
     dieses numerischen Checks.
     """
 
-    datapoint = series.get_latest_annual_datapoint(session, entity, Metric.REVENUE)
+    datapoint = series.get_latest_annual_datapoint(session, entity, Metric.REVENUE, as_of=as_of)
     if datapoint is None or datapoint.period_end is None:
         return None
 
@@ -259,12 +279,25 @@ ALL_CHECKS = (
 )
 
 
-def run_all_checks(session: Session, entity: Entity) -> list[WarningSignal]:
-    """Führt alle implementierten Warnsignal-Checks aus und liefert die ausgelösten."""
+def run_all_checks(
+    session: Session, entity: Entity, *, as_of: datetime | None = None
+) -> list[WarningSignal]:
+    """Führt alle implementierten Warnsignal-Checks aus und liefert die ausgelösten.
+
+    ``as_of`` MUSS von Aufrufern mit Point-in-time-Anspruch (insbesondere
+    ``fundamentals/report.py``, das dies für Backtests braucht) durchgereicht
+    werden — ohne ``as_of`` griffe jeder Check sonst auf den aktuellen
+    Zeitpunkt zurück (``series.get_*``-Default) und könnte zum Stichtag
+    ``as_of`` noch nicht bekannte Restatements/spätere Einreichungen/
+    Verwässerung einfließen lassen (Look-ahead-Bias, Auftrag §9). Bis zur
+    Behebung dieses Fehlens (Milestone-8-Security-Review, unabhängige
+    Prüfung, siehe ADR-25) wurde ``as_of`` hier schlicht nicht
+    entgegengenommen.
+    """
 
     results = []
     for check in ALL_CHECKS:
-        signal = check(session, entity)
+        signal = check(session, entity, as_of=as_of)
         if signal is not None:
             results.append(signal)
     return results
