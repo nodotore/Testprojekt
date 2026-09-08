@@ -188,7 +188,31 @@
 - [ ] Risikofreien Zins für Sharpe/Sortino aus einer echten Zinsreihe
       (z. B. EZB/FRED) beziehen statt Default 0.
 
-## Milestone 8 — Sicherheit und Abnahme (nächster Schritt, letzte Milestone)
+## Milestone 8 — Sicherheit und Abnahme (in Bearbeitung, letzte Milestone)
 
-Siehe `PLAN.md` für Details; wird hier aufgeschlüsselt, sobald die
-Milestone beginnt.
+- [x] Security-Review: jede `SECURITY.md`-Behauptung gegen den Code
+      geprüft (siehe ADR-23). Drei echte Lücken gefunden und behoben:
+      Downloadgrößen-Begrenzung (`ConnectorConfig.max_response_bytes`),
+      unvollständige Log-Redaction (`record.args`), fehlender
+      Pflichthinweis in Berichtsexporten (`reports/bundle.py::
+      MANDATORY_DISCLAIMER`). Ein Dokumentationsfehler korrigiert
+      (Redirect-Verhalten). `pip-audit`: keine bekannten Schwachstellen
+      (Stand 2026-09-08).
+- [x] Prompt-Injection-Schutz verifiziert: kein LLM-Aufruf existiert
+      aktuell im Code; `news/sanitize.py` entfernt HTML/Skripte vor
+      jeder Speicherung. Erneut zu prüfen, sobald die KI-Zusammenfassung
+      (ADR-19) implementiert wird.
+- [ ] Ausfalltests: manipulierte/böswillige Webinhalte, absichtlich
+      falsche/widersprüchliche Testdaten, Rate-Limit-Überschreitung je
+      Connector, Restore-Prozess (Alembic Up-/Downgrade-Zyklus) end-to-end.
+- [ ] Windows-Setup vervollständigen (`start.ps1`/`start.bat` härten);
+      Windows-Installer-Binärdatei (.exe/.msi) wird NICHT gebaut — in
+      dieser Linux-Sandbox keine Windows-Build-Tools verfügbar; als
+      bewusste, dokumentierte Einschränkung festgehalten.
+- [ ] `BENUTZERHANDBUCH.md` (Installation, Ersteinrichtung, alle Module,
+      Datenschutz/Sicherheit, Haftungsausschluss, Fehlerbehebung).
+- [ ] Abnahme-Checkliste gegen Auftrag §15 (neun Kriterien) ehrlich
+      durchgehen (erfüllt/teilweise/nicht erfüllt), Ergebnis in
+      `PROGRESS.md`/`README.md` dokumentieren.
+- [ ] Finaler Doku-Abschluss (alle Pflichtdateien), `pytest`/`ruff`/
+      `mypy` grün, Commit + Push.

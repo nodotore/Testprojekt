@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 
 from sqlalchemy import select
@@ -7,9 +8,16 @@ from sqlalchemy import select
 from investment_analyzer.audit.logger import AuditLogger
 from investment_analyzer.audit.logging_setup import configure_logging
 from investment_analyzer.audit.models import AuditEventType, AuditLogEntry
-from investment_analyzer.audit.redaction import redact
+from investment_analyzer.audit.redaction import RedactingFilter, redact
 from investment_analyzer.config.settings import AppSettings
 from investment_analyzer.db import create_all_tables, create_db_engine, create_session_factory
+
+
+def _record(msg: str, args: object = ()) -> logging.LogRecord:
+    return logging.LogRecord(
+        name="test", level=logging.INFO, pathname=__file__, lineno=1,
+        msg=msg, args=args, exc_info=None,
+    )
 
 
 def _session_factory(tmp_path: Path):
@@ -72,6 +80,38 @@ def test_redact_maskiert_bearer_token() -> None:
 def test_redact_laesst_normalen_text_unveraendert() -> None:
     text = "SEC EDGAR lieferte 42 Datenpunkte für Beispiel AG."
     assert redact(text) == text
+
+
+def test_redacting_filter_bereinigt_msg() -> None:
+    record = _record("Anfrage mit api_key=SUPERGEHEIM123 fehlgeschlagen")
+    assert RedactingFilter().filter(record) is True
+    assert "SUPERGEHEIM123" not in record.msg
+
+
+def test_redacting_filter_bereinigt_tuple_args() -> None:
+    """Der eigentliche Härtungsfall: ein Secret als %-Style-Platzhalter-Argument
+    (``logger.info("key=%s", value)``) taucht in ``record.msg`` selbst NICHT
+    auf — ohne Prüfung von ``record.args`` würde es unredigiert durchrutschen."""
+
+    record = _record("Zugriff mit Schlüssel %s", ("api_key=SUPERGEHEIM123",))
+    RedactingFilter().filter(record)
+    assert "SUPERGEHEIM123" not in record.args[0]  # type: ignore[index]
+
+
+def test_redacting_filter_bereinigt_dict_args() -> None:
+    # logging-Konvention: ein einzelnes Mapping-Argument wird als 1-Tupel
+    # übergeben (siehe logging.Logger.info(msg, some_dict) -> args=(some_dict,)),
+    # logging.LogRecord entpackt es aber intern sofort wieder zum bloßen
+    # Mapping (self.args = args[0]) -- record.args ist danach das dict selbst.
+    record = _record("Zugriff mit %(header)s", ({"header": "Authorization: Bearer abcdef123456.ghijk"},))
+    RedactingFilter().filter(record)
+    assert "abcdef123456" not in record.args["header"]  # type: ignore[index]
+
+
+def test_redacting_filter_laesst_nicht_string_args_unveraendert() -> None:
+    record = _record("Verarbeitet %d Datenpunkte", (42,))
+    RedactingFilter().filter(record)
+    assert record.args == (42,)
 
 
 def test_configure_logging_schreibt_logdatei_und_redigiert(tmp_path: Path) -> None:

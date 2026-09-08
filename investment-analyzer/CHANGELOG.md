@@ -2,6 +2,22 @@
 
 ## Unreleased
 
+- Milestone 8 (Sicherheit und Abnahme, in Bearbeitung) — Security-Review
+  abgeschlossen (ADR-23): systematischer Abgleich jeder `SECURITY.md`-
+  Behauptung mit dem tatsächlichen Codeverhalten. Drei echte Lücken
+  gefunden und behoben — Downloadgrößen-Begrenzung je Connector
+  (`ConnectorConfig.max_response_bytes`, kein Retry/Cache bei
+  Überschreitung), unvollständige Log-Redaction (`RedactingFilter`
+  bereinigt jetzt auch `record.args`, nicht nur `record.msg`),
+  fehlender Auftrag-§12-Pflichthinweis in den Berichtsexporten
+  (`reports/bundle.py::MANDATORY_DISCLAIMER`, jetzt in JSON-/Excel-/
+  PDF-Export sichtbar, zuvor nur in der UI). Ein Dokumentationsfehler
+  korrigiert (Redirect-Verhalten von `httpx.Client`, tatsächlich
+  strenger als dokumentiert). `pip-audit`: keine bekannten
+  Schwachstellen. 10 neue Tests (insgesamt 435), `ruff`/`mypy`
+  fehlerfrei. Ausfalltests, Windows-Setup-Härtung, Benutzerhandbuch und
+  die finale Auftrag-§15-Abnahme-Checkliste stehen noch aus.
+
 - Milestone 7 (Backtesting) umgesetzt: Point-in-time-Universum
   (`backtesting/universe.py`, ADR-22 — eine Entity gilt als „zum
   Stichtag bekannt", wenn mindestens ein `DataPoint` mit

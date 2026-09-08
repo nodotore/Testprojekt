@@ -673,3 +673,62 @@ metrics, strategy, engine, report); zugehörige Tests unter
 
 **Nächster Schritt:** Milestone 8 (Sicherheit und Abnahme) gemäß
 `PLAN.md` — siehe `NEXT_STEPS.md`.
+
+## Milestone 8 — Sicherheit und Abnahme
+
+**Status:** in Bearbeitung (2026-09-08). Security-Review abgeschlossen,
+Ausfalltests/Windows-Setup/Benutzerhandbuch/Abnahme-Checkliste stehen
+noch aus.
+
+**Umgesetzt (Security-Review, siehe ADR-23):**
+
+- Systematischer Abgleich jeder `SECURITY.md`-Behauptung mit dem
+  tatsächlichen Codeverhalten (nicht nur mit der Absicht).
+- **Drei echte Lücken gefunden und behoben:**
+  1. Downloadgrößen-Begrenzung fehlte im Code trotz Dokumentation —
+     `ConnectorConfig.max_response_bytes` (Default 10 MB) ergänzt,
+     Prüfung in `connectors/base.py::_request_with_retry` vor jedem
+     Parsing/Caching; übergroße Antwort → `ConnectorValidationError`
+     ohne Retry, ohne Cache-Schreibung.
+  2. `RedactingFilter` bereinigte nur `record.msg`, nicht
+     `record.args` — ein Secret als %-Style-Platzhalter-Argument wäre
+     unredigiert ins Log gelangt. Behoben: `record.args` (Tupel- und
+     Dict-Form) läuft jetzt ebenfalls durch `redact()`.
+  3. Der Auftrag-§12-Pflichthinweis existierte nur in der UI, nicht in
+     den Berichtsexporten (JSON/Excel/PDF) — Auftrag §12 verlangt ihn
+     „an JEDER Berichtsausgabe sichtbar". Behoben:
+     `reports/bundle.py::MANDATORY_DISCLAIMER` als Pflichtfeld
+     `ReportHeader.disclaimer`, gerendert in allen drei Exportformaten.
+- **Ein Dokumentationsfehler korrigiert:** `SECURITY.md` behauptete,
+  Redirects würden „nur innerhalb der Allowlist gefolgt" — tatsächlich
+  (verifiziert per `inspect.signature`) folgt `httpx.Client` nie
+  automatisch einem Redirect (`follow_redirects=False`, nie
+  überschrieben). Strenger als dokumentiert, aber die Doku war
+  sachlich falsch — korrigiert.
+- **Verifiziert, keine Lücke:** Secrets-Handling (`SecretStore`),
+  SSRF-Schutz (Allowlist + DNS-Rebinding-Prüfung), `.gitignore`-
+  Ausschlüsse, Prompt-Injection-Schutz (kein LLM-Aufruf existiert
+  aktuell im Code — `news/sanitize.py` entfernt HTML/Skripte bereits
+  vor jeder Speicherung; erneut zu prüfen, sobald die KI-
+  Zusammenfassung aus ADR-19 implementiert wird).
+- `pip-audit`: „No known vulnerabilities found" (Stand 2026-09-08).
+
+**Tests:** 10 neue Tests (insgesamt 435, alle grün) — 3 für die
+Downloadgrößen-Begrenzung (`tests/connectors/test_base_connector.py`),
+4 für die `record.args`-Redaction (`tests/audit/test_audit.py`), 3 für
+den Pflichthinweis in allen drei Exportformaten
+(`tests/reports/test_bundle.py`, `test_excel_export.py`,
+`test_pdf_export.py`). `ruff check .` und `mypy src` beide fehlerfrei.
+
+**Geänderte Dateien:** `connectors/base.py`, `audit/redaction.py`,
+`reports/bundle.py`, `reports/excel_export.py`, `reports/pdf_export.py`,
+`SECURITY.md`, zugehörige Tests.
+
+**Offene Risiken/nächste Schritte:** Ausfalltests (manipulierte
+Webinhalte, falsche Testdaten, Rate-Limit-Überschreitung,
+Restore-Prozess), Windows-Setup-Härtung + `BENUTZERHANDBUCH.md`, sowie
+die finale Abnahme-Checkliste gegen Auftrag §15 stehen noch aus (siehe
+`TODO.md`/`NEXT_STEPS.md`).
+
+**Nächster Schritt:** Ausfalltests (Milestone 8, Fortsetzung) — siehe
+`NEXT_STEPS.md`.

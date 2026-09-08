@@ -120,6 +120,23 @@ def test_zusammenfassung_zeigt_dieselben_werte_wie_json_export(tmp_path: Path) -
     assert values["Gesamtscore (0-100)"] == as_dict["score"]["total_score"]
 
 
+def test_zusammenfassung_enthaelt_pflichthinweis(tmp_path: Path) -> None:
+    """Auftrag §12: Hinweis muss an jeder Berichtsausgabe sichtbar sein."""
+
+    session_factory = _session_factory(tmp_path)
+    with session_factory() as session:
+        bundle = _build_bundle(session, tmp_path)
+        wb = build_excel_workbook(bundle)
+
+    ws = wb["Zusammenfassung"]
+    all_rows = [
+        (ws.cell(row=r, column=1).value, ws.cell(row=r, column=2).value) for r in range(1, ws.max_row + 1)
+    ]
+    hinweis_werte = [value for label, value in all_rows if label == "Hinweis"]
+    assert hinweis_werte
+    assert "keine Anlageberatung" in hinweis_werte[0]
+
+
 def test_quellen_sheet_enthaelt_alle_registrierten_quellen(tmp_path: Path) -> None:
     session_factory = _session_factory(tmp_path)
     with session_factory() as session:

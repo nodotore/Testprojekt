@@ -187,6 +187,10 @@ def build_pdf_bytes(bundle: ReportBundle) -> bytes:
 
     story.append(_heading("Annahmen"))
     story.extend(_bullets(list(data["assumptions"])))
+    story.append(Spacer(1, 20))
+
+    story.append(_heading("Hinweis"))
+    story.append(_para(header["disclaimer"]))
 
     doc.build(story)
     return buffer.getvalue()

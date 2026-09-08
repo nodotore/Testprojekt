@@ -18,7 +18,7 @@ from investment_analyzer.entity_resolution.models import Entity, IdentifierType
 from investment_analyzer.entity_resolution.service import IdentifierSpec, find_or_create_entity
 from investment_analyzer.fundamentals.metrics import Metric
 from investment_analyzer.normalization.models import DataPoint, ValueKind
-from investment_analyzer.reports.bundle import build_report_bundle
+from investment_analyzer.reports.bundle import MANDATORY_DISCLAIMER, build_report_bundle
 from investment_analyzer.scoring.score import compute_score
 
 FETCHED_AT = datetime(2024, 3, 1, tzinfo=UTC)
@@ -111,6 +111,26 @@ def test_build_report_bundle_liefert_konsistenten_header(tmp_path: Path) -> None
     assert bundle.header.score_coverage == bundle.score.coverage
     assert bundle.header.score_classification == bundle.score.classification
     assert "Streaming" in bundle.header.market_data_delay_note
+
+
+def test_build_report_bundle_enthaelt_pflichthinweis(tmp_path: Path) -> None:
+    """Auftrag §12: der Hinweis muss an JEDER Berichtsausgabe sichtbar sein,
+    nicht nur in der UI (siehe SECURITY.md, Milestone-8-Sicherheitsreview)."""
+
+    session_factory = _session_factory(tmp_path)
+    with session_factory() as session:
+        ensure_default_sources(session)
+        entity = find_or_create_entity(
+            session, name="Firma ohne Daten",
+            identifiers=[IdentifierSpec(id_type=IdentifierType.CIK, id_value="0000000010")],
+        )
+        session.commit()
+
+        bundle = build_report_bundle(session, entity)
+
+    assert bundle.header.disclaimer == MANDATORY_DISCLAIMER
+    assert "keine Anlageberatung" in bundle.header.disclaimer
+    assert "Totalverlust" in bundle.header.disclaimer
 
 
 def test_build_report_bundle_score_konsistent_mit_eigenstaendiger_berechnung(tmp_path: Path) -> None:

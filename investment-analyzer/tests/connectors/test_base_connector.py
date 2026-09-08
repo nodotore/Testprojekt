@@ -37,13 +37,15 @@ def _config(**overrides) -> ConnectorConfig:
     return ConnectorConfig(**base)
 
 
-def _make_connector(handler, *, cache_dir: Path | None = None, rate_limiter=None, sleeps=None):
+def _make_connector(
+    handler, *, cache_dir: Path | None = None, rate_limiter=None, sleeps=None, config_overrides=None
+):
     transport = httpx.MockTransport(handler)
     client = httpx.Client(transport=transport)
     cache = FileCache(cache_dir) if cache_dir is not None else None
     sleep_fn = (sleeps.append if sleeps is not None else lambda s: None)
     return Connector(
-        _config(),
+        _config(**(config_overrides or {})),
         http_client=client,
         cache=cache,
         rate_limiter=rate_limiter,
@@ -221,3 +223,42 @@ def test_cache_wird_nicht_fuer_fehlgeschlagene_abrufe_geschrieben(tmp_path: Path
 
     key = cache_key_for(f"https://{ALLOWED_HOST}/v1/immer-kaputt", None)
     assert cache.get("test_connector", key) is None
+
+
+def test_uebergrosse_antwort_wird_ohne_retry_abgelehnt(tmp_path: Path) -> None:
+    calls = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        calls.append(request)
+        return httpx.Response(200, content=b"x" * 100)
+
+    connector = _make_connector(handler, cache_dir=tmp_path, config_overrides={"max_response_bytes": 50})
+    with pytest.raises(ConnectorValidationError, match="Größenobergrenze"):
+        connector.get_json("/v1/riesige-antwort")
+
+    assert len(calls) == 1  # kein Retry -- eine Wiederholung würde dieselbe Größe liefern
+
+
+def test_uebergrosse_antwort_wird_nicht_gecacht(tmp_path: Path) -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, content=b"x" * 100)
+
+    connector = _make_connector(handler, cache_dir=tmp_path, config_overrides={"max_response_bytes": 50})
+    with pytest.raises(ConnectorValidationError):
+        connector.get_json("/v1/riesige-antwort")
+
+    cache = FileCache(tmp_path)
+    from investment_analyzer.connectors.cache import cache_key_for
+
+    key = cache_key_for(f"https://{ALLOWED_HOST}/v1/riesige-antwort", None)
+    assert cache.get("test_connector", key) is None
+
+
+def test_antwort_innerhalb_der_groessenobergrenze_wird_akzeptiert(tmp_path: Path) -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json={"foo": "bar"})
+
+    connector = _make_connector(handler, cache_dir=tmp_path, config_overrides={"max_response_bytes": 1024})
+    result = connector.get_json("/v1/data")
+
+    assert result.data == {"foo": "bar"}

@@ -590,6 +590,73 @@ beiden Größen, wird 0 statt eines geratenen Werts angenommen. Dieselbe
 Vereinfachung wie die bereits in Milestone 3 dokumentierte
 Non-GAAP-/Ausschüttungsquote-Vereinfachung.
 
+## ADR-23: Milestone-8-Security-Review — Befunde und Korrekturen
+
+**Kontext:** Auftrag §15/PLAN.md verlangen zu Milestone 8 einen
+dokumentierten Security-Review, der jede Behauptung in `SECURITY.md`
+gegen das tatsächliche Verhalten des Codes prüft (nicht nur gegen die
+Absicht). Durchgeführt: systematischer Abgleich jedes `SECURITY.md`-
+Abschnitts mit dem Code (Secrets, SSRF, Downloadgrößen, Redirects,
+Log-Redaction, Pflichthinweis, Abhängigkeits-Scan).
+
+**Befund 1 — echte Implementierungslücke, behoben: fehlende
+Downloadgrößen-Begrenzung.** `SECURITY.md` behauptete eine
+Obergrenze je Connector; im Code existierte keine. Behoben durch
+`ConnectorConfig.max_response_bytes` (Default 10 MB) und eine Prüfung
+in `connectors/base.py::_request_with_retry` VOR jeder Statuscode-
+Verzweigung/Parsing — eine übergroße Antwort wird ohne Retry und ohne
+Cache-Schreibung mit `ConnectorValidationError` abgelehnt.
+
+**Befund 2 — echte Implementierungslücke, behoben: unvollständige
+Log-Redaction.** `RedactingFilter` bereinigte nur `record.msg`, nicht
+`record.args` — ein Secret, das ausschließlich als %-Style-Platzhalter-
+Argument übergeben wird (`logger.info("key=%s", value)`), taucht in
+`record.msg` selbst nie auf und rutschte unredigiert durch. Behoben:
+`record.args` wird jetzt ebenfalls durch `redact()` geführt (Tupel- und
+Dict-Form, siehe `logging`-Konvention für Mapping-Argumente).
+
+**Befund 3 — echte Compliance-Lücke, behoben: Pflichthinweis fehlte in
+Berichtsexporten.** Auftrag §12 verlangt den Hinweis „an JEDER
+Berichtsausgabe sichtbar", nicht nur in der UI. Der Hinweis existierte
+bislang ausschließlich in `ui/app.py`. Behoben durch
+`reports/bundle.py::MANDATORY_DISCLAIMER` (eigenständige Konstante,
+NICHT aus `ui/` importiert — `reports/` darf laut Modulgrenzen ADR-3
+nicht von `ui/` abhängen) als Pflichtfeld `ReportHeader.disclaimer`,
+gerendert in der Zusammenfassung von JSON-, Excel- und PDF-Export.
+
+**Befund 4 — Dokumentationsfehler, korrigiert: Redirect-Verhalten.**
+`SECURITY.md` behauptete, Redirects würden „nur innerhalb derselben
+Allowlist gefolgt". Tatsächlich verifiziert (`inspect.signature
+(httpx.Client.__init__)`): `follow_redirects` ist `False` per Default
+und wird im gesamten Code nie überschrieben — Redirects werden also nie
+automatisch verfolgt (eine 3xx-Antwort ist für den Connector ein
+gewöhnlicher, nicht-fehlerhafter Statuscode ohne Folgeaufruf). Das ist
+strenger als die dokumentierte Allowlist-Prüfung pro Sprung, aber die
+Dokumentation war sachlich falsch — korrigiert in `SECURITY.md`.
+
+**Befund 5 — kein Fund, aber verifiziert: Prompt-Injection.** Es
+existiert im gesamten Code aktuell KEIN Aufruf eines Sprachmodells
+(verifiziert per Volltextsuche) — die in Auftrag §8a vorgesehene
+KI-Zusammenfassung ist noch nicht implementiert (offener Punkt seit
+ADR-19/`news/report.py`). Der dokumentierte Prompt-Injection-Schutz
+(„abgerufener Fremdtext wird nie als Instruktion behandelt") ist damit
+aktuell nicht akut prüfbar, aber auch nicht verletzt — `news/
+sanitize.py` entfernt bereits jegliches HTML-Markup/Skripte, bevor der
+Text überhaupt gespeichert wird. Sobald eine KI-Zusammenfassung
+implementiert wird, MUSS dieser Review-Punkt erneut geprüft werden
+(Nachtrag in `TODO.md`).
+
+**Befund 6 — kein Fund, verifiziert als bereits korrekt:** Secrets
+(`SecretStore`, ADR-5), SSRF-Schutz (Allowlist + DNS-Rebinding-Prüfung
+vor Verbindungsaufbau, `connectors/ssrf.py`), `.gitignore`-Ausschlüsse
+für lokale Secret-/DB-Dateien, Abhängigkeits-Scan (`pip-audit`: „No
+known vulnerabilities found", Stand 2026-09-08).
+
+**Offen, nicht blockierend, dokumentiert statt verschwiegen:**
+`SecretStore` ist noch in keine UI-Seite eingebunden (es existiert
+noch keine Screener-/Einstellungsseite, die einen API-Schlüssel
+entgegennimmt) — nachzuholen, sobald diese UI-Seite gebaut wird.
+
 ## Noch zu treffende Entscheidungen
 
 Keine blockierenden Entscheidungen mehr offen für Milestone 1–7 (alle

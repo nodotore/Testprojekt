@@ -34,9 +34,16 @@ Leitplanken gemäß Auftrag §12.
 - HTML wird vor jeder Weiterverarbeitung/Anzeige bereinigt (Sanitizing,
   kein `innerHTML` mit Rohinhalt, siehe bereits bestehende Konvention in
   diesem Repo unter `kontakt.html`).
-- Dateitypen und Downloadgrößen werden je Connector begrenzt (z. B. nur
-  PDF/HTML/JSON, Obergrenze in MB); unerwartete Dateitypen werden
-  verworfen und protokolliert.
+- Downloadgrößen werden je Connector begrenzt (`ConnectorConfig.
+  max_response_bytes`, Default 10 MB) — eine übergroße Antwort wird
+  abgelehnt (`ConnectorValidationError`), bevor sie geparst oder gecacht
+  wird; kein Retry, da eine Wiederholung dieselbe Größe liefert
+  (`connectors/base.py::_request_with_retry`, Test in
+  `tests/connectors/test_base_connector.py`).
+- JSON-Antworten werden über `response.json()` geparst — ein
+  strukturell ungültiges Ergebnis (auch absichtlich manipulierter
+  Inhalt) führt zu einem `ConnectorValidationError` statt zu einer
+  stillen Fehlinterpretation.
 
 ## SSRF-Schutz
 
@@ -46,8 +53,13 @@ Leitplanken gemäß Auftrag §12.
   Loopback, Link-Local) — DNS-Antworten werden vor dem Verbindungsaufbau
   geprüft, nicht nur die ursprüngliche Host-Angabe (Schutz gegen
   DNS-Rebinding).
-- Umleitungen (HTTP-Redirects) werden nur innerhalb derselben Allowlist
-  gefolgt, sonst abgebrochen.
+- Umleitungen (HTTP-Redirects) werden grundsätzlich NICHT automatisch
+  verfolgt (`httpx.Client` mit `follow_redirects=False`, dem Default —
+  verifiziert im Security-Review Milestone 8). Das ist strenger als eine
+  Allowlist-Prüfung pro Redirect-Sprung: eine 3xx-Antwort wird als
+  gewöhnlicher (nicht per se fehlerhafter) Statuscode behandelt und ohne
+  Folgeaufruf zurückgegeben, sodass ein Connector nie unbeabsichtigt
+  einem Redirect außerhalb der Allowlist folgt.
 
 ## Rechtliche Nutzung von Quellen
 

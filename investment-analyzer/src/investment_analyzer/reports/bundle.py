@@ -55,6 +55,7 @@ class ReportHeader:
     score_coverage: float
     score_classification: str
     market_data_delay_note: str
+    disclaimer: str
 
 
 @dataclass(frozen=True)
@@ -79,6 +80,21 @@ _MARKET_DATA_DELAY_NOTE = (
     "Kein Streaming-Marktdaten-Feed angebunden — Kurse sind Einzelabruf-"
     "Snapshots (Alpha Vantage GLOBAL_QUOTE), tatsächliche Verzögerung zum "
     "Live-Markt ist nicht gemessen und wird hier nicht vorgetäuscht."
+)
+
+#: Auftrag §12: „Deutlicher, an jeder Berichtsausgabe sichtbarer Hinweis" —
+#: gilt für JEDE Berichtsausgabe, nicht nur die UI. Reiner Klartext (kein
+#: Markdown/HTML), damit die Zelle in Excel und der Absatz im PDF korrekt
+#: dargestellt werden. Inhaltlich an ``ui/app.py``s ``DISCLAIMER`` angelehnt,
+#: aber bewusst als eigene Konstante geführt statt importiert — ``reports/``
+#: darf laut Modulgrenzen (siehe ``DECISIONS.md`` ADR-3) nicht von ``ui/``
+#: abhängen.
+MANDATORY_DISCLAIMER = (
+    "Nur allgemeine Information — keine Anlageberatung. Dieser Bericht liefert "
+    "Research-Ergebnisse im Simulationsmodus, keine individuelle Anlage-, Steuer- "
+    "oder Rechtsberatung und keine Kauf-/Verkaufsempfehlung. Es werden keine "
+    "Wertpapiere automatisch gehandelt. Investitionen in Wertpapiere können bis "
+    "zum Totalverlust des eingesetzten Kapitals führen."
 )
 
 
@@ -133,6 +149,7 @@ def build_report_bundle(
         score_coverage=score.coverage,
         score_classification=score.classification,
         market_data_delay_note=_MARKET_DATA_DELAY_NOTE,
+        disclaimer=MANDATORY_DISCLAIMER,
     )
 
     return ReportBundle(

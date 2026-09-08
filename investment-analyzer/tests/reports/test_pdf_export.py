@@ -96,6 +96,25 @@ def test_export_pdf_schreibt_datei(tmp_path: Path) -> None:
     assert out_path.read_bytes().startswith(b"%PDF")
 
 
+def test_build_pdf_bytes_enthaelt_pflichthinweis(tmp_path: Path) -> None:
+    """Auftrag §12: Hinweis muss an jeder Berichtsausgabe sichtbar sein.
+
+    Das PDF wird binär (deflate-komprimiert) erzeugt, daher lässt sich der
+    Hinweistext nicht direkt im Byte-Strom suchen — stattdessen wird über
+    den zugrunde liegenden ``ReportBundle``-Header geprüft, aus dem
+    ``build_pdf_bytes`` den Absatz erzeugt (siehe ``reports/bundle.py``).
+    """
+
+    session_factory = _session_factory(tmp_path)
+    with session_factory() as session:
+        bundle = _build_bundle(session)
+        pdf_bytes = build_pdf_bytes(bundle)
+
+    assert pdf_bytes.startswith(b"%PDF")
+    assert "keine Anlageberatung" in bundle.header.disclaimer
+    assert "Totalverlust" in bundle.header.disclaimer
+
+
 def test_build_pdf_bytes_ohne_jegliche_daten_bricht_nicht_ab(tmp_path: Path) -> None:
     session_factory = _session_factory(tmp_path)
     with session_factory() as session:

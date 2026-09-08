@@ -75,14 +75,28 @@
       (täglicher Abruf), dann `run_backtest()`/`build_backtest_report()`
       über mehrere Rebalancing-Stichtage ausführen und die Kennzahlen
       stichprobenartig von Hand nachrechnen.
-11. **Aktuell nächster inhaltlicher Schritt:** Milestone 8 (Sicherheit
-    und Abnahme, letzte Milestone) gemäß `PLAN.md` beginnen;
-    anschließend die beiden in Milestone 4 als nicht berechenbar
-    dokumentierten Scoring-Komponenten „Wettbewerbsvorteil" und
-    „Nachrichten und Katalysatoren" auf Basis des jetzt verfügbaren
-    `news`-Moduls ergänzen (siehe ADR-17) sowie die KI-Zusammenfassung
-    mit Quellenverweis für Nachrichten-Cluster implementieren (siehe
-    ADR-19/`news/report.py`).
+11. ~~Milestone 8 Security-Review durchführen~~ — abgeschlossen am
+    2026-09-08 (siehe `PROGRESS.md`/ADR-23): drei echte Lücken
+    behoben (Downloadgrößen-Begrenzung, unvollständige Log-Redaction,
+    fehlender Pflichthinweis in Berichtsexporten), ein
+    Dokumentationsfehler korrigiert (Redirect-Verhalten), `pip-audit`
+    ohne Befund. 435 Tests grün, ruff/mypy fehlerfrei.
+11a. **Aktuell nächster inhaltlicher Schritt:** Milestone 8 fortsetzen —
+    Ausfalltests (manipulierte/böswillige Webinhalte, absichtlich
+    falsche/widersprüchliche Testdaten, Rate-Limit-Überschreitung je
+    Connector, Restore-Prozess/Alembic-Up-Down-Zyklus end-to-end),
+    danach Windows-Setup härten + `BENUTZERHANDBUCH.md` schreiben,
+    danach die finale Abnahme-Checkliste gegen Auftrag §15 (neun
+    Kriterien, ehrlich als erfüllt/teilweise/nicht erfüllt bewerten)
+    und den Projekt-Doku-Abschluss. Danach — falls vom Nutzer
+    priorisiert und nicht Teil der Milestone-8-Abnahme — die beiden in
+    Milestone 4 als nicht berechenbar dokumentierten Scoring-
+    Komponenten „Wettbewerbsvorteil" und „Nachrichten und Katalysatoren"
+    auf Basis des jetzt verfügbaren `news`-Moduls ergänzen (siehe
+    ADR-17) sowie die KI-Zusammenfassung mit Quellenverweis für
+    Nachrichten-Cluster implementieren (siehe ADR-19/`news/report.py`;
+    danach ist der Prompt-Injection-Schutz aus ADR-23 Befund 5 erneut
+    zu prüfen, da dann erstmals ein LLM-Aufruf existiert).
 12. Bei Gelegenheit, nicht blockierend für Milestone 8:
     - Notierungswährung für Alpha-Vantage-Kurse auflösen (aus
       Milestone 2 offen, weiterhin nicht erledigt — jetzt zusätzlich

@@ -46,6 +46,12 @@ class ConnectorConfig:
     max_retries: int = 3
     backoff_base_seconds: float = 0.5
     cache_ttl_seconds: int = 3600
+    #: Obergrenze für die Antwortgröße (Auftrag §12: „Downloadgrößen begrenzen").
+    #: Verhindert, dass eine kompromittierte/böswillige Quelle (v. a. relevant
+    #: bei IR-RSS, dessen Host je Emittent variiert) eine übergroße Antwort
+    #: zur Verarbeitung/Speicherung zwingt. 10 MB ist großzügig genug für
+    #: JSON-/XML-Antworten aller angebundenen Quellen.
+    max_response_bytes: int = 10 * 1024 * 1024
 
 
 @dataclass(frozen=True)
@@ -216,6 +222,16 @@ class Connector:
             except httpx.TransportError as exc:
                 last_error = ConnectorError(f"Transportfehler bei {url}: {exc}")
             else:
+                content_length = len(response.content)
+                if content_length > self.config.max_response_bytes:
+                    # Fail loud statt eine übergroße Antwort zu verarbeiten/zu
+                    # cachen (Auftrag §12) — kein Retry, da eine Wiederholung
+                    # dieselbe übergroße Antwort nicht kleiner macht.
+                    raise ConnectorValidationError(
+                        f"Antwort von {url} überschreitet die Größenobergrenze "
+                        f"({content_length} > {self.config.max_response_bytes} Bytes) — "
+                        "Verarbeitung abgelehnt."
+                    )
                 if response.status_code == 429:
                     last_error = ConnectorRateLimitedError(
                         f"Rate-Limit von {url} überschritten (HTTP 429)."

@@ -100,9 +100,12 @@ def _sheet_zusammenfassung(wb: Workbook, data: dict[str, Any]) -> None:
     row = _write_bullet_list(ws, "Positive Faktoren", score["top_positive_factors"], start_row=row)
     row = _write_bullet_list(ws, "Risiken", score["top_risks"], start_row=row)
     row = _write_bullet_list(ws, "Gegenargumente", score["counterarguments"], start_row=row)
-    _write_bullet_list(
+    row = _write_bullet_list(
         ws, "Bedingungen für Ungültigkeit der These", score["invalidation_conditions"], start_row=row
     )
+
+    ws.cell(row=row, column=1, value="Hinweis")
+    ws.cell(row=row, column=2, value=_excel_safe(header["disclaimer"]))
 
 
 def _sheet_kennzahlen(wb: Workbook, data: dict[str, Any]) -> None:
