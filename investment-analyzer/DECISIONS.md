@@ -1105,6 +1105,66 @@ ganz ohne Daten) — Rangfolge, Score-Werte, Klassifikationen und die
 Warnung bei unzureichender Datenlage rendern korrekt, keine
 unerwarteten Konsolenfehler.
 
+## ADR-29: Peer-Vergleich — Vergleichstabelle je aus vollständigem ReportBundle, keine Größenfilterung
+
+**Kontext:** Vierte der neun noch fehlenden Auftrag-§10-Oberflächen-
+seiten: **Peer-Vergleich** (Auftrag §10, Seite 5) — eine eigenständige
+Vergleichstabelle über ein ausgewähltes Unternehmen und seine Peers.
+`fundamentals/peers.py::find_peers` (Milestone 3) lag bereits vor und
+wird bereits in `ui/detail.py`s Bewertungsabschnitt als reine
+PE-/EV-EBITDA-Momentaufnahme genutzt (ADR-27) — diese neue Seite geht
+darüber hinaus mit einer vollständigen Kennzahlen-Gegenüberstellung.
+
+**Entscheidung — je Zeile ein vollständiger `ReportBundle`, wie
+`ui/ranking.py` (ADR-28):** Statt nur `find_peers()` plus einer
+schlanken Multiples-Momentaufnahme zu nutzen, baut `ui/peers.py` für
+das ausgewählte Unternehmen UND jeden gefundenen Peer den vollständigen
+`ReportBundle` und liest Score, Klassifikation, Wachstum, Margen,
+Rendite, Verschuldung und Multiples einheitlich aus
+`bundle.fundamentals`/`bundle.valuation`/`bundle.score`. Damit gilt
+dieselbe strukturelle Garantie wie zwischen Detailseite, Rangliste und
+Exporten (ADR-21/27/28): der für das ausgewählte Unternehmen gezeigte
+Score/die Margen usw. können auf dieser Seite nicht von den auf der
+Unternehmensdetail-Seite gezeigten Werten abweichen.
+
+**Entscheidung — Peers ausschließlich über `find_peers()`, keine
+eigene Größenfilterung:** `fundamentals/peers.py` dokumentiert bereits
+selbst, dass die Peer-Zuordnung aktuell rein über den SIC-Code läuft,
+ohne Größenähnlichkeit (Marktkapitalisierung). Diese UI-Seite fügt
+bewusst KEINEN eigenen Filter (z. B. „nur ähnlich große Peers")
+hinzu — das wäre eine über die dokumentierte Fähigkeit von
+`find_peers()` hinausgehende, hier still eingeführte Zusatzlogik. Die
+bereits in `DECISIONS.md`/`TODO.md` geführte Lücke (Größenfilter für
+Peer-Gruppen) bleibt an ihrem angestammten Ort dokumentiert, nicht
+durch eine UI-Sonderlösung umgangen.
+
+**Entscheidung — kein SIC-Code / keine Peers sind unterschiedliche,
+beide ehrliche Zustände:** Zwei Fälle werden bewusst unterschiedlich
+kommuniziert, statt beide unter einer generischen „keine Ergebnisse"-
+Meldung zu verstecken: (a) das ausgewählte Unternehmen hat noch keinen
+SIC-Code (wird erst beim SEC-EDGAR-Abruf über den Marktscreener
+automatisch gesetzt, siehe ADR-26) — hier ist ein Peer-Vergleich
+grundsätzlich nicht möglich; (b) das Unternehmen hat einen SIC-Code,
+aber es gibt (noch) kein anderes erfasstes Unternehmen mit demselben
+Code — hier fehlt nur die Datenbasis, nicht die Klassifikation. Beide
+Meldungen erklären zusätzlich, dass Peers ausschließlich unter bereits
+über den Marktscreener erfassten Unternehmen gesucht werden, nicht in
+einem größeren Aktienuniversum (dieselbe dokumentierte Grenze wie bei
+der Kandidaten-Rangliste, ADR-28).
+
+**Tests:** 5 neue Tests (insgesamt 487) — 2 reine Tests
+(`tests/ui/test_peers.py`: `find_peers` filtert korrekt nach SIC-Code,
+`_vergleichstabelle()` enthält ausgewähltes Unternehmen und Peer mit
+plausiblen Werten), 3 neue `AppTest`-Smoke-Tests
+(`tests/ui/test_app_smoke.py`): kein Unternehmen erfasst, Unternehmen
+ohne SIC-Code, sowie zwei Unternehmen mit identischem SIC-Code inkl.
+Vergleichstabelle. `ruff`/`mypy` fehlerfrei. Zusätzlich mit echtem
+Playwright-Browser gegen einen laufenden Streamlit-Prozess mit drei
+synthetisch befüllten Unternehmen verifiziert (zwei mit identischem
+SIC-Code, eines mit abweichendem) — der Peer mit abweichendem SIC-Code
+erscheint korrekt NICHT in der Vergleichstabelle, keine unerwarteten
+Konsolenfehler.
+
 ## Noch zu treffende Entscheidungen
 
 Keine blockierenden Entscheidungen mehr offen für Milestone 1–7 (alle

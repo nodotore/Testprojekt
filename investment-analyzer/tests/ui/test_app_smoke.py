@@ -103,6 +103,77 @@ def _seed_entity_mit_fundamentaldaten(data_dir: Path) -> None:
     engine.dispose()
 
 
+def _seed_zwei_peer_unternehmen(data_dir: Path) -> None:
+    """Legt zwei synthetische Unternehmen mit identischem SIC-Code an,
+    damit ``Peer-Vergleich`` (ui/peers.py) einen Peer findet und eine
+    vollständige Vergleichstabelle rendert."""
+
+    engine = create_db_engine(f"sqlite:///{data_dir / 'investment_analyzer.db'}")
+    session_factory = create_session_factory(engine)
+    with session_factory() as session:
+        sources = ensure_default_sources(session)
+        source = sources["sec_edgar"]
+
+        def dp(entity, metric: Metric, period_end: date, value: float) -> DataPoint:
+            return DataPoint(
+                entity_id=entity.id,
+                source_id=source.id,
+                metric_name=metric.value,
+                period_start=None,
+                period_end=period_end,
+                published_at=period_end,
+                retrieved_at_utc=FETCHED_AT,
+                value_raw=str(value),
+                value_normalized=value,
+                unit="USD",
+                currency="USD",
+                value_kind=ValueKind.REPORTED,
+                document_url="https://example.invalid/doc",
+                document_type="10-K",
+                content_hash="x" * 64,
+                document_id=f"acc-{entity.id}-{metric.value}-{period_end.isoformat()}",
+            )
+
+        def seed(name: str, cik: str) -> None:
+            entity = find_or_create_entity(
+                session, name=name, identifiers=[IdentifierSpec(id_type=IdentifierType.CIK, id_value=cik)]
+            )
+            entity.sic_code = "7372"
+            session.flush()
+
+            jahre = [date(2020, 12, 31), date(2021, 12, 31), date(2022, 12, 31), date(2023, 12, 31)]
+            umsatz = [1000.0, 1100.0, 1210.0, 1331.0]
+            for jahr, u in zip(jahre, umsatz, strict=True):
+                session.add(dp(entity, Metric.REVENUE, jahr, u))
+                session.add(dp(entity, Metric.OPERATING_CASH_FLOW, jahr, u * 0.15))
+                session.add(dp(entity, Metric.CAPEX, jahr, -u * 0.05))
+                session.add(dp(entity, Metric.NET_INCOME, jahr, u * 0.1))
+
+            letztes_jahr = date(2023, 12, 31)
+            for metric, value in (
+                (Metric.OPERATING_INCOME, 180.0),
+                (Metric.DEPRECIATION_AND_AMORTIZATION, 40.0),
+                (Metric.TOTAL_EQUITY, 1000.0),
+                (Metric.LONG_TERM_DEBT, 300.0),
+                (Metric.SHORT_TERM_DEBT, 100.0),
+                (Metric.CASH_AND_EQUIVALENTS, 200.0),
+                (Metric.SHARES_DILUTED, 100.0),
+                (Metric.EPS_DILUTED, 2.0),
+                (Metric.INTEREST_EXPENSE, 20.0),
+                (Metric.CURRENT_ASSETS, 500.0),
+                (Metric.CURRENT_LIABILITIES, 250.0),
+                (Metric.DIVIDENDS_PAID, 30.0),
+                (Metric.GROSS_PROFIT, 500.0),
+            ):
+                session.add(dp(entity, metric, letztes_jahr, value))
+            session.add(dp(entity, Metric.PRICE_CLOSE, date(2024, 1, 15), 20.0))
+
+        seed("Firma G (synthetisches Beispiel)", "0000000007")
+        seed("Firma H (Peer)", "0000000008")
+        session.commit()
+    engine.dispose()
+
+
 def test_app_zeigt_ersteinrichtung_ohne_gespeichertes_profil(tmp_path, monkeypatch) -> None:
     monkeypatch.setenv("IA_DATA_DIR", str(tmp_path))
     _reset_caches()
@@ -248,6 +319,74 @@ def test_app_kandidatenrangliste_zeigt_rangfolge_nach_score(tmp_path, monkeypatc
     df = at.dataframe[0].value
     assert list(df["Unternehmen"]) == ["Firma G (synthetisches Beispiel)"]
     assert df.loc[0, "Score (0–100)"] > 0
+
+    _reset_caches()
+
+
+def test_app_peervergleich_ohne_unternehmen_zeigt_hinweis(tmp_path, monkeypatch) -> None:
+    monkeypatch.setenv("IA_DATA_DIR", str(tmp_path))
+    _reset_caches()
+    _migrate_test_db(tmp_path)
+
+    profil = default_profile()
+    profil.haftungsausschluss_akzeptiert = True
+    ProfileStore(tmp_path / "profile.json").save(profil)
+
+    at = AppTest.from_file(APP_PATH)
+    at.run(timeout=30)
+    at.sidebar.radio[0].set_value("Peer-Vergleich").run(timeout=30)
+
+    assert not at.exception, [str(e) for e in at.exception]
+    header_texte = " ".join(h.value for h in at.header)
+    assert "Peer-Vergleich" in header_texte
+    infos = " ".join(i.value for i in at.info)
+    assert "Noch keine Unternehmen erfasst" in infos
+
+    _reset_caches()
+
+
+def test_app_peervergleich_ohne_sic_code_zeigt_warnung(tmp_path, monkeypatch) -> None:
+    monkeypatch.setenv("IA_DATA_DIR", str(tmp_path))
+    _reset_caches()
+    _migrate_test_db(tmp_path)
+    _seed_entity_mit_fundamentaldaten(tmp_path)
+
+    profil = default_profile()
+    profil.haftungsausschluss_akzeptiert = True
+    ProfileStore(tmp_path / "profile.json").save(profil)
+
+    at = AppTest.from_file(APP_PATH)
+    at.run(timeout=30)
+    at.sidebar.radio[0].set_value("Peer-Vergleich").run(timeout=30)
+
+    assert not at.exception, [str(e) for e in at.exception]
+    warnungen = " ".join(w.value for w in at.warning)
+    assert "SIC-Branchencode" in warnungen
+
+    _reset_caches()
+
+
+def test_app_peervergleich_zeigt_vergleichstabelle_mit_peer(tmp_path, monkeypatch) -> None:
+    monkeypatch.setenv("IA_DATA_DIR", str(tmp_path))
+    _reset_caches()
+    _migrate_test_db(tmp_path)
+    _seed_zwei_peer_unternehmen(tmp_path)
+
+    profil = default_profile()
+    profil.haftungsausschluss_akzeptiert = True
+    ProfileStore(tmp_path / "profile.json").save(profil)
+
+    at = AppTest.from_file(APP_PATH)
+    at.run(timeout=30)
+    at.sidebar.radio[0].set_value("Peer-Vergleich").run(timeout=30)
+
+    assert not at.exception, [str(e) for e in at.exception]
+    captions = " ".join(c.value for c in at.caption)
+    assert "1 Peer(s) gefunden" in captions
+
+    assert len(at.dataframe) == 1
+    df = at.dataframe[0].value
+    assert list(df["Unternehmen"]) == ["Firma G (synthetisches Beispiel) (ausgewählt)", "Firma H (Peer)"]
 
     _reset_caches()
 

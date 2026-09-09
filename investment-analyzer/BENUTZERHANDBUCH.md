@@ -213,37 +213,57 @@ Unternehmen den vollständigen Bericht:
    demselben bereits berechneten Bericht wie die Anzeige oben, damit
    Anzeige und Export niemals unterschiedliche Zahlen zeigen können.
 
+## 4d. Der Peer-Vergleich — ein Unternehmen und seine Branchen-Peers
+
+Über die Seitenleiste („Seite" → „Peer-Vergleich") erreichbar. Zeigt
+ein ausgewähltes Unternehmen und seine Peers (andere erfasste
+Unternehmen mit demselben SIC-Branchencode) in einer Tabelle
+nebeneinander — Score, Klassifikation, Umsatzwachstum, Nettomarge,
+ROE, Verschuldung, KGV und EV/EBITDA.
+
+- **Unternehmen auswählen** über das Dropdown. Hat das Unternehmen noch
+  keinen SIC-Code (wird beim Abruf über den Marktscreener automatisch
+  aus SEC EDGAR übernommen), erscheint ein entsprechender Hinweis statt
+  einer leeren oder falschen Tabelle.
+- Gibt es keine anderen erfassten Unternehmen mit demselben SIC-Code,
+  erscheint ebenfalls ein klarer Hinweis — auch hier gilt: Peers werden
+  nur unter bereits über den Marktscreener erfassten Unternehmen
+  gesucht, nicht in einem größeren Aktienuniversum.
+- Die Peer-Zuordnung selbst beruht ausschließlich auf einem
+  übereinstimmenden SIC-Code, noch nicht zusätzlich auf ähnlicher
+  Unternehmensgröße — eine dokumentierte, noch offene Verfeinerung
+  (siehe `NEXT_STEPS.md`).
+
 ## 5. Was die Oberfläche heute zeigt — und was noch nicht
 
 **Bitte diesen Abschnitt aufmerksam lesen.**
 
-Die grafische Oberfläche hat aktuell vier Seiten: **„Start /
+Die grafische Oberfläche hat aktuell fünf Seiten: **„Start /
 Datenstatus"** (Ersteinrichtung/Profilverwaltung, ehrliche Zählung
 dessen, was in der Datenbank steht), **„Marktscreener"** (Abschnitt
 4a — Unternehmen hinzufügen, Daten abrufen), **„Kandidaten-Rangliste"**
-(Abschnitt 4b — alle erfassten Unternehmen nach Score sortiert) und
+(Abschnitt 4b — alle erfassten Unternehmen nach Score sortiert),
 **„Unternehmensdetail"** (Abschnitt 4c — vollständiger Bericht mit
-Quellenleiste für ein erfasstes Unternehmen). Solange noch kein
-Datenabruf stattgefunden hat, zeigt die Startseite bewusst **Nullen**
-— niemals Platzhalter- oder Beispielzahlen, die wie echte Marktdaten
-aussehen könnten.
+Quellenleiste für ein erfasstes Unternehmen) und **„Peer-Vergleich"**
+(Abschnitt 4d — ein Unternehmen und seine Branchen-Peers
+nebeneinander). Solange noch kein Datenabruf stattgefunden hat, zeigt
+die Startseite bewusst **Nullen** — niemals Platzhalter- oder
+Beispielzahlen, die wie echte Marktdaten aussehen könnten.
 
-Die im Auftrag vorgesehenen weiteren sechs Oberflächen-Seiten
-(Peer-Vergleich, DCF-/Szenarioanalyse, Nachrichten/Ereignisse,
-Watchlist/Portfolio, Backtest, Einstellungen/Quellen/Prüfprotokoll)
-sind **noch nicht als Bildschirmseiten gebaut** — sie werden bewusst
-nicht als leere Platzhalter vorgezeigt, um keine Funktionalität
-vorzutäuschen, die noch nicht existiert (Auftrag §16).
+Die im Auftrag vorgesehenen weiteren fünf Oberflächen-Seiten (DCF-/
+Szenarioanalyse, Nachrichten/Ereignisse, Watchlist/Portfolio, Backtest,
+Einstellungen/Quellen/Prüfprotokoll) sind **noch nicht als
+Bildschirmseiten gebaut** — sie werden bewusst nicht als leere
+Platzhalter vorgezeigt, um keine Funktionalität vorzutäuschen, die noch
+nicht existiert (Auftrag §16).
 
 **Was bereits vollständig funktioniert und getestet ist** (nur noch
-nicht über einen Button in der Oberfläche erreichbar): Peer-Vergleich
-als eigenständige Auswertung über mehrere Unternehmen (die
-Unternehmensdetail-Seite zeigt Peer-Werte nur, wenn Vergleichs-
-unternehmen bereits erfasst sind), Nachrichtenauswertung (GDELT/
-IR-RSS-Abruf selbst ist noch nicht in der Oberfläche, nur SEC EDGAR/
-Alpha Vantage über den Marktscreener), Portfolio-/Watchlist-Analyse,
-Backtesting. Alle diese Bausteine sind unabhängig voneinander getestet
-(482 automatisierte Tests, siehe `PROGRESS.md`) und lassen sich
+nicht über einen Button in der Oberfläche erreichbar):
+Nachrichtenauswertung (GDELT/IR-RSS-Abruf selbst ist noch nicht in der
+Oberfläche, nur SEC EDGAR/Alpha Vantage über den Marktscreener),
+Portfolio-/Watchlist-Analyse, Backtesting. Alle diese Bausteine sind
+unabhängig voneinander getestet (487 automatisierte Tests, siehe
+`PROGRESS.md`) und lassen sich
 bereits heute über ein kurzes Python-Skript aufrufen — das erfordert
 allerdings Grundkenntnisse in Python. Ein vollständiges, tatsächlich
 lauffähiges Beispiel für den gesamten Weg von der Datenbank bis zum

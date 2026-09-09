@@ -1105,3 +1105,58 @@ machen).
 **Nächster Schritt:** Peer-Vergleich oder DCF-/Szenarioanalyse (Auftrag
 §10, Seiten 5/6 — nutzen dieselben Daten wie die Detailseite) — siehe
 `NEXT_STEPS.md`.
+
+## Nach Milestone 8 — Peer-Vergleich (Auftrag §10, Seite 5)
+
+**Status:** umgesetzt (2026-09-09), vierte von neun noch fehlenden
+Auftrag-§10-Oberflächenseiten (siehe ADR-29).
+
+**Umgesetzt:**
+
+- Neue UI-Seite `ui/peers.py`: Unternehmen auswählen, dann
+  Vergleichstabelle mit allen über `fundamentals/peers.py::find_peers`
+  (identischer SIC-Code, Milestone 3) gefundenen Peers. Baut je Zeile
+  den vollständigen `ReportBundle` (wie `ui/ranking.py`, ADR-28) und
+  zeigt Score, Klassifikation, Umsatzwachstum, Nettomarge, ROE,
+  Verschuldung, KGV und EV/EBITDA nebeneinander.
+- Zwei unterschiedliche, ehrlich getrennte Meldungen statt einer
+  generischen „keine Ergebnisse": (a) ausgewähltes Unternehmen hat noch
+  keinen SIC-Code (wird erst beim SEC-EDGAR-Abruf über den
+  Marktscreener automatisch gesetzt), (b) SIC-Code vorhanden, aber
+  keine anderen erfassten Unternehmen mit demselben Code.
+- Fügt bewusst KEINEN eigenen Größenfilter für Peers hinzu — die
+  bereits dokumentierte Lücke „Peer-Gruppen-Zuordnung ohne
+  Größenähnlichkeit" (`fundamentals/peers.py`-Docstring) bleibt
+  unverändert an ihrem angestammten Ort in `TODO.md`/`DECISIONS.md`
+  geführt.
+- `app.py`: Sidebar-Navigation um „Peer-Vergleich" als fünfte Option
+  erweitert.
+
+**Tests:** 5 neue Tests (insgesamt 487, alle grün) — 2 reine Tests
+(`tests/ui/test_peers.py`: `find_peers`-Filterung, Inhalt der
+Vergleichstabelle), 3 neue `AppTest`-Smoke-Tests
+(`tests/ui/test_app_smoke.py`): kein Unternehmen erfasst, Unternehmen
+ohne SIC-Code, zwei Unternehmen mit identischem SIC-Code inkl.
+Vergleichstabelle. `ruff check .` und `mypy src` beide fehlerfrei.
+
+**Manuell mit echtem Browser verifiziert** (Playwright gegen einen
+laufenden Streamlit-Prozess mit drei synthetisch befüllten
+Unternehmen — zwei mit identischem SIC-Code, eines mit abweichendem):
+Peer korrekt gefunden und in der Tabelle angezeigt, das Unternehmen
+mit abweichendem SIC-Code korrekt NICHT in der Vergleichstabelle,
+Score-/Kennzahlenwerte plausibel unterschiedlich, keine unerwarteten
+Konsolenfehler.
+
+**Geänderte/neue Dateien:** neue `ui/peers.py`, `ui/app.py`
+(Navigation, Docstring), zugehörige Tests (`tests/ui/test_peers.py`,
+`tests/ui/test_app_smoke.py`).
+
+**Offene Punkte** (siehe `TODO.md`): fünf weitere Auftrag-§10-Seiten,
+Einstellungen-Seite für die Alpha-Vantage-Schlüsselverwaltung, Umstieg
+auf `st.navigation()` sobald mehr Seiten existieren, Größenfilter für
+Peer-Gruppen (bereits vor dieser Seite als Lücke dokumentiert,
+weiterhin offen).
+
+**Nächster Schritt:** DCF-/Szenarioanalyse (Auftrag §10, Seite 6 —
+nutzt dieselben Daten wie die Detailseite, `valuation/dcf.py` inkl.
+Sensitivitätsmatrix bereits vorhanden) — siehe `NEXT_STEPS.md`.

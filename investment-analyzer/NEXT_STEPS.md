@@ -142,15 +142,23 @@
       vorhanden, siehe unten). 482 Tests grün, ruff/mypy fehlerfrei, mit
       echtem Browser (Playwright) gegen drei synthetisch befüllte
       Unternehmen verifiziert.
-    - **Ausbau der sechs weiteren Auftrag-§10-UI-Seiten** (Peer-
-      Vergleich, DCF-/Szenarioanalyse, Nachrichten/Ereignisse,
-      Watchlist/Portfolio, Backtest, Einstellungen/Quellen/
-      Prüfprotokoll) — empfohlene Reihenfolge: Peer-Vergleich/DCF als
-      Nächstes (nutzen dieselben Daten wie die Detailseite), zuletzt
-      Watchlist/Portfolio, Backtest, Einstellungen (jeweils eigene
-      Datenflüsse). Einstellungen-Seite ist zudem Voraussetzung dafür,
-      dass der Alpha-Vantage-Kursabruf im Marktscreener ohne vorherige
-      manuelle OS-Keyring-Einrichtung nutzbar wird.
+    - ~~Ausbau der Auftrag-§10-UI-Seite „Peer-Vergleich"~~ — umgesetzt
+      am 2026-09-09 (siehe `PROGRESS.md`/ADR-29): neue `ui/peers.py`,
+      baut je Zeile den vollständigen `ReportBundle` wie die Kandidaten-
+      Rangliste (garantiert konsistente Werte), unterscheidet klar
+      zwischen „kein SIC-Code" und „SIC-Code vorhanden, aber keine
+      Peers". 487 Tests grün, ruff/mypy fehlerfrei, mit echtem Browser
+      (Playwright) gegen drei synthetisch befüllte Unternehmen
+      verifiziert.
+    - **Ausbau der fünf weiteren Auftrag-§10-UI-Seiten** (DCF-/
+      Szenarioanalyse, Nachrichten/Ereignisse, Watchlist/Portfolio,
+      Backtest, Einstellungen/Quellen/Prüfprotokoll) — empfohlene
+      Reihenfolge: DCF-/Szenarioanalyse als Nächstes (nutzt dieselben
+      Daten wie die Detailseite), zuletzt Watchlist/Portfolio,
+      Backtest, Einstellungen (jeweils eigene Datenflüsse).
+      Einstellungen-Seite ist zudem Voraussetzung dafür, dass der
+      Alpha-Vantage-Kursabruf im Marktscreener ohne vorherige manuelle
+      OS-Keyring-Einrichtung nutzbar wird.
     - Neu, nicht blockierend (aus dem Bau der Kandidaten-Rangliste,
       ADR-28): eine echte Breitensuche über ein größeres
       Aktienuniversum für den Marktscreener (z. B. SEC-EDGAR-
@@ -200,6 +208,6 @@
       inzwischen mehrfach mit echtem, headless laufendem Chromium
       (Playwright) gegen einen echten `streamlit run`-Prozess verifiziert
       (Ersteinrichtung, Datenstatus, Marktscreener inkl. Formular-
-      validierung, Unternehmensdetail und Kandidaten-Rangliste mit
-      synthetisch befüllter Testdatenbank) — kein reiner
-      `AppTest`-Trockentest mehr, siehe `PROGRESS.md`.
+      validierung, Unternehmensdetail, Kandidaten-Rangliste und
+      Peer-Vergleich mit synthetisch befüllter Testdatenbank) — kein
+      reiner `AppTest`-Trockentest mehr, siehe `PROGRESS.md`.

@@ -310,8 +310,18 @@ seit Milestone 1–7 fertig, nur die Bedienoberfläche fehlte.
       Streamlit-Prozess mit synthetisch befüllter Testdatenbank
       verifiziert — alle Abschnitte inkl. der drei Download-Buttons
       rendern korrekt.
-- [ ] **Peer-Vergleich** (Seite 5): `fundamentals/peers.py::find_peers`
-      bereits vorhanden, nur keine UI.
+- [x] **Peer-Vergleich** (Seite 5, siehe ADR-29): eigenständige
+      Vergleichstabelle über ein ausgewähltes Unternehmen und seine
+      über `fundamentals/peers.py::find_peers` (identischer SIC-Code)
+      gefundenen Peers. Neues Modul `ui/peers.py` — baut je Zeile den
+      vollständigen `ReportBundle` (wie `ui/ranking.py`), zeigt Score,
+      Klassifikation, Wachstum, Margen, Rendite, Verschuldung und
+      Multiples nebeneinander. Unterscheidet klar zwischen „kein
+      SIC-Code" und „SIC-Code vorhanden, aber keine anderen erfassten
+      Peers". 5 neue Tests (insgesamt 487), `ruff`/`mypy` fehlerfrei.
+      Mit echtem Playwright-Browser gegen drei synthetisch befüllte
+      Unternehmen verifiziert (zwei mit identischem SIC-Code, eines
+      mit abweichendem — korrekt ausgeschlossen).
 - [ ] **DCF- und Szenarioanalyse** (Seite 6): `valuation/dcf.py`
       inkl. Sensitivitätsmatrix bereits vorhanden, nur keine UI.
 - [ ] **Nachrichten/Ereignisse** (Seite 7): `news/report.py::

@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+- Peer-Vergleich (Auftrag §10, Seite 5) umgesetzt — vierte von neun
+  noch fehlenden Oberflächenseiten (siehe ADR-29). Neue Seite
+  `ui/peers.py`: Vergleichstabelle für ein ausgewähltes Unternehmen und
+  seine über `fundamentals/peers.py::find_peers` (identischer SIC-Code)
+  gefundenen Peers, baut je Zeile den vollständigen `ReportBundle` (wie
+  die Kandidaten-Rangliste) statt nur eine schlanke
+  Multiples-Momentaufnahme zu nutzen — Score, Klassifikation, Wachstum,
+  Margen, Rendite, Verschuldung und Multiples zeigen garantiert
+  dieselben Werte wie auf der Unternehmensdetail-Seite. Unterscheidet
+  klar zwischen „kein SIC-Code" und „SIC-Code vorhanden, aber keine
+  anderen erfassten Peers". 5 neue Tests (insgesamt 487), `ruff`/`mypy`
+  fehlerfrei, zusätzlich mit echtem Browser gegen drei synthetisch
+  befüllte Unternehmen verifiziert.
+
 - Kandidaten-Rangliste (Auftrag §10, Seite 3) umgesetzt — dritte von
   neun noch fehlenden Oberflächenseiten (siehe ADR-28). Neue Seite
   `ui/ranking.py`: sortierbare Tabelle aller bereits erfassten
