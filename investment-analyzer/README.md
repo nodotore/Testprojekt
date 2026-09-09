@@ -7,11 +7,11 @@ Simulationsmodus, siehe Hinweis unten und `SECURITY.md`.
 
 > **Projektstand:** Alle acht Milestones (Auftrag §14) implementiert,
 > getestet und einem zweistufigen Security-Review inkl. unabhängiger
-> Prüfung unterzogen (487 automatisierte Tests). **Noch nicht
+> Prüfung unterzogen (494 automatisierte Tests). **Noch nicht
 > vollständig abnahmefähig** im strengen Sinn von Auftrag §15 — eine
 > ehrliche, kriterienweise Bewertung mit den verbleibenden offenen
 > Punkten (v. a.: kein Internetzugang in dieser Entwicklungsumgebung,
-> daher keine Verifikation mit echten Marktdaten; erst fünf von zehn
+> daher keine Verifikation mit echten Marktdaten; erst sechs von zehn
 > Oberflächenseiten gebaut, siehe `TODO.md`) steht in `ABNAHME.md`. Ausführliche
 > Bedienungsanleitung: `BENUTZERHANDBUCH.md`. Details:
 > `PROGRESS.md`/`TODO.md`/`NEXT_STEPS.md`.

@@ -322,8 +322,17 @@ seit Milestone 1–7 fertig, nur die Bedienoberfläche fehlte.
       Mit echtem Playwright-Browser gegen drei synthetisch befüllte
       Unternehmen verifiziert (zwei mit identischem SIC-Code, eines
       mit abweichendem — korrekt ausgeschlossen).
-- [ ] **DCF- und Szenarioanalyse** (Seite 6): `valuation/dcf.py`
-      inkl. Sensitivitätsmatrix bereits vorhanden, nur keine UI.
+- [x] **DCF- und Szenarioanalyse** (Seite 6, siehe ADR-30):
+      vollständiges DCF-Detail je Szenario (Annahmen, Jahr-für-Jahr-
+      Cashflow-Tabelle, Terminalwert/EV/Eigenkapitalwert/fairer Wert je
+      Aktie) und beide Sensitivitätsmatrizen (Umsatzwachstum×WACC,
+      FCF-Marge×Terminalwachstum) — ergänzt die verdichtete
+      Zusammenfassung auf der Unternehmensdetail-Seite, ohne sie zu
+      duplizieren. Neues Modul `ui/dcf.py`, liest Matrizen unverändert
+      aus `bundle.valuation` (keine eigene Neuberechnung). 7 neue Tests
+      (insgesamt 494), `ruff`/`mypy` fehlerfrei. Mit echtem
+      Playwright-Browser gegen eine synthetisch befüllte Testdatenbank
+      verifiziert.
 - [ ] **Nachrichten/Ereignisse** (Seite 7): `news/report.py::
       build_news_report` bereits vorhanden, nur keine UI. Benötigt
       zusätzlich einen GDELT-/IR-RSS-Abrufweg im Marktscreener oder

@@ -150,15 +150,29 @@
       Peers". 487 Tests grün, ruff/mypy fehlerfrei, mit echtem Browser
       (Playwright) gegen drei synthetisch befüllte Unternehmen
       verifiziert.
-    - **Ausbau der fünf weiteren Auftrag-§10-UI-Seiten** (DCF-/
-      Szenarioanalyse, Nachrichten/Ereignisse, Watchlist/Portfolio,
-      Backtest, Einstellungen/Quellen/Prüfprotokoll) — empfohlene
-      Reihenfolge: DCF-/Szenarioanalyse als Nächstes (nutzt dieselben
-      Daten wie die Detailseite), zuletzt Watchlist/Portfolio,
-      Backtest, Einstellungen (jeweils eigene Datenflüsse).
-      Einstellungen-Seite ist zudem Voraussetzung dafür, dass der
-      Alpha-Vantage-Kursabruf im Marktscreener ohne vorherige manuelle
-      OS-Keyring-Einrichtung nutzbar wird.
+    - ~~Ausbau der Auftrag-§10-UI-Seite „DCF- und Szenarioanalyse"~~ —
+      umgesetzt am 2026-09-09 (siehe `PROGRESS.md`/ADR-30): neue
+      `ui/dcf.py`, zeigt vollständiges DCF-Detail je Szenario und beide
+      Sensitivitätsmatrizen unverändert aus dem bereits vorhandenen
+      `ValuationReport`. 494 Tests grün, ruff/mypy fehlerfrei, mit
+      echtem Browser (Playwright) gegen eine synthetisch befüllte
+      Testdatenbank verifiziert.
+    - **Ausbau der vier weiteren Auftrag-§10-UI-Seiten** (Nachrichten/
+      Ereignisse, Watchlist/Portfolio, Backtest, Einstellungen/Quellen/
+      Prüfprotokoll) — empfohlene Reihenfolge: Nachrichten/Ereignisse
+      als Nächstes (`news/report.py::build_news_report` bereits
+      vorhanden), zuletzt Watchlist/Portfolio, Backtest, Einstellungen
+      (jeweils eigene Datenflüsse). Einstellungen-Seite ist zudem
+      Voraussetzung dafür, dass der Alpha-Vantage-Kursabruf im
+      Marktscreener ohne vorherige manuelle OS-Keyring-Einrichtung
+      nutzbar wird.
+    - Neu, nicht blockierend (aus dem Bau der DCF-/Szenarioanalyse,
+      ADR-30): eine interaktive „eigene DCF-Annahmen eingeben"-Funktion
+      (Nutzer variiert Wachstum/WACC/Marge/Terminalwachstum frei statt
+      der festen Standard-Variationsbereiche) wäre ein sinnvoller
+      Ausbau, sobald eine gute UI-Lösung für "berechne live, aber
+      erzeuge keine neuen dauerhaften Werte" gefunden ist (Auftrag
+      §11-Abgrenzung beachten).
     - Neu, nicht blockierend (aus dem Bau der Kandidaten-Rangliste,
       ADR-28): eine echte Breitensuche über ein größeres
       Aktienuniversum für den Marktscreener (z. B. SEC-EDGAR-
@@ -208,6 +222,7 @@
       inzwischen mehrfach mit echtem, headless laufendem Chromium
       (Playwright) gegen einen echten `streamlit run`-Prozess verifiziert
       (Ersteinrichtung, Datenstatus, Marktscreener inkl. Formular-
-      validierung, Unternehmensdetail, Kandidaten-Rangliste und
-      Peer-Vergleich mit synthetisch befüllter Testdatenbank) — kein
-      reiner `AppTest`-Trockentest mehr, siehe `PROGRESS.md`.
+      validierung, Unternehmensdetail, Kandidaten-Rangliste,
+      Peer-Vergleich und DCF-/Szenarioanalyse mit synthetisch befüllter
+      Testdatenbank) — kein reiner `AppTest`-Trockentest mehr, siehe
+      `PROGRESS.md`.

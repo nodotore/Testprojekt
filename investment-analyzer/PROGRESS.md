@@ -1160,3 +1160,57 @@ weiterhin offen).
 **Nächster Schritt:** DCF-/Szenarioanalyse (Auftrag §10, Seite 6 —
 nutzt dieselben Daten wie die Detailseite, `valuation/dcf.py` inkl.
 Sensitivitätsmatrix bereits vorhanden) — siehe `NEXT_STEPS.md`.
+
+## Nach Milestone 8 — DCF- und Szenarioanalyse (Auftrag §10, Seite 6)
+
+**Status:** umgesetzt (2026-09-09), fünfte von neun noch fehlenden
+Auftrag-§10-Oberflächenseiten (siehe ADR-30).
+
+**Umgesetzt:**
+
+- Neue UI-Seite `ui/dcf.py`: zeigt für ein ausgewähltes Unternehmen das
+  vollständige DCF-Detail je Szenario (Basis/Optimistisch/
+  Pessimistisch als aufklappbare Abschnitte, Basis-Szenario
+  standardmäßig aufgeklappt) — Annahmen (Umsatzwachstum, FCF-Marge,
+  WACC, Terminalwachstum, Projektionshorizont), Jahr-für-Jahr-Tabelle
+  (projizierter/diskontierter FCF), Terminalwert, Unternehmenswert,
+  Eigenkapitalwert, fairer Wert je Aktie. Ergänzt bewusst die auf
+  `ui/detail.py` bereits gezeigte verdichtete Zusammenfassung, ohne sie
+  zu duplizieren.
+- Zeigt beide Sensitivitätsmatrizen (Umsatzwachstum×WACC, FCF-Marge×
+  Terminalwachstum) unverändert aus `bundle.valuation.
+  sensitivity_growth_wacc`/`sensitivity_margin_terminal_growth` — keine
+  eigene Neuberechnung mit UI-wählbaren Bereichen, dieselbe
+  strukturelle Garantie wie bei den anderen neuen Seiten. Rechnerisch
+  unzulässige Zellen (WACC ≤ Terminalwachstum/WACC ≤ 0) erscheinen als
+  leer, nie als 0 oder eine sonstige Zahl.
+- `app.py`: Sidebar-Navigation um „DCF- und Szenarioanalyse" als sechste
+  Option erweitert.
+
+**Tests:** 7 neue Tests (insgesamt 494, alle grün) — 5 reine Tests
+(`tests/ui/test_dcf.py`: Formatierungsfunktionen, Sensitivitätstabelle
+inkl. `None`-Behandlung), 2 neue `AppTest`-Smoke-Tests
+(`tests/ui/test_app_smoke.py`): kein Unternehmen erfasst, vollständiger
+Durchlauf mit synthetisch befüllter Testdatenbank. `ruff check .` und
+`mypy src` beide fehlerfrei.
+
+**Manuell mit echtem Browser verifiziert** (Playwright gegen einen
+laufenden Streamlit-Prozess mit synthetisch befüllter Testdatenbank):
+Basis-Szenario korrekt aufgeklappt mit plausibler Jahr-für-Jahr-Tabelle,
+Optimistisch/Pessimistisch mit denselben Fair-Value-Werten wie auf der
+Unternehmensdetail-Seite, beide Sensitivitätsmatrizen mit plausibel
+monotonen Werten, keine unerwarteten Konsolenfehler.
+
+**Geänderte/neue Dateien:** neue `ui/dcf.py`, `ui/app.py` (Navigation,
+Docstring), zugehörige Tests (`tests/ui/test_dcf.py`,
+`tests/ui/test_app_smoke.py`).
+
+**Offene Punkte** (siehe `TODO.md`): vier weitere Auftrag-§10-Seiten,
+Einstellungen-Seite für die Alpha-Vantage-Schlüsselverwaltung, Umstieg
+auf `st.navigation()` sobald mehr Seiten existieren, künftig ggf. eine
+interaktive „eigene DCF-Annahmen eingeben"-Funktion (bewusst nicht
+gebaut, siehe ADR-30).
+
+**Nächster Schritt:** Nachrichten/Ereignisse (Auftrag §10, Seite 7 —
+`news/report.py::build_news_report` bereits vorhanden) — siehe
+`NEXT_STEPS.md`.

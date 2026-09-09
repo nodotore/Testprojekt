@@ -234,35 +234,59 @@ ROE, Verschuldung, KGV und EV/EBITDA.
   Unternehmensgröße — eine dokumentierte, noch offene Verfeinerung
   (siehe `NEXT_STEPS.md`).
 
+## 4e. Die DCF- und Szenarioanalyse — Bewertungsdetail und Sensitivität
+
+Über die Seitenleiste („Seite" → „DCF- und Szenarioanalyse")
+erreichbar. Ergänzt die verdichtete Bewertungszusammenfassung der
+Unternehmensdetail-Seite (Abschnitt 4c) um das vollständige
+DCF-Rechendetail:
+
+- **Unternehmen auswählen**, dann Fair-Value-Band und Sicherheitsmarge
+  oben (identisch zu den Werten auf der Unternehmensdetail-Seite).
+- **Drei aufklappbare Szenarien** (Basis/Optimistisch/Pessimistisch,
+  Basis standardmäßig aufgeklappt): jeweils alle Modellannahmen
+  (Umsatzwachstum, FCF-Marge, WACC, Terminalwachstum,
+  Projektionshorizont), eine Jahr-für-Jahr-Tabelle mit projiziertem und
+  diskontiertem freien Cashflow, sowie Terminalwert, Unternehmenswert,
+  Eigenkapitalwert und fairer Wert je Aktie.
+- **Zwei Sensitivitätsmatrizen** (Umsatzwachstum × WACC sowie
+  FCF-Marge × Terminalwachstum): zeigen, wie stark der faire Wert je
+  Aktie auf Änderungen dieser Annahmen reagiert. Eine leere Zelle
+  bedeutet eine rechnerisch unzulässige Annahmenkombination (z. B.
+  WACC kleiner oder gleich Terminalwachstum) — nie eine geratene Zahl.
+- Ist für ein Unternehmen kein DCF berechenbar (z. B. fehlende
+  Wachstums- oder Cashflow-Historie), erscheint ein klarer Hinweis
+  statt einer leeren oder falschen Seite.
+
 ## 5. Was die Oberfläche heute zeigt — und was noch nicht
 
 **Bitte diesen Abschnitt aufmerksam lesen.**
 
-Die grafische Oberfläche hat aktuell fünf Seiten: **„Start /
+Die grafische Oberfläche hat aktuell sechs Seiten: **„Start /
 Datenstatus"** (Ersteinrichtung/Profilverwaltung, ehrliche Zählung
 dessen, was in der Datenbank steht), **„Marktscreener"** (Abschnitt
 4a — Unternehmen hinzufügen, Daten abrufen), **„Kandidaten-Rangliste"**
 (Abschnitt 4b — alle erfassten Unternehmen nach Score sortiert),
 **„Unternehmensdetail"** (Abschnitt 4c — vollständiger Bericht mit
-Quellenleiste für ein erfasstes Unternehmen) und **„Peer-Vergleich"**
-(Abschnitt 4d — ein Unternehmen und seine Branchen-Peers
-nebeneinander). Solange noch kein Datenabruf stattgefunden hat, zeigt
-die Startseite bewusst **Nullen** — niemals Platzhalter- oder
-Beispielzahlen, die wie echte Marktdaten aussehen könnten.
+Quellenleiste für ein erfasstes Unternehmen), **„Peer-Vergleich"**
+(Abschnitt 4d — ein Unternehmen und seine Branchen-Peers nebeneinander)
+und **„DCF- und Szenarioanalyse"** (Abschnitt 4e — Bewertungsdetail
+und Sensitivitätsmatrizen). Solange noch kein Datenabruf stattgefunden
+hat, zeigt die Startseite bewusst **Nullen** — niemals Platzhalter-
+oder Beispielzahlen, die wie echte Marktdaten aussehen könnten.
 
-Die im Auftrag vorgesehenen weiteren fünf Oberflächen-Seiten (DCF-/
-Szenarioanalyse, Nachrichten/Ereignisse, Watchlist/Portfolio, Backtest,
-Einstellungen/Quellen/Prüfprotokoll) sind **noch nicht als
-Bildschirmseiten gebaut** — sie werden bewusst nicht als leere
-Platzhalter vorgezeigt, um keine Funktionalität vorzutäuschen, die noch
-nicht existiert (Auftrag §16).
+Die im Auftrag vorgesehenen weiteren vier Oberflächen-Seiten
+(Nachrichten/Ereignisse, Watchlist/Portfolio, Backtest, Einstellungen/
+Quellen/Prüfprotokoll) sind **noch nicht als Bildschirmseiten gebaut**
+— sie werden bewusst nicht als leere Platzhalter vorgezeigt, um keine
+Funktionalität vorzutäuschen, die noch nicht existiert (Auftrag §16).
 
 **Was bereits vollständig funktioniert und getestet ist** (nur noch
 nicht über einen Button in der Oberfläche erreichbar):
 Nachrichtenauswertung (GDELT/IR-RSS-Abruf selbst ist noch nicht in der
 Oberfläche, nur SEC EDGAR/Alpha Vantage über den Marktscreener),
 Portfolio-/Watchlist-Analyse, Backtesting. Alle diese Bausteine sind
-unabhängig voneinander getestet (487 automatisierte Tests, siehe
+unabhängig voneinander getestet (494 automatisierte Tests, siehe
 `PROGRESS.md`) und lassen sich
 bereits heute über ein kurzes Python-Skript aufrufen — das erfordert
 allerdings Grundkenntnisse in Python. Ein vollständiges, tatsächlich

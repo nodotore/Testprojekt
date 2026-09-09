@@ -1165,6 +1165,70 @@ SIC-Code, eines mit abweichendem) — der Peer mit abweichendem SIC-Code
 erscheint korrekt NICHT in der Vergleichstabelle, keine unerwarteten
 Konsolenfehler.
 
+## ADR-30: DCF- und Szenarioanalyse — vollständiges DCF-Detail statt nur der Zusammenfassung, Sensitivitätsmatrizen direkt aus dem ReportBundle
+
+**Kontext:** Fünfte der neun noch fehlenden Auftrag-§10-Oberflächen-
+seiten: **DCF- und Szenarioanalyse** (Auftrag §10, Seite 6).
+`valuation/dcf.py` (Milestone 4) — Zwei-Stufen-DCF-Modell mit
+Sensitivitätsmatrix — lag bereits vollständig vor; `ui/detail.py`
+(ADR-27) zeigt davon bislang nur eine verdichtete Zusammenfassung
+(Fair-Value-Band, eine dreispaltige Szenarientabelle mit je einer
+Zeile pro Szenario), keine Sensitivitätsmatrizen und keine
+Jahr-für-Jahr-Cashflow-Details.
+
+**Entscheidung — vollständiges DCF-Detail statt Duplikation der
+Detailseite:** Diese neue Seite zeigt, was `ui/detail.py` bewusst NICHT
+zeigt: je Szenario alle Annahmen (Umsatzwachstum, FCF-Marge, WACC,
+Terminalwachstum, Projektionshorizont) UND die Jahr-für-Jahr-Tabelle
+(projizierter FCF, diskontierter FCF je Jahr) UND
+Terminalwert/Unternehmenswert/Eigenkapitalwert/fairer Wert je Aktie,
+sowie beide Sensitivitätsmatrizen (Umsatzwachstum×WACC,
+FCF-Marge×Terminalwachstum). Keine Dopplung der bereits auf der
+Detailseite gezeigten verdichteten Zusammenfassung — beide Seiten
+ergänzen sich, ohne denselben Inhalt zweimal in unterschiedlicher
+Tiefe zu pflegen.
+
+**Entscheidung — Sensitivitätsmatrizen direkt aus `ValuationReport`,
+keine eigene Neuberechnung:** `build_valuation_report()` (Milestone 4)
+berechnet die beiden Sensitivitätsmatrizen bereits als Teil des
+regulären `ValuationReport` — mit denselben Standard-Variationsbereichen
+(±2 Prozentpunkte Wachstum/Marge in 1-Punkt-Schritten, ±1 Prozentpunkt
+WACC/Terminalwachstum in 0,5-Punkt-Schritten um die Basisannahme). Statt
+diese Matrizen mit eigenen, in der UI frei wählbaren Bereichen neu zu
+berechnen (was eine zweite, potenziell abweichende Berechnungslogik
+bedeutet hätte), liest `ui/dcf.py` sie unverändert aus
+`bundle.valuation.sensitivity_growth_wacc`/
+`sensitivity_margin_terminal_growth` — dieselbe strukturelle Garantie
+wie bei allen anderen neuen Seiten (ADR-27/28/29): keine zweite
+Berechnung, nur Darstellung. Eine interaktive „eigene Annahmen
+eingeben"-Funktion wurde deshalb bewusst NICHT gebaut — das wäre eine
+neue, hier nicht vorgesehene Berechnungsfunktion (Auftrag §11) und ist
+als möglicher künftiger Ausbauschritt in `NEXT_STEPS.md` vermerkt.
+
+**Entscheidung — fehlende Zellen als „—", nie als 0:** `run_dcf()`
+liefert `None` bei rechnerisch unzulässigen Annahmenkombinationen
+(WACC ≤ Terminalwachstum oder WACC ≤ 0) — `build_sensitivity_matrix()`
+übernimmt das unverändert als `None`-Zelle. `ui/dcf.py` zeigt solche
+Zellen als leer/„—" in der Tabelle, mit einer erklärenden Caption unter
+jeder Matrix, statt sie als 0 oder eine sonstige Zahl darzustellen
+(Auftrag §11).
+
+**Tests:** 7 neue Tests (insgesamt 494) — 5 reine Tests
+(`tests/ui/test_dcf.py`: `_pct()`/`_zahl()`-Formatierung inkl.
+`None`-Behandlung, `_sensitivitaetstabelle()` mit korrekten Zeilen-/
+Spaltenbeschriftungen und korrekter `None`-Behandlung bei unzulässigen
+Annahmen), 2 neue `AppTest`-Smoke-Tests (`tests/ui/test_app_smoke.py`):
+kein Unternehmen erfasst, sowie ein vollständiger Durchlauf mit
+synthetisch befüllter Testdatenbank (alle drei Szenario-Expander,
+beide Sensitivitätsmatrizen). `ruff`/`mypy` fehlerfrei. Zusätzlich mit
+echtem Playwright-Browser gegen einen laufenden Streamlit-Prozess mit
+synthetisch befüllter Testdatenbank verifiziert: Basis-Szenario
+aufgeklappt mit korrekter Jahr-für-Jahr-Tabelle, Optimistisch/
+Pessimistisch als eingeklappte Expander mit korrekten Fair-Value-Werten
+(identisch zu den auf der Detailseite gezeigten Werten), beide
+Sensitivitätsmatrizen mit plausibel monotonen Werten, keine
+unerwarteten Konsolenfehler.
+
 ## Noch zu treffende Entscheidungen
 
 Keine blockierenden Entscheidungen mehr offen für Milestone 1–7 (alle

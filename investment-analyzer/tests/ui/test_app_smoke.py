@@ -391,6 +391,62 @@ def test_app_peervergleich_zeigt_vergleichstabelle_mit_peer(tmp_path, monkeypatc
     _reset_caches()
 
 
+def test_app_dcfanalyse_ohne_unternehmen_zeigt_hinweis(tmp_path, monkeypatch) -> None:
+    monkeypatch.setenv("IA_DATA_DIR", str(tmp_path))
+    _reset_caches()
+    _migrate_test_db(tmp_path)
+
+    profil = default_profile()
+    profil.haftungsausschluss_akzeptiert = True
+    ProfileStore(tmp_path / "profile.json").save(profil)
+
+    at = AppTest.from_file(APP_PATH)
+    at.run(timeout=30)
+    at.sidebar.radio[0].set_value("DCF- und Szenarioanalyse").run(timeout=30)
+
+    assert not at.exception, [str(e) for e in at.exception]
+    header_texte = " ".join(h.value for h in at.header)
+    assert "DCF- und Szenarioanalyse" in header_texte
+    infos = " ".join(i.value for i in at.info)
+    assert "Noch keine Unternehmen erfasst" in infos
+
+    _reset_caches()
+
+
+def test_app_dcfanalyse_zeigt_szenarien_und_sensitivitaet(tmp_path, monkeypatch) -> None:
+    monkeypatch.setenv("IA_DATA_DIR", str(tmp_path))
+    _reset_caches()
+    _migrate_test_db(tmp_path)
+    _seed_entity_mit_fundamentaldaten(tmp_path)
+
+    profil = default_profile()
+    profil.haftungsausschluss_akzeptiert = True
+    ProfileStore(tmp_path / "profile.json").save(profil)
+
+    at = AppTest.from_file(APP_PATH)
+    at.run(timeout=30)
+    at.sidebar.radio[0].set_value("DCF- und Szenarioanalyse").run(timeout=30)
+
+    assert not at.exception, [str(e) for e in at.exception]
+    header_texte = " ".join(h.value for h in at.header)
+    assert "DCF- und Szenarioanalyse" in header_texte
+
+    subheader_texte = " ".join(h.value for h in at.subheader)
+    assert "Szenarien" in subheader_texte
+    assert "Sensitivitätsanalyse" in subheader_texte
+
+    expander_labels = [exp.label for exp in at.expander]
+    assert any("Basis" in label for label in expander_labels)
+    assert any("Optimistisch" in label for label in expander_labels)
+    assert any("Pessimistisch" in label for label in expander_labels)
+
+    markdown_texte = " ".join(m.value for m in at.markdown)
+    assert "Umsatzwachstum × WACC" in markdown_texte
+    assert "FCF-Marge × Terminalwachstum" in markdown_texte
+
+    _reset_caches()
+
+
 def test_app_unternehmensdetail_ohne_unternehmen_zeigt_hinweis(tmp_path, monkeypatch) -> None:
     monkeypatch.setenv("IA_DATA_DIR", str(tmp_path))
     _reset_caches()

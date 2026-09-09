@@ -32,8 +32,9 @@ Ehrliche Abnahmebewertung gegen alle neun Auftrag-§15-Kriterien:
 **Laufende Erweiterung darüber hinaus:** Ausbau der zehn Auftrag-§10-
 Oberflächenseiten (aktuell fertig: „Start/Datenstatus", „Marktscreener",
 „Kandidaten-Rangliste", „Unternehmensdetail mit Quellenleiste",
-„Peer-Vergleich"; fünf weitere offen, siehe `NEXT_STEPS.md`). Details/
-offene Punkte: `PROGRESS.md`/`TODO.md`/`NEXT_STEPS.md`.
+„Peer-Vergleich", „DCF- und Szenarioanalyse"; vier weitere offen, siehe
+`NEXT_STEPS.md`). Details/offene Punkte:
+`PROGRESS.md`/`TODO.md`/`NEXT_STEPS.md`.
 
 ## Nicht verhandelbare Leitplanken
 

@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+- DCF- und Szenarioanalyse (Auftrag §10, Seite 6) umgesetzt — fünfte
+  von neun noch fehlenden Oberflächenseiten (siehe ADR-30). Neue Seite
+  `ui/dcf.py`: vollständiges DCF-Detail je Szenario (Annahmen,
+  Jahr-für-Jahr-Cashflow-Tabelle, Terminalwert/Unternehmenswert/
+  Eigenkapitalwert/fairer Wert je Aktie) sowie beide
+  Sensitivitätsmatrizen (Umsatzwachstum×WACC, FCF-Marge×
+  Terminalwachstum) — liest die Matrizen unverändert aus dem bereits
+  vorhandenen `ValuationReport`, keine eigene Neuberechnung. Ergänzt
+  die verdichtete Zusammenfassung auf der Unternehmensdetail-Seite,
+  ohne sie zu duplizieren. Rechnerisch unzulässige Zellen erscheinen
+  als leer, nie als 0. 7 neue Tests (insgesamt 494), `ruff`/`mypy`
+  fehlerfrei, zusätzlich mit echtem Browser gegen eine synthetisch
+  befüllte Testdatenbank verifiziert.
+
 - Peer-Vergleich (Auftrag §10, Seite 5) umgesetzt — vierte von neun
   noch fehlenden Oberflächenseiten (siehe ADR-29). Neue Seite
   `ui/peers.py`: Vergleichstabelle für ein ausgewähltes Unternehmen und
