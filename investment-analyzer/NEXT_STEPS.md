@@ -120,13 +120,24 @@
       vollständig erfüllt gelten lässt (Kriterien 1, 6, 8 in
       `ABNAHME.md`). Sobald Internetzugang verfügbar ist: Reihenfolge
       und konkrete Schritte siehe Punkt 10.
-    - **Ausbau der restlichen neun Auftrag-§10-UI-Seiten**
-      (Marktscreener, Kandidaten-Rangliste, Unternehmensdetail,
-      Peer-Vergleich, DCF-/Szenarioanalyse, Nachrichten/Ereignisse,
-      Watchlist/Portfolio, Backtest, Einstellungen/Quellen/
-      Prüfprotokoll) — schließt zugleich Auftrag-§15-Kriterium 8
-      („Exporte = Oberflächenwerte", aktuell nicht verifizierbar mangels
-      UI-Detailseite, siehe `ABNAHME.md`).
+    - ~~Ausbau der Auftrag-§10-UI-Seite „Marktscreener"~~ — umgesetzt
+      am 2026-09-09 (siehe `PROGRESS.md`/ADR-26): neues `ingestion/`-
+      Modul, Profilfeld `sec_edgar_kontakt_email`, `SecretStore` in
+      der Oberfläche, Sidebar-Navigation. 471 Tests grün, ruff/mypy
+      fehlerfrei, mit echtem Browser (Playwright) verifiziert.
+    - **Ausbau der acht weiteren Auftrag-§10-UI-Seiten** (Kandidaten-
+      Rangliste, Unternehmensdetail, Peer-Vergleich, DCF-/
+      Szenarioanalyse, Nachrichten/Ereignisse, Watchlist/Portfolio,
+      Backtest, Einstellungen/Quellen/Prüfprotokoll) — empfohlene
+      Reihenfolge: Kandidaten-Rangliste und Unternehmensdetail zuerst
+      (schließt zugleich Auftrag-§15-Kriterium 8 „Exporte =
+      Oberflächenwerte", aktuell laut `ABNAHME.md` nicht verifizierbar
+      mangels UI-Detailseite), danach Peer-Vergleich/DCF (nutzen
+      dieselben Daten wie die Detailseite), zuletzt Watchlist/
+      Portfolio, Backtest, Einstellungen (jeweils eigene Datenflüsse).
+      Einstellungen-Seite ist zudem Voraussetzung dafür, dass der
+      Alpha-Vantage-Kursabruf im Marktscreener ohne vorherige manuelle
+      OS-Keyring-Einrichtung nutzbar wird.
     - SSRF-IP-Pinning bis zur tatsächlichen HTTP-Verbindung (ADR-25
       Befund 4, `SECURITY.md`) — behebt die dokumentierte Time-of-
       check-to-time-of-use-Restlücke; erfordert einen eigenen
@@ -164,6 +175,10 @@
     - Benchmark-/Index-Kursquelle für den Backtest-Vergleich anbinden.
     - Risikofreien Zins für Sharpe/Sortino aus einer echten Zinsreihe
       (z. B. EZB/FRED) beziehen statt Default 0.
-    - PostgreSQL-Migrationstest gegen eine echte Instanz, Test der
-      Streamlit-Oberfläche in einem echten Browser (Sandbox hatte nur
-      Headless-/HTTP-Verifikation zur Verfügung).
+    - PostgreSQL-Migrationstest gegen eine echte Instanz (weiterhin offen).
+    - ~~Test der Streamlit-Oberfläche in einem echten Browser~~ —
+      inzwischen mehrfach mit echtem, headless laufendem Chromium
+      (Playwright) gegen einen echten `streamlit run`-Prozess verifiziert
+      (Ersteinrichtung, Datenstatus, Marktscreener inkl. Formular-
+      validierung) — kein reiner `AppTest`-Trockentest mehr, siehe
+      `PROGRESS.md`.

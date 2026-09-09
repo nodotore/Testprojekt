@@ -60,6 +60,25 @@ def test_unbekanntes_feld_wird_abgelehnt() -> None:
         NutzerProfil.model_validate({"unbekanntes_feld": 123})
 
 
+def test_sec_edgar_kontakt_email_default_ist_none() -> None:
+    assert default_profile().sec_edgar_kontakt_email is None
+
+
+def test_sec_edgar_kontakt_email_ohne_at_zeichen_ist_ungueltig() -> None:
+    with pytest.raises(ValidationError):
+        NutzerProfil(sec_edgar_kontakt_email="keine-email-adresse")
+
+
+def test_sec_edgar_kontakt_email_leerer_string_wird_zu_none() -> None:
+    profil = NutzerProfil(sec_edgar_kontakt_email="   ")
+    assert profil.sec_edgar_kontakt_email is None
+
+
+def test_sec_edgar_kontakt_email_wird_getrimmt() -> None:
+    profil = NutzerProfil(sec_edgar_kontakt_email="  test@example.com  ")
+    assert profil.sec_edgar_kontakt_email == "test@example.com"
+
+
 def test_profile_store_roundtrip(tmp_path: Path) -> None:
     store = ProfileStore(tmp_path / "profile.json")
     assert store.load_or_none() is None
@@ -97,3 +116,4 @@ def test_app_settings_ensure_data_dirs(tmp_path: Path) -> None:
     settings.ensure_data_dirs()
     assert settings.data_dir.exists()
     assert settings.log_dir.exists()
+    assert settings.cache_dir.exists()

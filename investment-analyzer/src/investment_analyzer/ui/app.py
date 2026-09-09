@@ -27,16 +27,12 @@ from investment_analyzer.config.models import (
     Risikoklasse,
 )
 from investment_analyzer.ui.bootstrap import AppContext, bootstrap, check_database_ready
+from investment_analyzer.ui.components import DISCLAIMER, render_disclaimer
 from investment_analyzer.ui.profile_form import build_profile_from_form
+from investment_analyzer.ui.screener import render_marktscreener
 from investment_analyzer.ui.status import lade_datenstatus
 
-DISCLAIMER = (
-    "⚠️ **Nur allgemeine Information — keine Anlageberatung.** Dieses Programm "
-    "liefert Research-Ergebnisse im Simulationsmodus, keine individuelle Anlage-, "
-    "Steuer- oder Rechtsberatung und keine Kauf-/Verkaufsempfehlung. Es werden keine "
-    "Wertpapiere automatisch gehandelt. Investitionen in Wertpapiere können bis zum "
-    "Totalverlust des eingesetzten Kapitals führen."
-)
+__all__ = ["DISCLAIMER", "render_disclaimer"]
 
 REGION_OPTIONEN = ["USA", "Deutschland", "Übriges Europa", "Weitere/global"]
 BOERSEN_OPTIONEN = ["NYSE", "NASDAQ", "XETRA", "Euronext", "Sonstige"]
@@ -45,10 +41,6 @@ BOERSEN_OPTIONEN = ["NYSE", "NASDAQ", "XETRA", "Euronext", "Sonstige"]
 @st.cache_resource
 def get_context() -> AppContext:
     return bootstrap()
-
-
-def render_disclaimer() -> None:
-    st.warning(DISCLAIMER)
 
 
 def render_ersteinrichtungsdialog(ctx: AppContext, vorbelegung: NutzerProfil) -> None:
@@ -148,6 +140,17 @@ def render_ersteinrichtungsdialog(ctx: AppContext, vorbelegung: NutzerProfil) ->
                 "Illiquide Werte ausschließen", value=vorbelegung.illiquide_ausschliessen
             )
 
+        st.subheader("Datenquellen")
+        sec_edgar_kontakt_email = st.text_input(
+            "Kontakt-E-Mail für SEC-EDGAR-Abrufe",
+            value=vorbelegung.sec_edgar_kontakt_email or "",
+            help=(
+                "SEC-Pflichtangabe für jeden Datenabruf über den Marktscreener "
+                "(Fair-Access-Policy der SEC, siehe DATA_SOURCES.md). Wird nur an "
+                "SEC EDGAR übertragen, sonst nirgends."
+            ),
+        )
+
         st.subheader("Ausgabe")
         speicherort = st.text_input("Speicherort für Berichte/Exporte", value=str(vorbelegung.speicherort))
         ausgabeformate = st.multiselect(
@@ -192,6 +195,7 @@ def render_ersteinrichtungsdialog(ctx: AppContext, vorbelegung: NutzerProfil) ->
         "speicherort": speicherort,
         "ausgabeformate": ausgabeformate,
         "konfigurierte_quellen": vorbelegung.konfigurierte_quellen,
+        "sec_edgar_kontakt_email": sec_edgar_kontakt_email,
         "haftungsausschluss_akzeptiert": haftungsausschluss_akzeptiert,
     }
 
@@ -226,9 +230,10 @@ def render_datenstatus(ctx: AppContext, profil: NutzerProfil) -> None:
 
     if status.anzahl_datenpunkte == 0:
         st.info(
-            "Noch keine Analysedaten vorhanden: Milestone 2 (Datenbeschaffung) wurde noch "
-            "nicht ausgeführt. Diese Seite zeigt bewusst keine Beispiel- oder Platzhalterzahlen, "
-            "die wie echte Marktdaten aussehen könnten (Auftrag §16)."
+            'Noch keine Analysedaten vorhanden. Über die Seite "Marktscreener" (Sidebar) '
+            "lässt sich ein Unternehmen hinzufügen und echte Daten abrufen. Diese Seite hier "
+            "zeigt bewusst keine Beispiel- oder Platzhalterzahlen, die wie echte Marktdaten "
+            "aussehen könnten (Auftrag §16)."
         )
 
     with st.expander("Aktuelles Analyseprofil", expanded=False):
@@ -254,6 +259,16 @@ def main() -> None:
     profil = ctx.profile_store.load_or_none()
     if profil is None or not profil.haftungsausschluss_akzeptiert:
         render_ersteinrichtungsdialog(ctx, vorbelegung=profil or default_profile())
+        return
+
+    # Einfache Sidebar-Navigation statt st.navigation()/st.Page(): mit nur
+    # zwei Seiten bleibt eine feste Auswahl klarer und lässt sich unverändert
+    # mit AppTest.from_file testen (siehe tests/ui/test_app_smoke.py).
+    # Sobald weitere der neun Auftrag-§10-Seiten dazukommen, ist der Wechsel
+    # auf st.navigation() vorgesehen (siehe NEXT_STEPS.md).
+    seite = st.sidebar.radio("Seite", ["Start / Datenstatus", "Marktscreener"])
+    if seite == "Marktscreener":
+        render_marktscreener(ctx, profil)
     else:
         render_datenstatus(ctx, profil)
 

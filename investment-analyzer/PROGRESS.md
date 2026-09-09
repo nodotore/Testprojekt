@@ -906,3 +906,71 @@ getestet und ehrlich abgenommen. Siehe `NEXT_STEPS.md` für die
 Prioritätenliste künftiger, nicht mehr durch den ursprünglichen
 Auftragsplan vorgegebener Arbeit (Live-Datenverifikation, restliche
 UI-Seiten, KI-Zusammenfassung).
+
+## Nach Milestone 8 — Marktscreener (Auftrag §10, Seite 2)
+
+**Status:** umgesetzt (2026-09-09), auf Nutzerwunsch als erste von neun
+noch fehlenden Auftrag-§10-Oberflächenseiten (siehe ADR-26).
+
+**Umgesetzt:**
+
+- Neues Modul `ingestion/pipeline.py`: Ticker/CIK → Entity finden/
+  anlegen (`entity_resolution/service.py::find_or_create_entity`) →
+  alle im Kennzahlen-Vokabular bekannten XBRL-Kennzahlen abrufen und
+  speichern (`normalization/ingest.py::ingest_sec_company_concept`).
+  `TAG_CANDIDATES_BY_METRIC` probiert bei mehreren möglichen XBRL-Tags
+  je Kennzahl (unterschiedliche Taxonomie-Versionen) jeden Kandidaten;
+  ein HTTP 404 (Unternehmen meldet diesen Tag nicht) gilt als „nicht
+  gemeldet", nicht als Fehlschlag der gesamten Ingestion. Nimmt bereits
+  konstruierte Connector-Instanzen entgegen (Dependency Injection) —
+  vollständig ohne echten Netzwerkzugriff testbar.
+- Neues Profilfeld `NutzerProfil.sec_edgar_kontakt_email` (SEC-
+  Pflichtangabe für den User-Agent) — bewusst ein eigenes, vom Nutzer
+  ausdrücklich gesetztes Feld statt automatisch aus dem Anmeldekonto
+  übernommen (Auftrag §12).
+- `AppContext.secret_store` (nur OS-Keyring, kein Master-Passwort-
+  Dialog — der ist Aufgabe der noch fehlenden Einstellungen-Seite).
+  Neuer `AppSettings.cache_dir` für `connectors.cache.FileCache` —
+  erste produktive `FileCache`-Nutzung (bislang nur in Tests).
+- Neue UI-Seite `ui/screener.py`: Formular zum Hinzufügen per CIK/
+  Ticker, klare Fehlermeldungen bei fehlender Kontakt-E-Mail oder
+  Connector-Fehlern (kein stiller Fehlschlag), optionaler Alpha-
+  Vantage-Kursabruf (nur falls Schlüssel hinterlegt), Liste bereits
+  erfasster Unternehmen mit Namenssuche. Jede Ingestion-Aktion landet
+  im Audit-Log (`log_data_fetch`/`log_data_fetch_error`/
+  `log_secret_accessed`).
+- `app.py`: einfache Sidebar-Navigation (`st.sidebar.radio`) zwischen
+  „Start/Datenstatus" und „Marktscreener"; gemeinsamer Hinweis-Baustein
+  nach `ui/components.py` ausgelagert (vermeidet Zirkelimport).
+
+**Tests:** 20 neue Tests (insgesamt 471, alle grün) — 8 für
+`ingestion/pipeline.py` (inkl. Idempotenz, 404-Behandlung, echter
+Serverfehler wird nicht verschluckt), 4 für `list_entities`, 4 für das
+neue Profilfeld/`cache_dir`, 2 neue `AppTest`-Smoke-Tests für die
+Marktscreener-Seite (inkl. Sidebar-Navigation), 2 für `secret_store` in
+`AppContext`. `ruff check .` und `mypy src` beide fehlerfrei.
+
+**Manuell mit echtem Browser verifiziert** (Playwright gegen einen
+laufenden Streamlit-Prozess, nicht nur `AppTest`): Ersteinrichtung mit
+Kontakt-E-Mail, Wechsel zur Marktscreener-Seite, Formular korrekt
+gerendert, leeres Formular zeigt die erwartete Fehlermeldung ohne
+Absturz. Ein echter SEC-EDGAR-Live-Abruf konnte mangels Internetzugang
+in dieser Sandbox nicht getestet werden — dieselbe, seit Milestone 2
+durchgängig dokumentierte Einschränkung; der Nutzer muss dies auf dem
+eigenen Rechner (`start.bat`) selbst prüfen.
+
+**Geänderte/neue Dateien:** neues Modul `ingestion/` (`__init__.py`,
+`pipeline.py`), neue `ui/screener.py`, neue `ui/components.py`,
+`ui/app.py`, `ui/bootstrap.py`, `config/models.py`, `config/settings.py`,
+`config/secrets.py` (keine funktionale Änderung, nur Re-Export-Kontext),
+`ui/profile_form.py`, `connectors/alpha_vantage.py`
+(`API_KEY_SECRET_NAME`), zugehörige Tests.
+
+**Offene Punkte** (siehe `TODO.md`): acht weitere Auftrag-§10-Seiten,
+Einstellungen-Seite für die Alpha-Vantage-Schlüsselverwaltung (aktuell
+nur nutzbar, wenn der Schlüssel bereits anderweitig im OS-Keyring
+liegt), Umstieg auf `st.navigation()` sobald mehr Seiten existieren.
+
+**Nächster Schritt:** Kandidaten-Rangliste oder Unternehmensdetail
+(nächste sinnvolle Seite, da beide bereits fertige Backend-Bausteine
+haben) — siehe `NEXT_STEPS.md`.

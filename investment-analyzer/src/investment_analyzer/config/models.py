@@ -118,6 +118,17 @@ class NutzerProfil(BaseModel):
     # Konfigurierte Datenquellen (nur Referenz auf Quellennamen, keine Secrets)
     konfigurierte_quellen: list[str] = Field(default_factory=list)
 
+    sec_edgar_kontakt_email: str | None = Field(
+        default=None,
+        description=(
+            "Kontaktadresse für den SEC-EDGAR-User-Agent-Header (SEC-Pflichtangabe, "
+            "siehe DATA_SOURCES.md) — wird bei jedem SEC-EDGAR-Abruf im Marktscreener "
+            "verwendet. Bewusst ein eigenes, ausdrücklich vom Nutzer gesetztes Feld statt "
+            "automatisch aus dem Anmeldekonto übernommen (Auftrag §12: keine Daten an "
+            "Dritte ohne ausdrückliche Zustimmung)."
+        ),
+    )
+
     haftungsausschluss_akzeptiert: bool = Field(
         default=False,
         description=(
@@ -131,6 +142,18 @@ class NutzerProfil(BaseModel):
     @classmethod
     def _waehrung_uppercase(cls, v: str) -> str:
         return v.upper()
+
+    @field_validator("sec_edgar_kontakt_email")
+    @classmethod
+    def _sec_edgar_kontakt_email_grobformat(cls, v: str | None) -> str | None:
+        if v is None:
+            return None
+        stripped = v.strip()
+        if not stripped:
+            return None
+        if "@" not in stripped or stripped.startswith("@") or stripped.endswith("@"):
+            raise ValueError("sec_edgar_kontakt_email sieht nicht wie eine E-Mail-Adresse aus.")
+        return stripped
 
     @field_validator("stil")
     @classmethod

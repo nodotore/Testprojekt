@@ -2,6 +2,23 @@
 
 ## Unreleased
 
+- Marktscreener (Auftrag §10, Seite 2) umgesetzt — erste von neun noch
+  fehlenden Oberflächenseiten nach Abschluss des ursprünglichen
+  Milestone-0–8-Plans (siehe ADR-26). Neues Modul `ingestion/
+  pipeline.py`: Ticker/CIK → Entity finden/anlegen → alle bekannten
+  XBRL-Kennzahlen abrufen und speichern, mehrere mögliche XBRL-Tags je
+  Kennzahl werden der Reihe nach versucht, ein von diesem Unternehmen
+  nicht gemeldeter Tag (HTTP 404) gilt nicht als Fehlschlag der
+  gesamten Ingestion. Neues Profilfeld `sec_edgar_kontakt_email`
+  (SEC-Pflichtangabe, bewusst nicht automatisch aus dem Nutzerkonto
+  übernommen). `SecretStore` erstmals in `AppContext` verfügbar (nur
+  OS-Keyring). Neue Seite `ui/screener.py` mit Formular, Fehler-
+  behandlung, Audit-Log-Anbindung und einer durchsuchbaren Liste
+  bereits erfasster Unternehmen; einfache Sidebar-Navigation in
+  `app.py`. 20 neue Tests (insgesamt 471), `ruff`/`mypy` fehlerfrei,
+  zusätzlich mit echtem Browser gegen einen laufenden Streamlit-Prozess
+  verifiziert.
+
 - Fix: `alembic/env.py` rief `AppSettings.ensure_data_dirs()` nicht auf,
   bevor die SQLite-Verbindung für die Migration aufgebaut wurde. Beim
   allerersten Start auf einem frischen Rechner existiert

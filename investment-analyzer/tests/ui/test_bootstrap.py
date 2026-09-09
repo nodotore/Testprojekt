@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from investment_analyzer.config.secrets import SecretStore
 from investment_analyzer.config.settings import AppSettings
 from investment_analyzer.db import create_all_tables, create_db_engine
 from investment_analyzer.ui.bootstrap import bootstrap, check_database_ready
@@ -26,6 +27,11 @@ def test_bootstrap_erstellt_datenverzeichnisse_und_kontext(tmp_path: Path) -> No
         assert settings.log_dir.exists()
         assert ctx.profile_store.path == settings.profile_path
         assert ctx.profile_store.load_or_none() is None
+        # secret_store ist None, falls kein OS-Keyring verfügbar ist (z. B. in
+        # dieser Sandbox) -- bootstrap() darf dafür NIE abstürzen (siehe
+        # get_secret_store-Tests in tests/config/test_secrets.py für die
+        # beiden Backend-Zweige selbst).
+        assert ctx.secret_store is None or isinstance(ctx.secret_store, SecretStore)
     finally:
         for handler in list(ctx.logger.handlers):
             handler.close()

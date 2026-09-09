@@ -26,12 +26,13 @@ können.
 
 ## Aktueller Stand
 
-**Milestone 8 (Sicherheit und Abnahme, letzte Milestone) — in
-Bearbeitung.** Milestone 1–7 vollständig implementiert und getestet
-(450 automatisierte Tests, `ruff`/`mypy` fehlerfrei). Ehrliche
-Abnahmebewertung gegen alle neun Auftrag-§15-Kriterien: `ABNAHME.md`.
-Bedienungsanleitung für Endnutzer: `BENUTZERHANDBUCH.md`. Details/
-offene Punkte: `PROGRESS.md`/`TODO.md`/`NEXT_STEPS.md`.
+**Milestone 0–8 (aller ursprüngliche Auftragsplan) abgeschlossen.**
+Ehrliche Abnahmebewertung gegen alle neun Auftrag-§15-Kriterien:
+`ABNAHME.md`. Bedienungsanleitung für Endnutzer: `BENUTZERHANDBUCH.md`.
+**Laufende Erweiterung darüber hinaus:** Ausbau der zehn Auftrag-§10-
+Oberflächenseiten (aktuell fertig: „Start/Datenstatus", „Marktscreener";
+acht weitere offen, siehe `NEXT_STEPS.md`). Details/offene Punkte:
+`PROGRESS.md`/`TODO.md`/`NEXT_STEPS.md`.
 
 ## Nicht verhandelbare Leitplanken
 
@@ -56,9 +57,11 @@ offene Punkte: `PROGRESS.md`/`TODO.md`/`NEXT_STEPS.md`.
 ## Modulgrenzen (verbindlich ab Milestone 1)
 
 `src/investment_analyzer/{connectors, normalization, entity_resolution,
-fundamentals, valuation, news, risk, scoring, backtesting, reports, ui,
-audit}` — siehe `DECISIONS.md` → ADR-3 für Details und Dateibesitz je
-Agentenrolle.
+fundamentals, valuation, news, risk, scoring, backtesting, reports,
+ingestion, ui, audit}` — siehe `DECISIONS.md` → ADR-3 für Details und
+Dateibesitz je Agentenrolle. `ingestion/` (neu, siehe ADR-26) bindet
+`connectors/`, `entity_resolution/` und `normalization/` für den
+Marktscreener zusammen — erzeugt selbst keine neuen Werte.
 
 ## Agentenkoordination (Auftrag §4)
 

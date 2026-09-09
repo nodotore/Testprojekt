@@ -258,3 +258,61 @@
       geführt, nicht stillschweigend als erfüllt behandelt.
 - [x] Finaler Doku-Abschluss (alle Pflichtdateien), `pytest`/`ruff`/
       `mypy` grün (453 Tests), Commit + Push.
+
+## Nach Milestone 8 — Ausbau der Auftrag-§10-Oberflächenseiten (laufend)
+
+Der ursprüngliche Auftragsplan (Milestone 0–8) ist abgeschlossen (siehe
+oben). Auf Nutzerwunsch werden jetzt die restlichen Auftrag-§10-
+Bildschirmseiten nachgezogen — der Analysemotor dahinter war bereits
+seit Milestone 1–7 fertig, nur die Bedienoberfläche fehlte.
+
+- [x] **Marktscreener** (Seite 2, siehe ADR-26): Unternehmen per
+      CIK/Ticker hinzufügen, SEC-EDGAR-Fundamentaldaten und optional
+      einen Alpha-Vantage-Kurs abrufen. Neues Modul `ingestion/
+      pipeline.py` (Orchestrierung, per Dependency Injection ohne
+      echten Netzwerkzugriff testbar), neues Profilfeld
+      `sec_edgar_kontakt_email` (SEC-Pflichtangabe, bewusst nicht
+      automatisch aus dem Nutzerkonto übernommen), `SecretStore` erstmals
+      in `AppContext` verfügbar (nur OS-Keyring, kein Master-Passwort-
+      Dialog — folgt mit der Einstellungen-Seite), einfache Liste
+      bereits erfasster Unternehmen mit Namenssuche. Sidebar-Navigation
+      (`st.sidebar.radio`) statt `st.navigation()` — bewusst einfach
+      gehalten, solange nur zwei Seiten existieren. 20 neue Tests
+      (insgesamt 471), `ruff`/`mypy` fehlerfrei. Mit echtem Playwright-
+      Browser gegen einen laufenden Streamlit-Prozess verifiziert
+      (Rendering, Navigation, Formularvalidierung) — ein echter SEC-
+      EDGAR-Live-Abruf war mangels Internetzugang in dieser Sandbox
+      nicht testbar (Nutzer muss das auf dem eigenen Rechner prüfen).
+- [ ] **Kandidaten-Rangliste** (Seite 3): sortierbare Tabelle aller
+      erfassten Unternehmen nach `ScoreResult.total_score`
+      (`scoring/score.py::score_entity` existiert bereits).
+- [ ] **Unternehmensdetail mit Quellenleiste** (Seite 4): vollständiger
+      `ReportBundle` (Kennzahlen, Bewertung, Score, Nachrichten, Quellen)
+      für ein Unternehmen — schließt zugleich Auftrag-§15-Kriterium 8
+      („Exporte = Oberflächenwerte", aktuell laut `ABNAHME.md` nicht
+      verifizierbar, da diese Seite fehlt), da sie laut Modul-Docstring
+      aus demselben `ReportBundle` rendern MUSS wie die Exporte (ADR-21).
+- [ ] **Peer-Vergleich** (Seite 5): `fundamentals/peers.py::find_peers`
+      bereits vorhanden, nur keine UI.
+- [ ] **DCF- und Szenarioanalyse** (Seite 6): `valuation/dcf.py`
+      inkl. Sensitivitätsmatrix bereits vorhanden, nur keine UI.
+- [ ] **Nachrichten/Ereignisse** (Seite 7): `news/report.py::
+      build_news_report` bereits vorhanden, nur keine UI. Benötigt
+      zusätzlich einen GDELT-/IR-RSS-Abrufweg im Marktscreener oder
+      einer eigenen Aktualisierungsfunktion.
+- [ ] **Watchlist/Portfolio** (Seite 8): CSV-Import
+      (`portfolio/csv_import.py`) und `PortfolioReport`-Orchestrierung
+      bereits vorhanden, nur keine UI.
+- [ ] **Backtest** (Seite 9): `backtesting/engine.py::run_backtest`
+      bereits vorhanden, nur keine UI (Stichtags-/Top-N-Auswahl,
+      Kennzahlen-Anzeige, Diagramm der NAV-Zeitreihe).
+- [ ] **Einstellungen, Quellen und Prüfprotokoll** (Seite 10):
+      Schlüsselverwaltung (`SecretStore.set_secret`/`delete_secret`,
+      inkl. Master-Passwort-Dialog für den verschlüsselten Datei-
+      Fallback, falls kein OS-Keyring verfügbar ist), Quellenübersicht
+      (`Source`-Tabelle), Prüfprotokoll-Ansicht (`AuditLogEntry`-Tabelle).
+      Wichtig für den Alpha-Vantage-Kursabruf im Marktscreener, der
+      aktuell nur funktioniert, wenn der Schlüssel bereits anderweitig
+      im OS-Keyring hinterlegt wurde.
+- [ ] Sobald mehr als drei/vier Seiten existieren: Umstieg von
+      `st.sidebar.radio` auf `st.navigation()`/`st.Page()` (siehe ADR-26).

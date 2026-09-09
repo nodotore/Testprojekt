@@ -50,5 +50,6 @@ def build_profile_from_form(data: dict[str, Any]) -> NutzerProfil:
         speicherort=Path(data["speicherort"]),
         ausgabeformate=data["ausgabeformate"],
         konfigurierte_quellen=data.get("konfigurierte_quellen", []),
+        sec_edgar_kontakt_email=data.get("sec_edgar_kontakt_email") or None,
         haftungsausschluss_akzeptiert=data["haftungsausschluss_akzeptiert"],
     )

@@ -53,10 +53,13 @@ gleichem Datenbankstand und gleichem `as_of`-Stichtag nachweislich
 reproduzierbar (Grundvoraussetzung für Point-in-time-Korrektheit,
 ADR-6, durchgängig getestet).
 
-**Offen:** Es gibt noch keinen einzigen Bedienknopf, der „einen
-kompletten Lauf" end-to-end auslöst (siehe Kriterium 8/
-`BENUTZERHANDBUCH.md` Abschnitt 5 — nur die Start-/Datenstatus-Seite
-existiert). Vor allem aber: ein kompletter Lauf gegen die **echten**
+**Offen:** Seit dem Marktscreener (Auftrag §10 Seite 2, siehe ADR-26)
+gibt es einen ersten echten Bedienknopf, der einen realen Datenabruf
+auslöst (SEC EDGAR, optional Alpha Vantage) — aber noch keinen, der
+den kompletten Weg bis zum fertigen Bericht (Bewertung, Score, Export)
+end-to-end auslöst; die dafür nötige Unternehmensdetail-Seite fehlt
+noch (siehe Kriterium 8/`BENUTZERHANDBUCH.md` Abschnitt 5). Vor allem
+aber: ein kompletter Lauf gegen die **echten**
 externen Datenquellen (SEC EDGAR, Alpha Vantage, GDELT, IR-RSS) wurde
 in dieser Entwicklungsumgebung **kein einziges Mal tatsächlich
 ausgeführt**, weil ausgehender Internetzugriff hier durch die
@@ -181,7 +184,10 @@ künftige UI-Detailseite MUSS laut Modul-Docstring ebenfalls aus einem
 `ReportBundle` rendern, damit dieselbe Garantie gilt.
 
 **Aber:** Es existiert aktuell KEINE UI-Seite, die Berichtswerte
-überhaupt anzeigt (nur „Start/Datenstatus", siehe
+(Kennzahlen, Bewertung, Score) überhaupt anzeigt — „Start/Datenstatus"
+zeigt nur Zähler, der neue „Marktscreener" (siehe ADR-26) zeigt nur
+Stammdaten (Name, Land, Kennungen), keine der Werte aus
+`FundamentalsReport`/`ValuationReport`/`ScoreResult` (siehe
 `BENUTZERHANDBUCH.md` Abschnitt 5) — es gibt daher wörtlich nichts, mit
 dem ein Export verglichen werden könnte. Dieses Kriterium kann erst
 erfüllt werden, sobald eine solche UI-Seite gebaut ist. Als offener

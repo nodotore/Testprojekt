@@ -40,6 +40,10 @@ ALPHA_VANTAGE_LICENSE_NOTE = (
 ALLOWED_HOSTS = frozenset({"www.alphavantage.co"})
 BASE_URL = "https://www.alphavantage.co"
 
+#: Fester Name, unter dem der Alpha-Vantage-API-Schlüssel im ``SecretStore``
+#: abgelegt wird (siehe ``config/secrets.py``, ``ui/screener.py``).
+API_KEY_SECRET_NAME = "alpha_vantage_api_key"
+
 #: Free-Tier-Limit (DATA_SOURCES.md). Bei bezahltem Tarif per rate_limiter-Parameter überschreibbar.
 FREE_TIER_MAX_CALLS_PER_MINUTE = 5
 

@@ -57,9 +57,17 @@ class AppSettings(BaseSettings):
     def log_dir(self) -> Path:
         return self.data_dir / "logs"
 
+    @property
+    def cache_dir(self) -> Path:
+        """Lokaler Connector-Cache (``connectors/cache.py::FileCache``), z. B. für
+        den Marktscreener (``ui/screener.py``)."""
+
+        return self.data_dir / "cache"
+
     def ensure_data_dirs(self) -> None:
         self.data_dir.mkdir(parents=True, exist_ok=True)
         self.log_dir.mkdir(parents=True, exist_ok=True)
+        self.cache_dir.mkdir(parents=True, exist_ok=True)
 
 
 @lru_cache

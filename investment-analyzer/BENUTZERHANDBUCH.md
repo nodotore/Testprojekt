@@ -116,47 +116,80 @@ vom eigenen Rechner aus.
 Das Profil steuert, welche Datenpunkte/Berichte als „im Rahmen des
 Auftrags" gelten — es ersetzt keine eigene Sorgfaltsprüfung.
 
+**Kontakt-E-Mail für SEC-EDGAR-Abrufe:** Im Abschnitt „Datenquellen"
+des Profils außerdem Pflicht, sobald der Marktscreener (Abschnitt 4a)
+genutzt werden soll — die SEC verlangt eine erreichbare Kontaktadresse
+im technischen Anfrage-Header jedes Abrufs (Fair-Access-Policy). Wird
+ausschließlich an SEC EDGAR übertragen, sonst nirgends.
+
+## 4a. Der Marktscreener — Unternehmen hinzufügen und Daten abrufen
+
+Über die Seitenleiste („Seite" → „Marktscreener") erreichbar. Hier wird
+ein Unternehmen erstmals zur Datenbank hinzugefügt:
+
+1. **Kennung wählen:** entweder die SEC-eigene **CIK** (zu finden über
+   die [SEC-EDGAR-Firmensuche](https://www.sec.gov/cgi-bin/browse-edgar))
+   oder ein **US-Börsenkürzel (Ticker)** — wird intern automatisch zu
+   einer CIK aufgelöst. SEC EDGAR deckt ausschließlich US-Emittenten ab
+   (bekannte, dokumentierte Lücke der Kostenlos-Variante, siehe
+   `DATA_SOURCES.md`).
+2. **„Hinzufügen und Daten abrufen" klicken.** Es werden automatisch
+   alle im Programm bekannten Kennzahlen abgerufen (Umsatz, Gewinn,
+   Bilanzposten usw.) — was das Unternehmen tatsächlich gemeldet hat,
+   erscheint als „gefunden", der Rest ehrlich als „nicht gemeldet"
+   (keine geratenen Werte).
+3. **Optional: Kursabruf über Alpha Vantage.** Erscheint nur, wenn
+   bereits ein API-Schlüssel im Windows Credential Manager hinterlegt
+   ist (eine eigene Bedienseite dafür ist noch nicht gebaut, siehe
+   unten) — sonst wird dieser Schritt übersprungen, nicht erzwungen.
+4. Ergebnis erscheint sofort auf derselben Seite: entweder eine
+   Erfolgsmeldung mit Anzahl neuer Datenpunkte, oder — bei einem
+   Quellenausfall, falschen Eingaben o. Ä. — ein klarer Fehlertext statt
+   eines stillen Fehlschlags.
+
+Unten auf der Seite: durchsuchbare Liste aller bereits erfassten
+Unternehmen (Name, Land, Börse, Branche, Kennungen).
+
 ## 5. Was die Oberfläche heute zeigt — und was noch nicht
 
-**Bitte diesen Abschnitt aufmerksam lesen — er ist der wichtigste Teil
-dieses Handbuchs für den aktuellen Stand.**
+**Bitte diesen Abschnitt aufmerksam lesen.**
 
-Die grafische Oberfläche zeigt aktuell genau eine Seite: **„Start /
-Datenstatus"** — Ersteinrichtung/Profilverwaltung sowie eine ehrliche
-Zählung dessen, was tatsächlich in der Datenbank steht (Anzahl
-Unternehmen, Datenquellen, Datenpunkte). Solange noch kein Datenabruf
-stattgefunden hat, zeigt diese Seite bewusst **Nullen** — niemals
-Platzhalter- oder Beispielzahlen, die wie echte Marktdaten aussehen
-könnten.
+Die grafische Oberfläche hat aktuell zwei Seiten: **„Start /
+Datenstatus"** (Ersteinrichtung/Profilverwaltung, ehrliche Zählung
+dessen, was in der Datenbank steht) und **„Marktscreener"** (Abschnitt
+4a — Unternehmen hinzufügen, Daten abrufen). Solange noch kein
+Datenabruf stattgefunden hat, zeigt die Startseite bewusst **Nullen**
+— niemals Platzhalter- oder Beispielzahlen, die wie echte Marktdaten
+aussehen könnten.
 
-Die im Auftrag vorgesehenen weiteren neun Oberflächen-Seiten
-(Marktscreener, Kandidaten-Rangliste, Unternehmensdetail,
-Peer-Vergleich, DCF-/Szenarioanalyse, Nachrichten/Ereignisse,
-Watchlist/Portfolio, Backtest, Einstellungen/Quellen/Prüfprotokoll)
-sind **noch nicht als Bildschirmseiten gebaut** — sie werden bewusst
-nicht als leere Platzhalter vorgezeigt, um keine Funktionalität
-vorzutäuschen, die noch nicht existiert (Auftrag §16).
+Die im Auftrag vorgesehenen weiteren acht Oberflächen-Seiten
+(Kandidaten-Rangliste, Unternehmensdetail, Peer-Vergleich, DCF-/
+Szenarioanalyse, Nachrichten/Ereignisse, Watchlist/Portfolio, Backtest,
+Einstellungen/Quellen/Prüfprotokoll) sind **noch nicht als
+Bildschirmseiten gebaut** — sie werden bewusst nicht als leere
+Platzhalter vorgezeigt, um keine Funktionalität vorzutäuschen, die
+noch nicht existiert (Auftrag §16).
 
 **Was bereits vollständig funktioniert und getestet ist** (nur noch
-nicht über einen Button in der Oberfläche erreichbar): der komplette
-Analysemotor — Datenabruf (SEC EDGAR, Alpha Vantage, GDELT, IR-RSS),
-Kennzahlenberechnung, Bewertung (Multiples + DCF mit Szenarien),
-erklärbares Scoring, Nachrichtenauswertung, Portfolio-/Watchlist-
-Analyse, Backtesting sowie JSON-/Excel-/PDF-Export. Alle diese Bausteine
-sind unabhängig voneinander getestet (445+ automatisierte Tests, siehe
-`PROGRESS.md`) und lassen sich bereits heute über ein kurzes
-Python-Skript aufrufen — das erfordert allerdings Grundkenntnisse in
-Python. Ein vollständiges, tatsächlich lauffähiges Beispiel für den
-gesamten Weg von der Datenbank bis zum fertigen Bericht (JSON/Excel/PDF)
-findet sich in `tests/reports/test_bundle.py` und
+nicht über einen Button in der Oberfläche erreichbar): Bewertung
+(Multiples + DCF mit Szenarien), erklärbares Scoring,
+Nachrichtenauswertung (GDELT/IR-RSS-Abruf selbst ist noch nicht in der
+Oberfläche, nur SEC EDGAR/Alpha Vantage über den Marktscreener),
+Portfolio-/Watchlist-Analyse, Backtesting sowie JSON-/Excel-/PDF-
+Export. Alle diese Bausteine sind unabhängig voneinander getestet
+(470+ automatisierte Tests, siehe `PROGRESS.md`) und lassen sich
+bereits heute über ein kurzes Python-Skript aufrufen — das erfordert
+allerdings Grundkenntnisse in Python. Ein vollständiges, tatsächlich
+lauffähiges Beispiel für den gesamten Weg von der Datenbank bis zum
+fertigen Bericht (JSON/Excel/PDF) findet sich in
+`tests/reports/test_bundle.py` und
 `tests/reports/test_excel_export.py`/`test_pdf_export.py` — diese
 Testdateien sind bewusst der verlässlichste Startpunkt für ein eigenes
 Skript, da sie (anders als eine gesondert gepflegte Beispieldatei) bei
 jeder Änderung automatisch mitgetestet werden und daher nie veralten.
 
-Der Ausbau der restlichen Bildschirmseiten ist in `PLAN.md`/
-`NEXT_STEPS.md` als nächster inhaltlicher Schritt nach Milestone 8
-vorgesehen.
+Der Ausbau der restlichen Bildschirmseiten läuft — siehe `TODO.md`/
+`NEXT_STEPS.md` für die geplante Reihenfolge.
 
 ## 6. Datenschutz und Sicherheit
 

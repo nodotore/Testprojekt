@@ -19,6 +19,11 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from investment_analyzer.audit.logger import AuditLogger
 from investment_analyzer.audit.logging_setup import configure_logging
+from investment_analyzer.config.secrets import (
+    SecretStore,
+    SecretStoreUnavailableError,
+    get_secret_store,
+)
 from investment_analyzer.config.settings import AppSettings, get_settings
 from investment_analyzer.config.store import ProfileStore
 from investment_analyzer.db import create_db_engine, create_session_factory
@@ -35,6 +40,13 @@ class AppContext:
     audit_logger: AuditLogger
     profile_store: ProfileStore
     logger: Logger
+    #: ``None``, falls kein Secret-Store-Backend verfügbar ist (z. B. kein
+    #: OS-Keyring und kein Master-Passwort gesetzt) — der Marktscreener
+    #: zeigt in diesem Fall einen klaren Hinweis statt eines Absturzes
+    #: (Auftrag §4: „Fail loud, nicht silent"). Ein Bedienfeld zum Setzen
+    #: eines Master-Passworts für den verschlüsselten Datei-Fallback ist
+    #: noch nicht gebaut (siehe TODO.md, Einstellungen-Seite).
+    secret_store: SecretStore | None
 
 
 def check_database_ready(engine: Engine) -> bool:
@@ -59,6 +71,16 @@ def bootstrap(settings: AppSettings | None = None) -> AppContext:
     audit_logger = AuditLogger(session_factory)
     profile_store = ProfileStore(resolved_settings.profile_path)
 
+    try:
+        # Ohne Master-Passwort: nutzt nur das OS-Keyring (unter Windows der
+        # Credential Manager) — funktioniert dort i. d. R. ohne weitere
+        # Einrichtung. Ist kein Keyring verfügbar, bleibt secret_store
+        # bewusst None statt eine Passwortabfrage zu erzwingen, für die es
+        # noch keine Oberflächenseite gibt.
+        secret_store: SecretStore | None = get_secret_store(path=resolved_settings.secrets_path)
+    except SecretStoreUnavailableError:
+        secret_store = None
+
     return AppContext(
         settings=resolved_settings,
         engine=engine,
@@ -66,4 +88,5 @@ def bootstrap(settings: AppSettings | None = None) -> AppContext:
         audit_logger=audit_logger,
         profile_store=profile_store,
         logger=logger,
+        secret_store=secret_store,
     )

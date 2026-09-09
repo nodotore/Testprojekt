@@ -873,6 +873,92 @@ gilt Auftrag-§15-Kriterium 7 („Backtests nachweislich kein Look-ahead")
 als erfüllt — siehe `ABNAHME.md` für die vollständige, kriterienweise
 Abnahmebewertung.
 
+## ADR-26: Marktscreener — neues `ingestion/`-Modul, Sidebar-Navigation, SecretStore in der UI
+
+**Kontext:** Nach Abschluss von Milestone 8 (alle neun Auftrag-§15-
+Kriterien bewertet, siehe ADR-25/`ABNAHME.md`) wurde mit dem Ausbau der
+neun noch fehlenden Auftrag-§10-Oberflächenseiten begonnen. Erste Seite:
+**Marktscreener** (Auftrag §10, Seite 2) — Unternehmen per CIK/Ticker
+hinzufügen, SEC-EDGAR-Fundamentaldaten und optional einen Alpha-Vantage-
+Kurs abrufen.
+
+**Entscheidung — neues Modul `ingestion/`:** Die Orchestrierung
+„Ticker/CIK → Entity finden/anlegen → alle bekannten XBRL-Kennzahlen
+abrufen und speichern" passt in kein bestehendes Modul aus ADR-3 (sie
+bindet `connectors/`, `entity_resolution/` und `normalization/`
+zusammen, erzeugt aber selbst keine neuen Werte). Neues Modul
+`ingestion/pipeline.py`, konsequent nach demselben Muster wie die
+übrigen späteren Modul-Ergänzungen (`portfolio/` in Milestone 6,
+`backtesting/` in Milestone 7): nimmt bereits konstruierte Connector-
+Instanzen entgegen (Dependency Injection) statt selbst HTTP-Clients zu
+konfigurieren — bleibt dadurch vollständig ohne echten Netzwerkzugriff
+testbar (`tests/ingestion/test_pipeline.py`, `httpx.MockTransport`,
+identisches Muster wie `tests/connectors/`).
+
+**Entscheidung — XBRL-Tag-Mehrdeutigkeit:** `fundamentals/metrics.py::
+SEC_US_GAAP_TAG_TO_METRIC` bildet mehrere XBRL-Tags auf dieselbe
+kanonische Kennzahl ab (z. B. drei Revenue-Varianten), da Unternehmen
+je nach Taxonomie-Version unterschiedliche Tags melden.
+`ingestion/pipeline.py::TAG_CANDIDATES_BY_METRIC` gruppiert das Mapping
+umgekehrt (Kennzahl → Tag-Kandidaten) und probiert beim Abruf jeden
+Kandidaten der Reihe nach; ein HTTP 404 (dieses Unternehmen meldet
+diesen konkreten Tag nicht) gilt NICHT als Fehlschlag der gesamten
+Ingestion, sondern die Kennzahl landet in `nicht_gemeldete_kennzahlen`
+— sichtbar für den Nutzer, aber kein Abbruch (Auftrag §4: „Fail loud"
+gilt für echte Fehler, nicht für eine einzelne, von diesem Unternehmen
+schlicht nicht gemeldete Kennzahl). Jeder andere Fehler (Timeout, 5xx,
+kaputtes Format) wird ungefiltert durchgereicht.
+
+**Entscheidung — neues Profilfeld `sec_edgar_kontakt_email`:** SEC
+EDGAR verlangt eine Kontaktadresse im User-Agent jeder Anfrage (Fair-
+Access-Policy). Bewusst NICHT automatisch aus einem Anmeldekonto/einer
+Systemeinstellung übernommen — Auftrag §12 verbietet die Weitergabe
+von Nutzerdaten an Dritte ohne ausdrückliche Zustimmung; SEC EDGAR ist
+aus Sicht dieses Programms ein Dritter. Stattdessen ein eigenes,
+ausdrücklich vom Nutzer im Ersteinrichtungsdialog gesetztes Profilfeld
+(`NutzerProfil.sec_edgar_kontakt_email`, Grobformat-Validierung). Ohne
+gesetztes Feld zeigt der Marktscreener eine klare Fehlermeldung statt
+eines unbenutzbaren Formulars oder eines automatisch geratenen Werts.
+
+**Entscheidung — SecretStore in `AppContext`, aber kein Master-
+Passwort-Dialog:** `ui/bootstrap.py::bootstrap()` versucht jetzt
+`get_secret_store()` ausschließlich über das OS-Keyring (kein Master-
+Passwort-Parameter) — unter Windows funktioniert das i. d. R. ohne
+weitere Einrichtung über den Credential Manager. Schlägt das fehl,
+bleibt `AppContext.secret_store` bewusst `None` statt eine
+Passwortabfrage zu erzwingen, für die noch keine Oberflächenseite
+existiert (die „Einstellungen"-Seite, Auftrag §10 Seite 10, folgt noch
+— dort gehört die Schlüsselverwaltung inkl. Datei-Fallback-Passwort
+hin, siehe TODO.md). Der Marktscreener prüft `secret_store`/den
+Alpha-Vantage-Schlüssel defensiv und bietet den Kursabruf einfach nicht
+an, statt abzustürzen.
+
+**Entscheidung — Sidebar-`st.radio` statt `st.navigation()`/`st.Page()`:**
+Mit aktuell zwei Seiten hält eine einfache `st.sidebar.radio(...)`-
+Auswahl in `app.py::main()` den bestehenden Testansatz
+(`AppTest.from_file`, `tests/ui/test_app_smoke.py`) unverändert
+funktionsfähig. Sobald weitere der neun Auftrag-§10-Seiten dazukommen
+(spätestens ab vier bis fünf Seiten wird eine flache Radio-Liste
+unübersichtlich), ist der Wechsel auf `st.navigation()`/`st.Page()`
+vorgesehen — im Code als Kommentar vermerkt, in `NEXT_STEPS.md`
+geführt.
+
+**Neuer Baustein:** `AppSettings.cache_dir` (`data_dir/cache`) für
+`connectors.cache.FileCache` — bislang wurde `FileCache` nur in Tests
+verwendet, der Marktscreener ist die erste Stelle, die einen Connector
+tatsächlich produktiv mit Cache verwendet.
+
+**Tests:** 20 neue Tests (8 `ingestion/pipeline.py`, 4 `list_entities`,
+2 Profilfeld-Validierung, 2 neue `AppTest`-Smoke-Tests für die
+Marktscreener-Seite, weitere kleinere Ergänzungen) — insgesamt 471,
+`ruff`/`mypy` fehlerfrei. Zusätzlich mit echtem Playwright-Browser
+gegen einen laufenden Streamlit-Prozess verifiziert (Seite rendert,
+Navigation funktioniert, Formularvalidierung bei leerer Eingabe zeigt
+korrekt eine Fehlermeldung ohne Absturz) — ein tatsächlicher SEC-EDGAR-
+Live-Abruf konnte in dieser Sandbox mangels Internetzugang nicht
+getestet werden (dieselbe, seit Milestone 2 durchgängig dokumentierte
+Einschränkung).
+
 ## Noch zu treffende Entscheidungen
 
 Keine blockierenden Entscheidungen mehr offen für Milestone 1–7 (alle
