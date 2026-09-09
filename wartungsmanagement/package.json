@@ -1,0 +1,23 @@
+{
+  "name": "wartungsmanagement",
+  "version": "1.0.0",
+  "description": "Wartungsmanagement: Hersteller, Geräte, Terminvorschläge, Outlook-Kalenderabgleich",
+  "main": "index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "node --no-warnings --test tests/*.test.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "private": true,
+  "dependencies": {
+    "@azure/identity": "^4.13.2",
+    "@microsoft/microsoft-graph-client": "^3.0.7",
+    "exceljs": "^4.4.0",
+    "isomorphic-fetch": "^3.0.0"
+  }
+}
