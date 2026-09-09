@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+- Fix: `pyproject.toml`s `numpy<2.1`-Obergrenze entfernt. Erste reale
+  Windows-Installation nach Milestone 8 schlug fehl
+  (`metadata-generation-failed` beim Bauen von `numpy` aus dem
+  Quellcode, da auf dem Zielrechner kein C-Compiler installiert ist und
+  für den dortigen Python-Stand kein vorgefertigtes Wheel innerhalb der
+  alten `numpy`-Version existierte). `numpy` wird im Code nirgends
+  direkt verwendet (nur transitiv über `pandas`), die Obergrenze war
+  eine willkürliche, nicht dokumentierte Absicherung aus Milestone 1.
+  Mit einer frischen Installation (`numpy` 2.5.3, `pandas` 3.0.5, die
+  aktuell neuesten Versionen) verifiziert: 453 Tests grün, `ruff`/
+  `mypy` fehlerfrei.
+
 - Milestone 8 (Sicherheit und Abnahme) abgeschlossen — unabhängiger
   Security-/Plausibilitätscheck (ADR-25): ein separater Agentenlauf
   ohne Kenntnis der Implementierungsentscheidungen fand einen echten,
