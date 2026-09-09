@@ -2,6 +2,22 @@
 
 ## Unreleased
 
+- Unternehmensdetail mit Quellenleiste (Auftrag §10, Seite 4) umgesetzt
+  — zweite von neun noch fehlenden Oberflächenseiten (siehe ADR-27).
+  Neue Seite `ui/detail.py` rendert ausschließlich aus demselben
+  `ReportBundle`/`report_bundle_to_dict()`-Dict wie die Excel-/PDF-/
+  JSON-Exporte (ADR-21) — Kopfzeile mit Datenstand/Analysezeit/
+  Marktdatenverzögerung/Datenabdeckung/Konfidenz, Kennzahlen, Bewertung
+  inkl. DCF-Szenarien/Peer-Vergleich, Score inkl. Risikoabzügen/
+  Gegenargumenten/Ungültigkeitsbedingungen, Nachrichten-Cluster,
+  Quellenleiste mit Lizenzhinweis je Quelle, Annahmen, sowie JSON-/
+  Excel-/PDF-Download-Buttons aus demselben Bericht. Damit gilt
+  Auftrag-§15-Kriterium 8 („Exporte = Oberflächenwerte") jetzt als
+  strukturell und durch eine echte UI-Seite erfüllt (siehe `ABNAHME.md`).
+  7 neue Tests (insgesamt 478), `ruff`/`mypy` fehlerfrei, zusätzlich mit
+  echtem Browser gegen einen laufenden Streamlit-Prozess mit
+  synthetisch befüllter Testdatenbank verifiziert.
+
 - Marktscreener (Auftrag §10, Seite 2) umgesetzt — erste von neun noch
   fehlenden Oberflächenseiten nach Abschluss des ursprünglichen
   Milestone-0–8-Plans (siehe ADR-26). Neues Modul `ingestion/

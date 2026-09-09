@@ -1,12 +1,13 @@
-"""Streamlit-Einstiegspunkt: Seite 1 „Start/Datenstatus" + Ersteinrichtungsdialog.
+"""Streamlit-Einstiegspunkt: Seite 1 „Start/Datenstatus" + Ersteinrichtungsdialog,
+bindet weitere Auftrag-§10-Seiten über die Sidebar-Navigation ein.
 
-Weitere neun Seiten aus Auftrag §10 (Marktscreener, Kandidaten-Rangliste,
-Unternehmensdetail, Peer-Vergleich, DCF/Szenarioanalyse, Nachrichten/
-Ereignisse, Watchlist/Portfolio, Backtest, Einstellungen/Quellen/
-Prüfprotokoll) folgen in den jeweils zuständigen späteren Milestones
-(siehe ``PLAN.md``) — sie werden hier bewusst NICHT als leere
-Platzhalter vorgebaut, um keine Funktionalität vorzutäuschen, die noch
-nicht existiert.
+Bereits gebaut: Marktscreener (``ui/screener.py``, ADR-26),
+Unternehmensdetail mit Quellenleiste (``ui/detail.py``). Sechs weitere
+Auftrag-§10-Seiten (Kandidaten-Rangliste, Peer-Vergleich, DCF-/
+Szenarioanalyse, Nachrichten/Ereignisse, Watchlist/Portfolio, Backtest,
+Einstellungen/Quellen/Prüfprotokoll) fehlen noch — sie werden bewusst
+NICHT als leere Platzhalter vorgebaut, um keine Funktionalität
+vorzutäuschen, die noch nicht existiert (siehe ``TODO.md``).
 
 Start: ``streamlit run src/investment_analyzer/ui/app.py`` (siehe
 ``start.ps1``/``start.bat`` im Projektstamm für den vollständigen
@@ -28,6 +29,7 @@ from investment_analyzer.config.models import (
 )
 from investment_analyzer.ui.bootstrap import AppContext, bootstrap, check_database_ready
 from investment_analyzer.ui.components import DISCLAIMER, render_disclaimer
+from investment_analyzer.ui.detail import render_unternehmensdetail
 from investment_analyzer.ui.profile_form import build_profile_from_form
 from investment_analyzer.ui.screener import render_marktscreener
 from investment_analyzer.ui.status import lade_datenstatus
@@ -266,9 +268,13 @@ def main() -> None:
     # mit AppTest.from_file testen (siehe tests/ui/test_app_smoke.py).
     # Sobald weitere der neun Auftrag-§10-Seiten dazukommen, ist der Wechsel
     # auf st.navigation() vorgesehen (siehe NEXT_STEPS.md).
-    seite = st.sidebar.radio("Seite", ["Start / Datenstatus", "Marktscreener"])
+    seite = st.sidebar.radio(
+        "Seite", ["Start / Datenstatus", "Marktscreener", "Unternehmensdetail"]
+    )
     if seite == "Marktscreener":
         render_marktscreener(ctx, profil)
+    elif seite == "Unternehmensdetail":
+        render_unternehmensdetail(ctx, profil)
     else:
         render_datenstatus(ctx, profil)
 

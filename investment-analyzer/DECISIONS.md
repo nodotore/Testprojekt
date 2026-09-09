@@ -959,6 +959,73 @@ Live-Abruf konnte in dieser Sandbox mangels Internetzugang nicht
 getestet werden (dieselbe, seit Milestone 2 durchgängig dokumentierte
 Einschränkung).
 
+## ADR-27: Unternehmensdetail mit Quellenleiste — vollständiges Report-Rendering, Auftrag-§15-Kriterium 8 strukturell erfüllt
+
+**Kontext:** Zweite der neun noch fehlenden Auftrag-§10-Oberflächen-
+seiten nach dem Marktscreener (ADR-26): **Unternehmensdetail mit
+Quellenleiste** (Auftrag §10, Seite 4) — der vollständige Bericht
+(Kennzahlen, Bewertung, Score, Nachrichten, Quellen) für ein einzelnes
+Unternehmen. Bewusst als zweite Seite priorisiert (vor Kandidaten-
+Rangliste), weil sie die erste UI-Seite ist, die tatsächlich
+`FundamentalsReport`/`ValuationReport`/`ScoreResult`-Werte anzeigt —
+`ABNAHME.md` führte Auftrag-§15-Kriterium 8 („Exporte = Oberflächen-
+werte") bislang als „strukturell fundiert, aber empirisch nicht
+nachweisbar" auf, da mangels UI-Detailseite kein Vergleich zwischen
+angezeigten und exportierten Werten möglich war.
+
+**Entscheidung — ausschließlich aus `ReportBundle` rendern:** Neues
+Modul `ui/detail.py` ruft `reports/bundle.py::build_report_bundle` auf
+und rendert danach ausschließlich aus `report_bundle_to_dict(bundle)`
+— demselben Dict, das `report_bundle_to_json`/`build_excel_workbook`/
+`build_pdf_bytes` für die Exportformate verwenden (ADR-21). Die Seite
+selbst berechnet nichts nach und rundet nichts eigenständig (Auftrag
+§11: keine neuen Werte in der UI-Schicht). Damit ist strukturell
+garantiert, dass UI und Exporte nie auseinanderlaufen können — Kriterium
+8 gilt damit als erfüllt, siehe aktualisierte Bewertung in `ABNAHME.md`.
+Die drei Download-Buttons (JSON/Excel/PDF) auf derselben Seite bauen
+bewusst aus demselben bereits im Speicher vorliegenden `bundle`-Objekt,
+nicht aus einer zweiten, separaten Berechnung.
+
+**Entscheidung — Kopfzeile nach Auftrag-§10-Pflichtangaben:** Ganz oben
+auf der Seite erscheinen Datenstand (`as_of`), Analysezeit
+(`generated_at_utc`), Marktdatenverzögerungshinweis, Datenabdeckung und
+Konfidenz (Score-Coverage) — exakt die von Auftrag §10 für jeden
+Bericht geforderten Angaben, direkt aus `bundle.header` übernommen statt
+neu zusammengestellt.
+
+**Entscheidung — `_kennzahl()`-Formatierung statt Streamlit-Rohanzeige:**
+Eine private Hilfsfunktion formatiert jeden Kennzahlenwert für die
+Anzeige: `None` wird immer als „—" dargestellt (nie als 0 oder eine
+andere geratene Zahl, Auftrag §11), `bool` wird vor dem allgemeinen
+Zahlenzweig behandelt (da `bool` in Python eine `int`-Unterklasse ist
+und sonst fälschlich als 1/0 formatiert würde), Prozentwerte erhalten
+ein Vorzeichen. Einheitlich für Kennzahlen, Bewertung und Score
+verwendet, damit „fehlend" nirgends auf der Seite wie ein echter
+Messwert aussieht.
+
+**Entscheidung — Auswahl über `ui/screener.py::list_entities`
+wiederverwendet:** Statt einer zweiten Abfragefunktion nutzt die
+Unternehmensauswahl (Dropdown) dieselbe `list_entities()`-Funktion wie
+der Marktscreener. Beim Laden des vollständigen Berichts wird die
+Entity anschließend in einer neuen Session per `session.get(Entity,
+entity_id)` erneut geladen (nicht `session.add()` auf der bereits
+detached-geladenen Instanz — das hätte einen SQLAlchemy-Fehler
+ausgelöst, siehe Debugging-Historie in `PROGRESS.md`).
+
+**Tests:** 7 neue Tests (5 reine Formatierungstests für `_kennzahl()`
+in `tests/ui/test_detail.py`, 2 neue `AppTest`-Smoke-Tests in
+`tests/ui/test_app_smoke.py` — leerer Zustand ohne erfasste
+Unternehmen sowie voller Bericht mit synthetisch befüllter
+Testdatenbank, gleiches Muster wie `tests/reports/test_bundle.py`) —
+insgesamt 478, `ruff`/`mypy` fehlerfrei. Zusätzlich mit echtem
+Playwright-Browser gegen einen laufenden Streamlit-Prozess mit
+synthetisch befüllter Testdatenbank verifiziert: alle Abschnitte
+(Kopfzeile, Kennzahlen, Bewertung inkl. DCF-Szenarien, Score inkl.
+Risikoabzügen, Nachrichten, Quellenleiste mit Lizenzhinweisen,
+Annahmen, drei Download-Buttons) rendern korrekt und ohne
+Konsolenfehler (abgesehen von erwarteten, harmlosen Streamlit-
+Telemetrie-Fehlschlägen mangels Internetzugang in dieser Sandbox).
+
 ## Noch zu treffende Entscheidungen
 
 Keine blockierenden Entscheidungen mehr offen für Milestone 1–7 (alle

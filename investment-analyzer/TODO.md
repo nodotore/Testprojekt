@@ -286,12 +286,21 @@ seit Milestone 1–7 fertig, nur die Bedienoberfläche fehlte.
 - [ ] **Kandidaten-Rangliste** (Seite 3): sortierbare Tabelle aller
       erfassten Unternehmen nach `ScoreResult.total_score`
       (`scoring/score.py::score_entity` existiert bereits).
-- [ ] **Unternehmensdetail mit Quellenleiste** (Seite 4): vollständiger
-      `ReportBundle` (Kennzahlen, Bewertung, Score, Nachrichten, Quellen)
-      für ein Unternehmen — schließt zugleich Auftrag-§15-Kriterium 8
-      („Exporte = Oberflächenwerte", aktuell laut `ABNAHME.md` nicht
-      verifizierbar, da diese Seite fehlt), da sie laut Modul-Docstring
-      aus demselben `ReportBundle` rendern MUSS wie die Exporte (ADR-21).
+- [x] **Unternehmensdetail mit Quellenleiste** (Seite 4, siehe ADR-27):
+      vollständiger `ReportBundle` (Kopfzeile mit Datenstand/Analysezeit/
+      Marktdatenverzögerung/Datenabdeckung/Konfidenz, Kennzahlen,
+      Bewertung inkl. DCF-Szenarien/Peer-Vergleich, Score inkl.
+      Risikoabzügen/Gegenargumenten/Ungültigkeitsbedingungen, Nachrichten-
+      Cluster, Quellenleiste mit Lizenzhinweis, Annahmen, JSON-/Excel-/
+      PDF-Export) für ein ausgewähltes Unternehmen. Neues Modul
+      `ui/detail.py` — rendert ausschließlich aus `report_bundle_to_dict()`,
+      genau wie die Exportformate, wodurch Auftrag-§15-Kriterium 8
+      („Exporte = Oberflächenwerte") jetzt strukturell erfüllt ist (siehe
+      `ABNAHME.md`). 7 neue Tests (insgesamt 478), `ruff`/`mypy`
+      fehlerfrei. Mit echtem Playwright-Browser gegen einen laufenden
+      Streamlit-Prozess mit synthetisch befüllter Testdatenbank
+      verifiziert — alle Abschnitte inkl. der drei Download-Buttons
+      rendern korrekt.
 - [ ] **Peer-Vergleich** (Seite 5): `fundamentals/peers.py::find_peers`
       bereits vorhanden, nur keine UI.
 - [ ] **DCF- und Szenarioanalyse** (Seite 6): `valuation/dcf.py`

@@ -125,19 +125,26 @@
       Modul, Profilfeld `sec_edgar_kontakt_email`, `SecretStore` in
       der Oberfläche, Sidebar-Navigation. 471 Tests grün, ruff/mypy
       fehlerfrei, mit echtem Browser (Playwright) verifiziert.
-    - **Ausbau der acht weiteren Auftrag-§10-UI-Seiten** (Kandidaten-
-      Rangliste, Unternehmensdetail, Peer-Vergleich, DCF-/
-      Szenarioanalyse, Nachrichten/Ereignisse, Watchlist/Portfolio,
-      Backtest, Einstellungen/Quellen/Prüfprotokoll) — empfohlene
-      Reihenfolge: Kandidaten-Rangliste und Unternehmensdetail zuerst
-      (schließt zugleich Auftrag-§15-Kriterium 8 „Exporte =
-      Oberflächenwerte", aktuell laut `ABNAHME.md` nicht verifizierbar
-      mangels UI-Detailseite), danach Peer-Vergleich/DCF (nutzen
-      dieselben Daten wie die Detailseite), zuletzt Watchlist/
-      Portfolio, Backtest, Einstellungen (jeweils eigene Datenflüsse).
-      Einstellungen-Seite ist zudem Voraussetzung dafür, dass der
-      Alpha-Vantage-Kursabruf im Marktscreener ohne vorherige manuelle
-      OS-Keyring-Einrichtung nutzbar wird.
+    - ~~Ausbau der Auftrag-§10-UI-Seite „Unternehmensdetail mit
+      Quellenleiste"~~ — umgesetzt am 2026-09-09 (siehe
+      `PROGRESS.md`/ADR-27): neue `ui/detail.py`, rendert
+      ausschließlich aus demselben `ReportBundle` wie die Exporte —
+      schließt damit Auftrag-§15-Kriterium 8 („Exporte =
+      Oberflächenwerte") strukturell UND durch eine echte UI-Seite
+      (siehe aktualisierte Bewertung in `ABNAHME.md`). 478 Tests grün,
+      ruff/mypy fehlerfrei, mit echtem Browser (Playwright) gegen eine
+      synthetisch befüllte Testdatenbank verifiziert.
+    - **Ausbau der sieben weiteren Auftrag-§10-UI-Seiten** (Kandidaten-
+      Rangliste, Peer-Vergleich, DCF-/Szenarioanalyse, Nachrichten/
+      Ereignisse, Watchlist/Portfolio, Backtest, Einstellungen/Quellen/
+      Prüfprotokoll) — empfohlene Reihenfolge: Kandidaten-Rangliste als
+      Nächstes (nutzt `scoring/score.py` direkt, keine weiteren
+      Abhängigkeiten), danach Peer-Vergleich/DCF (nutzen dieselben
+      Daten wie die Detailseite), zuletzt Watchlist/Portfolio, Backtest,
+      Einstellungen (jeweils eigene Datenflüsse). Einstellungen-Seite
+      ist zudem Voraussetzung dafür, dass der Alpha-Vantage-Kursabruf
+      im Marktscreener ohne vorherige manuelle OS-Keyring-Einrichtung
+      nutzbar wird.
     - SSRF-IP-Pinning bis zur tatsächlichen HTTP-Verbindung (ADR-25
       Befund 4, `SECURITY.md`) — behebt die dokumentierte Time-of-
       check-to-time-of-use-Restlücke; erfordert einen eigenen
@@ -180,5 +187,6 @@
       inzwischen mehrfach mit echtem, headless laufendem Chromium
       (Playwright) gegen einen echten `streamlit run`-Prozess verifiziert
       (Ersteinrichtung, Datenstatus, Marktscreener inkl. Formular-
-      validierung) — kein reiner `AppTest`-Trockentest mehr, siehe
+      validierung, Unternehmensdetail mit synthetisch befüllter
+      Testdatenbank) — kein reiner `AppTest`-Trockentest mehr, siehe
       `PROGRESS.md`.

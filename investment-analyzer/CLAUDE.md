@@ -30,8 +30,9 @@ können.
 Ehrliche Abnahmebewertung gegen alle neun Auftrag-§15-Kriterien:
 `ABNAHME.md`. Bedienungsanleitung für Endnutzer: `BENUTZERHANDBUCH.md`.
 **Laufende Erweiterung darüber hinaus:** Ausbau der zehn Auftrag-§10-
-Oberflächenseiten (aktuell fertig: „Start/Datenstatus", „Marktscreener";
-acht weitere offen, siehe `NEXT_STEPS.md`). Details/offene Punkte:
+Oberflächenseiten (aktuell fertig: „Start/Datenstatus", „Marktscreener",
+„Unternehmensdetail mit Quellenleiste"; sieben weitere offen, siehe
+`NEXT_STEPS.md`). Details/offene Punkte:
 `PROGRESS.md`/`TODO.md`/`NEXT_STEPS.md`.
 
 ## Nicht verhandelbare Leitplanken

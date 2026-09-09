@@ -974,3 +974,70 @@ liegt), Umstieg auf `st.navigation()` sobald mehr Seiten existieren.
 **Nächster Schritt:** Kandidaten-Rangliste oder Unternehmensdetail
 (nächste sinnvolle Seite, da beide bereits fertige Backend-Bausteine
 haben) — siehe `NEXT_STEPS.md`.
+
+## Nach Milestone 8 — Unternehmensdetail mit Quellenleiste (Auftrag §10, Seite 4)
+
+**Status:** umgesetzt (2026-09-09), zweite von neun noch fehlenden
+Auftrag-§10-Oberflächenseiten (siehe ADR-27), auf Nutzerwunsch ohne
+Zwischenrückfrage direkt im Anschluss an den Marktscreener gebaut.
+
+**Umgesetzt:**
+
+- Neue UI-Seite `ui/detail.py`: rendert ausschließlich aus
+  `reports/bundle.py::build_report_bundle` →
+  `report_bundle_to_dict()` — demselben Dict, das auch die Excel-/
+  PDF-/JSON-Exporte verwenden (ADR-21). Kopfzeile mit den laut
+  Auftrag §10 vorgeschriebenen Pflichtangaben (Datenstand,
+  Analysezeit, Marktdatenverzögerung, Datenabdeckung, Konfidenz),
+  Kennzahlen (Wachstum über vier Horizonte, Margen, Renditen,
+  Verschuldung, fehlende Kennzahlen explizit ausgewiesen), Bewertung
+  (Multiples, Fair-Value-Band, DCF-Szenarien, Peer-Vergleich),
+  Score (Gesamtscore, Klassifikation, positive Faktoren, Risiken,
+  Gegenargumente, Ungültigkeitsbedingungen, Risikoabzüge), Nachrichten
+  (Ereignis-Cluster), Quellenleiste mit Lizenzhinweis je Quelle
+  (Auftrag-§10-Titel „... MIT Quellenleiste"), Annahmen, sowie JSON-/
+  Excel-/PDF-Download-Buttons aus demselben bereits berechneten
+  `ReportBundle`.
+- Private Hilfsfunktion `_kennzahl()`: formatiert Werte für die
+  Anzeige, `None` immer als „—" (nie als 0 oder geratene Zahl,
+  Auftrag §11), `bool` vor dem allgemeinen Zahlenzweig behandelt (ist
+  in Python eine `int`-Unterklasse).
+- `app.py`: Sidebar-Navigation um „Unternehmensdetail" als dritte
+  Option erweitert.
+- Unternehmensauswahl nutzt dieselbe `ui/screener.py::list_entities`
+  wie der Marktscreener; der vollständige Bericht lädt die Entity
+  anschließend per `session.get(Entity, entity_id)` in einer neuen
+  Session (nicht `session.add()` auf der bereits detached-geladenen
+  Instanz — dieser Fehler wurde beim ersten Entwurf selbst gefunden
+  und vor jedem Testlauf korrigiert).
+
+**Tests:** 7 neue Tests (insgesamt 478, alle grün) — 5 reine
+Formatierungstests für `_kennzahl()` (`tests/ui/test_detail.py`), 2
+neue `AppTest`-Smoke-Tests (`tests/ui/test_app_smoke.py`): leerer
+Zustand ohne erfasste Unternehmen sowie voller Bericht mit
+synthetisch befüllter Testdatenbank (gleiches Muster wie
+`tests/reports/test_bundle.py`, Firma G). `ruff check .` und
+`mypy src` beide fehlerfrei.
+
+**Manuell mit echtem Browser verifiziert** (Playwright gegen einen
+laufenden Streamlit-Prozess mit synthetisch befüllter Testdatenbank,
+nicht nur `AppTest`): alle Seitenabschnitte rendern korrekt inkl.
+DCF-Szenarien-Tabelle, Score-Risikoabzüge, Quellenleiste mit
+Lizenzhinweisen und den drei funktionierenden Download-Buttons; keine
+unerwarteten Konsolenfehler (nur harmlose Streamlit-Telemetrie-
+Fehlschläge mangels Internetzugang in dieser Sandbox).
+
+**Geänderte/neue Dateien:** neue `ui/detail.py`, `ui/app.py`
+(Navigation, Docstring), zugehörige Tests
+(`tests/ui/test_detail.py`, `tests/ui/test_app_smoke.py`).
+
+**Auswirkung auf Abnahme:** Auftrag-§15-Kriterium 8 („Exporte =
+Oberflächenwerte") gilt jetzt als strukturell UND durch eine echte
+UI-Seite erfüllt — siehe aktualisierte Bewertung in `ABNAHME.md`.
+
+**Offene Punkte** (siehe `TODO.md`): sieben weitere Auftrag-§10-Seiten,
+Einstellungen-Seite für die Alpha-Vantage-Schlüsselverwaltung, Umstieg
+auf `st.navigation()` sobald mehr Seiten existieren.
+
+**Nächster Schritt:** Kandidaten-Rangliste (Auftrag §10, Seite 3) —
+siehe `NEXT_STEPS.md`.

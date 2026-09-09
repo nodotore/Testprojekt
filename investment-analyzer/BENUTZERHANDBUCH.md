@@ -150,34 +150,72 @@ ein Unternehmen erstmals zur Datenbank hinzugefügt:
 Unten auf der Seite: durchsuchbare Liste aller bereits erfassten
 Unternehmen (Name, Land, Börse, Branche, Kennungen).
 
+## 4b. Unternehmensdetail mit Quellenleiste — der vollständige Bericht
+
+Über die Seitenleiste („Seite" → „Unternehmensdetail") erreichbar.
+Zeigt für ein bereits über den Marktscreener (Abschnitt 4a) erfasstes
+Unternehmen den vollständigen Bericht:
+
+1. **Unternehmen auswählen** über das Dropdown oben auf der Seite.
+   Ist noch kein Unternehmen erfasst, erscheint stattdessen ein
+   Hinweis, zuerst den Marktscreener zu benutzen.
+2. **Kopfzeile:** Datenstand, Analysezeit, Marktdatenverzögerung,
+   Datenabdeckung und Konfidenz — die vier Angaben, die laut Auftrag
+   bei jedem Bericht sichtbar sein müssen, damit klar ist, wie
+   verlässlich die folgenden Zahlen einzuschätzen sind.
+3. **Kennzahlen:** Wachstumsraten über 1/3/5/10 Jahre, Margen,
+   Renditen, Verschuldung. Fehlende Kennzahlen werden in einem
+   eigenen, aufklappbaren Abschnitt ehrlich als „nicht gemeldet"
+   aufgelistet — nie als 0 oder geschätzter Wert getarnt.
+4. **Bewertung:** Multiples (KGV, EV/EBITDA), das aus dem DCF-Modell
+   abgeleitete Fair-Value-Band, die drei DCF-Szenarien (Basis/
+   Optimistisch/Pessimistisch) sowie ein Peer-Vergleich, falls
+   Vergleichsunternehmen erfasst sind.
+5. **Score:** Gesamtscore (0–100) und Klassifikation, aufgeschlüsselt
+   in positive Faktoren, Risiken, Gegenargumente und Bedingungen,
+   unter denen die Bewertungsthese ungültig würde — bewusst
+   nachvollziehbar statt als reine Zahl (Auftrag §8a: deterministisch,
+   kein KI-Urteil).
+6. **Nachrichten:** bereits erfasste Meldungen, nach Ereignistyp
+   gruppiert.
+7. **Quellenleiste:** alle im Programm registrierten Datenquellen mit
+   Lizenzhinweis — der Namensbestandteil „mit Quellenleiste" im
+   Auftrag bezieht sich genau auf diesen Abschnitt.
+8. **Annahmen:** alle für die Bewertung getroffenen Annahmen (z. B.
+   Steuersatz, DCF-Wachstumsraten) im Klartext.
+9. **Export:** JSON-, Excel- und PDF-Download — bewusst aus genau
+   demselben bereits berechneten Bericht wie die Anzeige oben, damit
+   Anzeige und Export niemals unterschiedliche Zahlen zeigen können.
+
 ## 5. Was die Oberfläche heute zeigt — und was noch nicht
 
 **Bitte diesen Abschnitt aufmerksam lesen.**
 
-Die grafische Oberfläche hat aktuell zwei Seiten: **„Start /
+Die grafische Oberfläche hat aktuell drei Seiten: **„Start /
 Datenstatus"** (Ersteinrichtung/Profilverwaltung, ehrliche Zählung
-dessen, was in der Datenbank steht) und **„Marktscreener"** (Abschnitt
-4a — Unternehmen hinzufügen, Daten abrufen). Solange noch kein
-Datenabruf stattgefunden hat, zeigt die Startseite bewusst **Nullen**
-— niemals Platzhalter- oder Beispielzahlen, die wie echte Marktdaten
-aussehen könnten.
+dessen, was in der Datenbank steht), **„Marktscreener"** (Abschnitt
+4a — Unternehmen hinzufügen, Daten abrufen) und **„Unternehmensdetail"**
+(Abschnitt 4b — vollständiger Bericht mit Quellenleiste für ein
+erfasstes Unternehmen). Solange noch kein Datenabruf stattgefunden
+hat, zeigt die Startseite bewusst **Nullen** — niemals Platzhalter-
+oder Beispielzahlen, die wie echte Marktdaten aussehen könnten.
 
-Die im Auftrag vorgesehenen weiteren acht Oberflächen-Seiten
-(Kandidaten-Rangliste, Unternehmensdetail, Peer-Vergleich, DCF-/
-Szenarioanalyse, Nachrichten/Ereignisse, Watchlist/Portfolio, Backtest,
-Einstellungen/Quellen/Prüfprotokoll) sind **noch nicht als
-Bildschirmseiten gebaut** — sie werden bewusst nicht als leere
-Platzhalter vorgezeigt, um keine Funktionalität vorzutäuschen, die
-noch nicht existiert (Auftrag §16).
+Die im Auftrag vorgesehenen weiteren sieben Oberflächen-Seiten
+(Kandidaten-Rangliste, Peer-Vergleich, DCF-/Szenarioanalyse,
+Nachrichten/Ereignisse, Watchlist/Portfolio, Backtest, Einstellungen/
+Quellen/Prüfprotokoll) sind **noch nicht als Bildschirmseiten gebaut**
+— sie werden bewusst nicht als leere Platzhalter vorgezeigt, um keine
+Funktionalität vorzutäuschen, die noch nicht existiert (Auftrag §16).
 
 **Was bereits vollständig funktioniert und getestet ist** (nur noch
-nicht über einen Button in der Oberfläche erreichbar): Bewertung
-(Multiples + DCF mit Szenarien), erklärbares Scoring,
-Nachrichtenauswertung (GDELT/IR-RSS-Abruf selbst ist noch nicht in der
-Oberfläche, nur SEC EDGAR/Alpha Vantage über den Marktscreener),
-Portfolio-/Watchlist-Analyse, Backtesting sowie JSON-/Excel-/PDF-
-Export. Alle diese Bausteine sind unabhängig voneinander getestet
-(470+ automatisierte Tests, siehe `PROGRESS.md`) und lassen sich
+nicht über einen Button in der Oberfläche erreichbar): Peer-Vergleich
+als eigenständige Auswertung über mehrere Unternehmen (die
+Unternehmensdetail-Seite zeigt Peer-Werte nur, wenn Vergleichs-
+unternehmen bereits erfasst sind), Nachrichtenauswertung (GDELT/
+IR-RSS-Abruf selbst ist noch nicht in der Oberfläche, nur SEC EDGAR/
+Alpha Vantage über den Marktscreener), Portfolio-/Watchlist-Analyse,
+Backtesting. Alle diese Bausteine sind unabhängig voneinander getestet
+(478 automatisierte Tests, siehe `PROGRESS.md`) und lassen sich
 bereits heute über ein kurzes Python-Skript aufrufen — das erfordert
 allerdings Grundkenntnisse in Python. Ein vollständiges, tatsächlich
 lauffähiges Beispiel für den gesamten Weg von der Datenbank bis zum

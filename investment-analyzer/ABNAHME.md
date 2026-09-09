@@ -1,7 +1,9 @@
 # Abnahme-Checkliste — Investment-Analysator (Auftrag §15)
 
 Ehrliche, kriterienweise Bewertung gegen die neun Abnahmekriterien aus
-`AUFTRAG.md` §15, Stand Milestone 8 (2026-09-08). Jedes Kriterium wird
+`AUFTRAG.md` §15, ursprünglich Stand Milestone 8 (2026-09-08),
+aktualisiert nach dem Bau der Unternehmensdetail-Seite (2026-09-09,
+siehe ADR-27) — Kriterium 8 dadurch neu bewertet. Jedes Kriterium wird
 als **erfüllt**, **teilweise erfüllt** oder **nicht erfüllt**
 eingestuft — mit Begründung. Ziel ist Ehrlichkeit über den
 tatsächlichen Stand, nicht eine geschönte Abnahme (Auftrag §11/§16).
@@ -14,22 +16,24 @@ tatsächlichen Stand, nicht eine geschönte Abnahme (Auftrag §11/§16).
 | 2 | Keine unbelegte Kennzahl im Bericht | Erfüllt (strukturell, an Syntheticdaten geprüft) |
 | 3 | Datenalter/Marktdatenverzögerung sichtbar | Erfüllt |
 | 4 | Klarer Fehler statt erfundener Analyse bei Quellenausfall | Erfüllt |
-| 5 | ≥30 Unit-/Integrationstests + zentrale End-to-End-Tests | Erfüllt (450 Tests) |
+| 5 | ≥30 Unit-/Integrationstests + zentrale End-to-End-Tests | Erfüllt (478 Tests) |
 | 6 | DCF/Kernkennzahlen gegen Handrechnungen geprüft | Teilweise erfüllt |
 | 7 | Backtests nachweislich ohne Look-ahead | Erfüllt (echter Fund der unabhängigen Prüfung noch in dieser Runde behoben) |
-| 8 | Exporte = Oberflächenwerte | Nicht erfüllt (noch nicht verifizierbar) |
+| 8 | Exporte = Oberflächenwerte | Erfüllt |
 | 9 | Unabhängiger Security-/Plausibilitätscheck dokumentiert | Erfüllt (fand einen echten, behobenen Fehler) |
 
 **Gesamturteil:** Das Programm ist **noch nicht vollständig
-abnahmefähig** im strengen Sinn von Auftrag §15 — zwei Kriterien (1, 8)
-sind strukturell/technisch fundiert, aber empirisch nicht vollständig
+abnahmefähig** im strengen Sinn von Auftrag §15 — ein Kriterium (1) ist
+strukturell/technisch fundiert, aber empirisch nicht vollständig
 nachweisbar, und ein Kriterium (6) bleibt an echten Unternehmensdaten
-offen. Alle drei Lücken haben dieselbe, bereits seit Milestone 2
-durchgängig dokumentierte Ursache: kein Internetzugang in dieser
-Entwicklungs-Sandbox (siehe `PROGRESS.md`) bzw. eine noch nicht gebaute
-UI-Detailseite (siehe `BENUTZERHANDBUCH.md` Abschnitt 5). Das ist eine
-bewusste, durchgängig dokumentierte Grenze dieser Entwicklungsumgebung,
-kein verschwiegener Mangel.
+offen. Beide verbleibenden Lücken haben dieselbe, bereits seit
+Milestone 2 durchgängig dokumentierte Ursache: kein Internetzugang in
+dieser Entwicklungs-Sandbox (siehe `PROGRESS.md`). Kriterium 8 galt bei
+der ursprünglichen Milestone-8-Abnahme noch als nicht erfüllt (fehlende
+UI-Detailseite) — mit der seither gebauten Unternehmensdetail-Seite
+(ADR-27) gilt es jetzt als erfüllt. Das ist eine bewusste, durchgängig
+dokumentierte Grenze dieser Entwicklungsumgebung, kein verschwiegener
+Mangel.
 
 Kriterium 7 verdient eine besondere Erwähnung: Die unabhängige Prüfung
 (Kriterium 9) fand hier einen ECHTEN, für die Abnahme blockierenden
@@ -54,18 +58,19 @@ reproduzierbar (Grundvoraussetzung für Point-in-time-Korrektheit,
 ADR-6, durchgängig getestet).
 
 **Offen:** Seit dem Marktscreener (Auftrag §10 Seite 2, siehe ADR-26)
-gibt es einen ersten echten Bedienknopf, der einen realen Datenabruf
-auslöst (SEC EDGAR, optional Alpha Vantage) — aber noch keinen, der
-den kompletten Weg bis zum fertigen Bericht (Bewertung, Score, Export)
-end-to-end auslöst; die dafür nötige Unternehmensdetail-Seite fehlt
-noch (siehe Kriterium 8/`BENUTZERHANDBUCH.md` Abschnitt 5). Vor allem
-aber: ein kompletter Lauf gegen die **echten**
-externen Datenquellen (SEC EDGAR, Alpha Vantage, GDELT, IR-RSS) wurde
-in dieser Entwicklungsumgebung **kein einziges Mal tatsächlich
-ausgeführt**, weil ausgehender Internetzugriff hier durch die
-Sandbox-Egress-Policy blockiert ist (verifiziert per `curl`, siehe
-`PROGRESS.md` seit Milestone 2). Reproduzierbarkeit ist bislang nur mit
-synthetischen Testdaten nachgewiesen, nicht mit einem echten Lauf.
+und der Unternehmensdetail-Seite (Auftrag §10 Seite 4, siehe ADR-27)
+existiert jetzt in der Oberfläche der komplette Weg von einem realen
+Datenabruf (SEC EDGAR, optional Alpha Vantage) bis zum fertigen Bericht
+(Kennzahlen, Bewertung, Score, JSON-/Excel-/PDF-Export) — mit
+synthetisch befüllter Testdatenbank per Playwright end-to-end
+verifiziert (siehe `PROGRESS.md`). Offen bleibt allein: ein kompletter
+Lauf gegen die **echten** externen Datenquellen (SEC EDGAR, Alpha
+Vantage, GDELT, IR-RSS) wurde in dieser Entwicklungsumgebung **kein
+einziges Mal tatsächlich ausgeführt**, weil ausgehender Internetzugriff
+hier durch die Sandbox-Egress-Policy blockiert ist (verifiziert per
+`curl`, siehe `PROGRESS.md` seit Milestone 2). Reproduzierbarkeit ist
+bislang nur mit synthetischen Testdaten nachgewiesen, nicht mit einem
+echten Lauf gegen reale Marktdaten.
 
 ## Kriterium 2 — „keine unbelegte Kennzahl im Bericht erscheint"
 
@@ -172,27 +177,35 @@ sachlich falsch, korrigiert durch die unabhängige Prüfung.
 
 ## Kriterium 8 — „Exporte dieselben Werte wie die Oberfläche"
 
-**Nicht erfüllt (noch nicht verifizierbar).**
+**Erfüllt.**
 
-Strukturell bereits abgesichert: `ReportBundle` (ADR-21) ist die
-EINZIGE Datenquelle für JSON-, Excel- und PDF-Export — die drei Formate
-können nicht voneinander abweichen, da sie exakt dieselbe
+Strukturell abgesichert: `ReportBundle` (ADR-21) ist die EINZIGE
+Datenquelle für JSON-, Excel- und PDF-Export — die drei Formate können
+nicht voneinander abweichen, da sie exakt dieselbe
 `report_bundle_to_dict()`-Struktur lesen (getestet u. a. in
 `tests/reports/test_excel_export.py::
-test_zusammenfassung_zeigt_dieselben_werte_wie_json_export`). Eine
-künftige UI-Detailseite MUSS laut Modul-Docstring ebenfalls aus einem
-`ReportBundle` rendern, damit dieselbe Garantie gilt.
+test_zusammenfassung_zeigt_dieselben_werte_wie_json_export`).
 
-**Aber:** Es existiert aktuell KEINE UI-Seite, die Berichtswerte
-(Kennzahlen, Bewertung, Score) überhaupt anzeigt — „Start/Datenstatus"
-zeigt nur Zähler, der neue „Marktscreener" (siehe ADR-26) zeigt nur
-Stammdaten (Name, Land, Kennungen), keine der Werte aus
-`FundamentalsReport`/`ValuationReport`/`ScoreResult` (siehe
-`BENUTZERHANDBUCH.md` Abschnitt 5) — es gibt daher wörtlich nichts, mit
-dem ein Export verglichen werden könnte. Dieses Kriterium kann erst
-erfüllt werden, sobald eine solche UI-Seite gebaut ist. Als offener
-Punkt in `NEXT_STEPS.md` geführt, nicht stillschweigend als erfüllt
-behandelt.
+Seit der neuen Seite „Unternehmensdetail mit Quellenleiste" (Auftrag
+§10, Seite 4, siehe ADR-27) gibt es jetzt auch eine UI-Seite, die
+Berichtswerte tatsächlich anzeigt — `ui/detail.py` rendert
+AUSSCHLIESSLICH aus demselben `report_bundle_to_dict()`-Dict wie die
+Exportformate, berechnet selbst nichts nach (Auftrag §11). Damit gilt
+dieselbe strukturelle Garantie, die bislang nur zwischen den drei
+Exportformaten galt, jetzt auch für die Oberfläche: Anzeige und Export
+lesen denselben Speicherwert, können also nicht auseinanderlaufen. Die
+drei Download-Buttons auf der Detailseite bauen zudem aus genau dem
+bereits im Speicher vorliegenden `bundle`-Objekt, nicht aus einer
+zweiten, separaten Berechnung.
+
+Mit echtem Playwright-Browser gegen eine synthetisch befüllte
+Testdatenbank verifiziert: alle auf der Detailseite angezeigten Werte
+(Kennzahlen, Bewertung inkl. DCF-Szenarien, Score) sind exakt dieselben
+Werte wie im `ReportBundle`, aus dem auch die Exporte gebaut werden
+(siehe `PROGRESS.md`). Ein Vergleich mit **echten**, über SEC EDGAR
+abgerufenen Daten steht weiterhin aus (siehe Kriterium 1) — das ändert
+nichts an der hier bewerteten strukturellen Garantie, die unabhängig
+vom Dateninhalt gilt.
 
 ## Kriterium 9 — „unabhängiger Security- und Plausibilitätscheck dokumentiert"
 
