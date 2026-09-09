@@ -157,15 +157,28 @@
       `ValuationReport`. 494 Tests grün, ruff/mypy fehlerfrei, mit
       echtem Browser (Playwright) gegen eine synthetisch befüllte
       Testdatenbank verifiziert.
-    - **Ausbau der vier weiteren Auftrag-§10-UI-Seiten** (Nachrichten/
-      Ereignisse, Watchlist/Portfolio, Backtest, Einstellungen/Quellen/
-      Prüfprotokoll) — empfohlene Reihenfolge: Nachrichten/Ereignisse
-      als Nächstes (`news/report.py::build_news_report` bereits
-      vorhanden), zuletzt Watchlist/Portfolio, Backtest, Einstellungen
-      (jeweils eigene Datenflüsse). Einstellungen-Seite ist zudem
-      Voraussetzung dafür, dass der Alpha-Vantage-Kursabruf im
+    - ~~Ausbau der Auftrag-§10-UI-Seite „Nachrichten/Ereignisse"~~ —
+      umgesetzt am 2026-09-09 (siehe `PROGRESS.md`/ADR-31): neue
+      `ui/news.py`, Ereignis-Cluster mit sichtbarer Mehrquellen-
+      bestätigung (Auftrag §3). Ein automatischer GDELT-/IR-RSS-
+      Abrufweg bleibt weiterhin offen (siehe unten). 497 Tests grün,
+      ruff/mypy fehlerfrei, mit echtem Browser (Playwright) gegen
+      synthetisch befüllte GDELT-Meldungen verifiziert.
+    - **Ausbau der drei weiteren Auftrag-§10-UI-Seiten** (Watchlist/
+      Portfolio, Backtest, Einstellungen/Quellen/Prüfprotokoll) —
+      empfohlene Reihenfolge: Watchlist/Portfolio als Nächstes (CSV-
+      Import und `PortfolioReport`-Orchestrierung bereits vorhanden),
+      danach Backtest, zuletzt Einstellungen. Einstellungen-Seite ist
+      zudem Voraussetzung dafür, dass der Alpha-Vantage-Kursabruf im
       Marktscreener ohne vorherige manuelle OS-Keyring-Einrichtung
       nutzbar wird.
+    - Weiterhin offen, nicht blockierend für die restlichen UI-Seiten:
+      ein automatischer Abrufweg über GDELT/IR-RSS für die
+      Nachrichten/Ereignisse-Seite — bislang in keiner Oberflächenseite
+      eingebunden (anders als SEC EDGAR/Alpha Vantage im
+      Marktscreener). Am ehesten als Erweiterung des Marktscreeners
+      oder eine eigene Aktualisierungsfunktion auf der Nachrichten-
+      Seite selbst denkbar.
     - Neu, nicht blockierend (aus dem Bau der DCF-/Szenarioanalyse,
       ADR-30): eine interaktive „eigene DCF-Annahmen eingeben"-Funktion
       (Nutzer variiert Wachstum/WACC/Marge/Terminalwachstum frei statt
@@ -223,6 +236,6 @@
       (Playwright) gegen einen echten `streamlit run`-Prozess verifiziert
       (Ersteinrichtung, Datenstatus, Marktscreener inkl. Formular-
       validierung, Unternehmensdetail, Kandidaten-Rangliste,
-      Peer-Vergleich und DCF-/Szenarioanalyse mit synthetisch befüllter
-      Testdatenbank) — kein reiner `AppTest`-Trockentest mehr, siehe
-      `PROGRESS.md`.
+      Peer-Vergleich, DCF-/Szenarioanalyse und Nachrichten/Ereignisse
+      mit synthetisch befüllter Testdatenbank) — kein reiner
+      `AppTest`-Trockentest mehr, siehe `PROGRESS.md`.

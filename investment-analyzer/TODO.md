@@ -333,10 +333,18 @@ seit Milestone 1–7 fertig, nur die Bedienoberfläche fehlte.
       (insgesamt 494), `ruff`/`mypy` fehlerfrei. Mit echtem
       Playwright-Browser gegen eine synthetisch befüllte Testdatenbank
       verifiziert.
-- [ ] **Nachrichten/Ereignisse** (Seite 7): `news/report.py::
-      build_news_report` bereits vorhanden, nur keine UI. Benötigt
-      zusätzlich einen GDELT-/IR-RSS-Abrufweg im Marktscreener oder
-      einer eigenen Aktualisierungsfunktion.
+- [x] **Nachrichten/Ereignisse** (Seite 7, siehe ADR-31): Ereignis-
+      Cluster mit sichtbarer Mehrquellenbestätigung (Auftrag §3),
+      frühester/jüngster Meldung je Cluster, klickbaren Quell-Links.
+      Neues Modul `ui/news.py`, liest `bundle.news` (kein eigener
+      Rechenweg). **Weiterhin offen:** ein GDELT-/IR-RSS-Abrufweg
+      fehlt in JEDER Oberflächenseite (anders als SEC EDGAR/Alpha
+      Vantage im Marktscreener) — die Seite kommuniziert das offen
+      statt es zu verschweigen; `NewsItem`-Zeilen gelangen aktuell nur
+      über eigene Skripte/Tests in die Datenbank. 3 neue Tests
+      (insgesamt 497), `ruff`/`mypy` fehlerfrei. Mit echtem
+      Playwright-Browser gegen synthetisch befüllte GDELT-Meldungen
+      verifiziert.
 - [ ] **Watchlist/Portfolio** (Seite 8): CSV-Import
       (`portfolio/csv_import.py`) und `PortfolioReport`-Orchestrierung
       bereits vorhanden, nur keine UI.

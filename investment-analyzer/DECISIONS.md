@@ -1229,6 +1229,63 @@ Pessimistisch als eingeklappte Expander mit korrekten Fair-Value-Werten
 Sensitivitätsmatrizen mit plausibel monotonen Werten, keine
 unerwarteten Konsolenfehler.
 
+## ADR-31: Nachrichten/Ereignisse — reine Anzeigeseite, offene Ehrlichkeit über fehlenden Abrufweg
+
+**Kontext:** Sechste der neun noch fehlenden Auftrag-§10-Oberflächen-
+seiten: **Nachrichten/Ereignisse** (Auftrag §10, Seite 7).
+`news/report.py::build_news_report` (Milestone 5) — liest gespeicherte
+`NewsItem`-Zeilen und clustert sie nach Ereignistyp — lag bereits
+vollständig vor; `ui/detail.py` (ADR-27) zeigt davon bislang nur eine
+verdichtete Tabelle je Cluster ohne Mehrquellen-Kennzeichnung.
+
+**Entscheidung — `bundle.news` statt `build_news_report` direkt:**
+Wie alle bisherigen neuen Seiten (ADR-27/28/29/30) liest `ui/news.py`
+ausschließlich `bundle.news` aus dem bereits vorhandenen
+`ReportBundle` (`build_report_bundle` ruft `build_news_report` intern
+auf) — keine eigene, potenziell abweichende zweite Berechnung.
+
+**Entscheidung — Mehrquellenbestätigung sichtbar machen (Auftrag
+§3):** Jeder Cluster-Titel zeigt explizit, ob er von mehreren
+unabhängigen Domains bestätigt wird (`NewsCluster.is_multi_source`)
+oder nur aus einer einzelnen Quelle stammt — „nur eine Quelle — noch
+nicht unabhängig bestätigt" statt einer neutralen Formulierung, die
+diesen für Auftrag §3 („mindestens zwei unabhängige Quellen für
+kritische Angaben") relevanten Unterschied verschleiern würde. Zusätzlich
+früheste/jüngste Meldung je Cluster und die Anzahl unabhängiger Domains.
+
+**Entscheidung — Quelle als klickbarer Link:** Die Cluster-Tabelle
+nutzt `st.column_config.LinkColumn` für die Quell-URL — Nutzer können
+die Originalmeldung direkt öffnen, statt nur einen Domainnamen ohne
+Beleg zu sehen (Auftrag §11: jede Aussage muss auf ein Quellenobjekt
+zurückführbar sein).
+
+**Entscheidung — offene Kommunikation der fehlenden automatischen
+Abrufkette:** Anders als beim Marktscreener (SEC EDGAR/Alpha Vantage,
+ADR-26) ist der Abruf über die GDELT-/IR-RSS-Connectoren in KEINER
+Oberflächenseite eingebunden — `NewsItem`-Zeilen gelangen aktuell nur
+über eigene Skripte/Tests in die Datenbank. Diese neue Seite verschweigt
+das nicht: Modul-Docstring UND die im Nutzerkontext leere-Zustand-
+Meldung nennen den fehlenden Abrufweg explizit, statt eine
+funktionierende, aber in der Praxis leere Seite ohne Erklärung zu
+zeigen (Auftrag §16). Als offener Ausbauschritt weiterhin in
+`NEXT_STEPS.md` geführt — Priorität niedriger als die verbleibenden
+UI-Seiten, da er einen neuen Ingestion-Pfad statt nur eine Anzeige
+erfordert.
+
+**Tests:** 3 neue Tests (insgesamt 497) — 1 reiner Test
+(`tests/ui/test_news.py`: `_cluster_tabelle()` enthält alle Meldungen
+inkl. Quelle, über den bestehenden `ingest_gdelt_articles`-Testpfad aus
+`tests/news/test_report.py` befüllt), 2 neue `AppTest`-Smoke-Tests
+(`tests/ui/test_app_smoke.py`): keine gespeicherten Meldungen, sowie
+ein mehrquellenbestätigter Cluster mit zwei GDELT-Artikeln
+unterschiedlicher Domains. `ruff`/`mypy` fehlerfrei. Zusätzlich mit
+echtem Playwright-Browser gegen einen laufenden Streamlit-Prozess mit
+drei synthetisch befüllten Meldungen verifiziert (zwei ähnliche Titel
+von unterschiedlichen Domains → korrekt als ein mehrquellenbestätigter
+Cluster erkannt, eine dritte, thematisch andere Meldung → korrekt als
+eigener Einzelquellen-Cluster; aufgeklappter Cluster zeigt Tabelle mit
+klickbarem Quell-Link) — keine unerwarteten Konsolenfehler.
+
 ## Noch zu treffende Entscheidungen
 
 Keine blockierenden Entscheidungen mehr offen für Milestone 1–7 (alle

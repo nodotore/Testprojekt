@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+- Nachrichten/Ereignisse (Auftrag §10, Seite 7) umgesetzt — sechste
+  von neun noch fehlenden Oberflächenseiten (siehe ADR-31). Neue Seite
+  `ui/news.py`: aufklappbare Ereignis-Cluster mit sichtbarer
+  Mehrquellenbestätigung (Auftrag §3: mehrere unabhängige Domains vs.
+  nur eine Quelle), frühester/jüngster Meldung je Cluster und
+  klickbaren Links zur Originalquelle — liest `bundle.news` aus dem
+  bereits vorhandenen `ReportBundle`, keine eigene Berechnung. Offen
+  und ehrlich kommuniziert: ein automatischer Abrufweg über GDELT/
+  IR-RSS ist bislang in keiner Oberflächenseite eingebunden. 3 neue
+  Tests (insgesamt 497), `ruff`/`mypy` fehlerfrei, zusätzlich mit
+  echtem Browser gegen synthetisch befüllte GDELT-Meldungen
+  verifiziert.
+
 - DCF- und Szenarioanalyse (Auftrag §10, Seite 6) umgesetzt — fünfte
   von neun noch fehlenden Oberflächenseiten (siehe ADR-30). Neue Seite
   `ui/dcf.py`: vollständiges DCF-Detail je Szenario (Annahmen,

@@ -1214,3 +1214,56 @@ gebaut, siehe ADR-30).
 **Nächster Schritt:** Nachrichten/Ereignisse (Auftrag §10, Seite 7 —
 `news/report.py::build_news_report` bereits vorhanden) — siehe
 `NEXT_STEPS.md`.
+
+## Nach Milestone 8 — Nachrichten/Ereignisse (Auftrag §10, Seite 7)
+
+**Status:** umgesetzt (2026-09-09), sechste von neun noch fehlenden
+Auftrag-§10-Oberflächenseiten (siehe ADR-31).
+
+**Umgesetzt:**
+
+- Neue UI-Seite `ui/news.py`: zeigt für ein ausgewähltes Unternehmen
+  die bereits gespeicherten Nachrichtenmeldungen als aufklappbare
+  Ereignis-Cluster (`bundle.news`, identisch zur Detailseite und den
+  Exporten). Jeder Cluster-Titel macht explizit sichtbar, ob er von
+  mehreren unabhängigen Domains bestätigt wird oder nur aus einer
+  einzelnen Quelle stammt (Auftrag §3), zeigt früheste/jüngste Meldung
+  sowie eine Tabelle mit Titel, Domain, Quellqualität,
+  Veröffentlichungsdatum und einem klickbaren Link zur Originalquelle.
+- Ehrlich kommunizierter, weiterhin offener Punkt: ein automatischer
+  Abrufweg über GDELT/IR-RSS ist in KEINER Oberflächenseite eingebunden
+  (anders als SEC EDGAR/Alpha Vantage über den Marktscreener) —
+  sowohl im Modul-Docstring als auch im leeren Zustand der Seite selbst
+  ausdrücklich benannt, statt eine in der Praxis meist leere Seite ohne
+  Erklärung zu zeigen.
+- `app.py`: Sidebar-Navigation um „Nachrichten/Ereignisse" als siebte
+  Option erweitert.
+
+**Tests:** 3 neue Tests (insgesamt 497, alle grün) — 1 reiner Test
+(`tests/ui/test_news.py`: `_cluster_tabelle()` über den bestehenden
+GDELT-Ingestion-Testpfad), 2 neue `AppTest`-Smoke-Tests
+(`tests/ui/test_app_smoke.py`): keine gespeicherten Meldungen, sowie
+ein mehrquellenbestätigter Cluster. `ruff check .` und `mypy src` beide
+fehlerfrei.
+
+**Manuell mit echtem Browser verifiziert** (Playwright gegen einen
+laufenden Streamlit-Prozess mit drei synthetisch befüllten GDELT-
+Meldungen — zwei ähnliche Titel von unterschiedlichen Domains, eine
+thematisch andere): korrekt zwei Cluster erkannt (ein mehrquellen-
+bestätigter mit 2 Domains, ein Einzelquellen-Cluster), aufgeklappter
+Cluster zeigt vollständige Tabelle inkl. funktionierendem Quell-Link,
+keine unerwarteten Konsolenfehler.
+
+**Geänderte/neue Dateien:** neue `ui/news.py`, `ui/app.py`
+(Navigation, Docstring), zugehörige Tests (`tests/ui/test_news.py`,
+`tests/ui/test_app_smoke.py`).
+
+**Offene Punkte** (siehe `TODO.md`): drei weitere Auftrag-§10-Seiten,
+Einstellungen-Seite für die Alpha-Vantage-Schlüsselverwaltung, Umstieg
+auf `st.navigation()` sobald mehr Seiten existieren, ein GDELT-/
+IR-RSS-Abrufweg in der Oberfläche (bislang in keiner Seite eingebunden,
+weiterhin offen).
+
+**Nächster Schritt:** Watchlist/Portfolio (Auftrag §10, Seite 8 —
+CSV-Import und `PortfolioReport`-Orchestrierung bereits vorhanden) —
+siehe `NEXT_STEPS.md`.

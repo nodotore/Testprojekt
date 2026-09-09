@@ -5,11 +5,11 @@ Bereits gebaut: Marktscreener (``ui/screener.py``, ADR-26),
 Kandidaten-Rangliste (``ui/ranking.py``, ADR-28), Unternehmensdetail
 mit Quellenleiste (``ui/detail.py``, ADR-27), Peer-Vergleich
 (``ui/peers.py``, ADR-29), DCF- und Szenarioanalyse (``ui/dcf.py``,
-ADR-30). Vier weitere Auftrag-§10-Seiten (Nachrichten/Ereignisse,
-Watchlist/Portfolio, Backtest, Einstellungen/Quellen/Prüfprotokoll)
-fehlen noch — sie werden bewusst NICHT als leere Platzhalter
-vorgebaut, um keine Funktionalität vorzutäuschen, die noch nicht
-existiert (siehe ``TODO.md``).
+ADR-30), Nachrichten/Ereignisse (``ui/news.py``, ADR-31). Drei weitere
+Auftrag-§10-Seiten (Watchlist/Portfolio, Backtest, Einstellungen/
+Quellen/Prüfprotokoll) fehlen noch — sie werden bewusst NICHT als
+leere Platzhalter vorgebaut, um keine Funktionalität vorzutäuschen,
+die noch nicht existiert (siehe ``TODO.md``).
 
 Start: ``streamlit run src/investment_analyzer/ui/app.py`` (siehe
 ``start.ps1``/``start.bat`` im Projektstamm für den vollständigen
@@ -33,6 +33,7 @@ from investment_analyzer.ui.bootstrap import AppContext, bootstrap, check_databa
 from investment_analyzer.ui.components import DISCLAIMER, render_disclaimer
 from investment_analyzer.ui.dcf import render_dcfanalyse
 from investment_analyzer.ui.detail import render_unternehmensdetail
+from investment_analyzer.ui.news import render_nachrichten
 from investment_analyzer.ui.peers import render_peervergleich
 from investment_analyzer.ui.profile_form import build_profile_from_form
 from investment_analyzer.ui.ranking import render_kandidatenrangliste
@@ -282,6 +283,7 @@ def main() -> None:
             "Unternehmensdetail",
             "Peer-Vergleich",
             "DCF- und Szenarioanalyse",
+            "Nachrichten/Ereignisse",
         ],
     )
     if seite == "Marktscreener":
@@ -294,6 +296,8 @@ def main() -> None:
         render_peervergleich(ctx, profil)
     elif seite == "DCF- und Szenarioanalyse":
         render_dcfanalyse(ctx, profil)
+    elif seite == "Nachrichten/Ereignisse":
+        render_nachrichten(ctx, profil)
     else:
         render_datenstatus(ctx, profil)
 

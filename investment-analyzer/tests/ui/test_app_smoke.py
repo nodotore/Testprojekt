@@ -9,11 +9,13 @@ from streamlit.testing.v1 import AppTest
 from investment_analyzer.config.defaults import default_profile
 from investment_analyzer.config.settings import get_settings
 from investment_analyzer.config.store import ProfileStore
+from investment_analyzer.connectors.gdelt import GdeltArticle
 from investment_analyzer.connectors.seed import ensure_default_sources
 from investment_analyzer.db import create_all_tables, create_db_engine, create_session_factory
 from investment_analyzer.entity_resolution.models import IdentifierType
 from investment_analyzer.entity_resolution.service import IdentifierSpec, find_or_create_entity
 from investment_analyzer.fundamentals.metrics import Metric
+from investment_analyzer.news.ingest import ingest_gdelt_articles
 from investment_analyzer.normalization.models import DataPoint, ValueKind
 
 APP_PATH = str(
@@ -99,6 +101,48 @@ def _seed_entity_mit_fundamentaldaten(data_dir: Path) -> None:
             session.add(dp(metric, letztes_jahr, value))
 
         session.add(dp(Metric.PRICE_CLOSE, date(2024, 1, 15), 20.0))
+        session.commit()
+    engine.dispose()
+
+
+def _seed_nachrichten_fuer_firma_g(data_dir: Path) -> None:
+    """Fügt zwei GDELT-Meldungen zur bereits per
+    ``_seed_entity_mit_fundamentaldaten`` angelegten Firma G hinzu,
+    damit ``ui/news.py`` einen mehrquellenbestätigten Cluster rendert."""
+
+    engine = create_db_engine(f"sqlite:///{data_dir / 'investment_analyzer.db'}")
+    session_factory = create_session_factory(engine)
+    with session_factory() as session:
+        sources = ensure_default_sources(session)
+        entity = find_or_create_entity(
+            session, name="Firma G (synthetisches Beispiel)",
+            identifiers=[IdentifierSpec(id_type=IdentifierType.CIK, id_value="0000000007")],
+        )
+        session.flush()
+
+        articles = (
+            GdeltArticle(
+                url="https://outlet-a.test/artikel-1",
+                title="Firma G meldet Rekordumsatz im ersten Quartal",
+                domain="outlet-a.test",
+                language="German",
+                source_country="Germany",
+                seen_at=datetime(2026, 3, 1, 8, tzinfo=UTC),
+                fetched_at_utc=datetime(2026, 3, 1, 8, tzinfo=UTC),
+                source_url="https://api.gdeltproject.org/api/v2/doc/doc?query=Firma+G",
+            ),
+            GdeltArticle(
+                url="https://outlet-b.test/artikel-2",
+                title="Firma G meldet Rekordumsatz im ersten Quartal 2026",
+                domain="outlet-b.test",
+                language="German",
+                source_country="Germany",
+                seen_at=datetime(2026, 3, 1, 10, tzinfo=UTC),
+                fetched_at_utc=datetime(2026, 3, 1, 10, tzinfo=UTC),
+                source_url="https://api.gdeltproject.org/api/v2/doc/doc?query=Firma+G",
+            ),
+        )
+        ingest_gdelt_articles(session, entity=entity, source=sources["gdelt"], articles=articles)
         session.commit()
     engine.dispose()
 
@@ -443,6 +487,59 @@ def test_app_dcfanalyse_zeigt_szenarien_und_sensitivitaet(tmp_path, monkeypatch)
     markdown_texte = " ".join(m.value for m in at.markdown)
     assert "Umsatzwachstum × WACC" in markdown_texte
     assert "FCF-Marge × Terminalwachstum" in markdown_texte
+
+    _reset_caches()
+
+
+def test_app_nachrichten_ohne_meldungen_zeigt_hinweis(tmp_path, monkeypatch) -> None:
+    monkeypatch.setenv("IA_DATA_DIR", str(tmp_path))
+    _reset_caches()
+    _migrate_test_db(tmp_path)
+    _seed_entity_mit_fundamentaldaten(tmp_path)
+
+    profil = default_profile()
+    profil.haftungsausschluss_akzeptiert = True
+    ProfileStore(tmp_path / "profile.json").save(profil)
+
+    at = AppTest.from_file(APP_PATH)
+    at.run(timeout=30)
+    at.sidebar.radio[0].set_value("Nachrichten/Ereignisse").run(timeout=30)
+
+    assert not at.exception, [str(e) for e in at.exception]
+    header_texte = " ".join(h.value for h in at.header)
+    assert "Nachrichten/Ereignisse" in header_texte
+    infos = " ".join(i.value for i in at.info)
+    assert "Noch keine Nachrichtenmeldungen" in infos
+
+    _reset_caches()
+
+
+def test_app_nachrichten_zeigt_mehrquellenbestaetigten_cluster(tmp_path, monkeypatch) -> None:
+    monkeypatch.setenv("IA_DATA_DIR", str(tmp_path))
+    _reset_caches()
+    _migrate_test_db(tmp_path)
+    _seed_entity_mit_fundamentaldaten(tmp_path)
+    _seed_nachrichten_fuer_firma_g(tmp_path)
+
+    profil = default_profile()
+    profil.haftungsausschluss_akzeptiert = True
+    ProfileStore(tmp_path / "profile.json").save(profil)
+
+    at = AppTest.from_file(APP_PATH)
+    at.run(timeout=30)
+    at.sidebar.radio[0].set_value("Nachrichten/Ereignisse").run(timeout=30)
+
+    assert not at.exception, [str(e) for e in at.exception]
+    body_texte = " ".join(w.value for w in at.markdown) + " ".join(w.value for w in at.text)
+    assert "2 Meldung(en) in 1 Ereignis-Cluster(n)" in body_texte
+
+    expander_labels = [exp.label for exp in at.expander]
+    assert any("mehrquellenbestätigt" in label for label in expander_labels)
+
+    assert len(at.dataframe) == 1
+    df = at.dataframe[0].value
+    assert len(df) == 2
+    assert set(df["Domain"]) == {"outlet-a.test", "outlet-b.test"}
 
     _reset_caches()
 
