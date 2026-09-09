@@ -2,6 +2,23 @@
 
 ## Unreleased
 
+- Fix: `alembic/env.py` rief `AppSettings.ensure_data_dirs()` nicht auf,
+  bevor die SQLite-Verbindung für die Migration aufgebaut wurde. Beim
+  allerersten Start auf einem frischen Rechner existiert
+  `%USERPROFILE%\InvestmentAnalyzer` noch nicht — `start.ps1` ruft die
+  Migration jedoch VOR dem Start der Oberfläche auf (die einzige Stelle,
+  die das Verzeichnis bisher anlegte, war `ui/bootstrap.py`). Ergebnis:
+  `sqlite3.OperationalError: unable to open database file` bei jedem
+  echten Erststart (in freier Wildbahn auf einem realen Windows-Rechner
+  gefunden — die bestehende Test-Suite prüfte die Migration bislang nur
+  gegen ein bereits existierendes `tmp_path`-Verzeichnis, nie gegen ein
+  wirklich neues). Behoben: `ensure_data_dirs()` wird jetzt in
+  `alembic/env.py` vor dem Verbindungsaufbau aufgerufen; bestehender
+  Migrationstest um ein verschachteltes, noch nicht existierendes
+  Verzeichnis erweitert, damit dieses Szenario künftig abgedeckt ist.
+  Verifiziert mit komplett frischem venv + frischem Datenverzeichnis
+  end-to-end (Migration + Streamlit-Oberfläche). 453 Tests grün.
+
 - Fix: `pyproject.toml`s `numpy<2.1`-Obergrenze entfernt. Erste reale
   Windows-Installation nach Milestone 8 schlug fehl
   (`metadata-generation-failed` beim Bauen von `numpy` aus dem

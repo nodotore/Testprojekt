@@ -234,11 +234,24 @@ def test_audit_log_roundtrip(session_factory) -> None:
 
 @pytest.mark.slow
 def test_alembic_migration_gegen_sqlite(tmp_path: Path) -> None:
-    """End-to-End-Test der echten Alembic-Migration (nicht nur create_all)."""
+    """End-to-End-Test der echten Alembic-Migration (nicht nur create_all).
+
+    ``data_dir`` ist bewusst ein noch NICHT existierendes, verschachteltes
+    Unterverzeichnis von ``tmp_path`` (nicht ``tmp_path`` selbst, das pytest
+    bereits anlegt) — genau das reale Szenario beim allerersten Start auf
+    einem frischen Windows-Rechner (``%USERPROFILE%\\InvestmentAnalyzer``
+    existiert dort noch nicht). Ein früherer, in freier Wildbahn gefundener
+    Fehler (``alembic/env.py`` rief ``ensure_data_dirs()`` nicht auf, bevor
+    die SQLite-Verbindung aufgebaut wurde -> ``OperationalError: unable to
+    open database file``) wäre mit ``IA_DATA_DIR=str(tmp_path)`` allein NIE
+    aufgefallen, weil ``tmp_path`` als pytest-Fixture bereits existiert."""
+
+    data_dir = tmp_path / "noch-nicht-vorhanden" / "InvestmentAnalyzer"
+    assert not data_dir.exists()
 
     env = {
         **__import__("os").environ,
-        "IA_DATA_DIR": str(tmp_path),
+        "IA_DATA_DIR": str(data_dir),
     }
     ini_path = PROJECT_ROOT / "alembic.ini"
 
@@ -252,7 +265,7 @@ def test_alembic_migration_gegen_sqlite(tmp_path: Path) -> None:
     )
     assert upgrade.returncode == 0, upgrade.stderr
 
-    db_path = tmp_path / "investment_analyzer.db"
+    db_path = data_dir / "investment_analyzer.db"
     assert db_path.exists()
 
     import sqlite3

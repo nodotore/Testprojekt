@@ -31,6 +31,15 @@ target_metadata = Base.metadata
 # so bleibt eine einzige Quelle der Wahrheit für die Verbindung
 # (siehe investment_analyzer.config.settings.AppSettings).
 _settings = get_settings()
+# Muss VOR dem ersten Verbindungsaufbau laufen: bei einer lokalen
+# SQLite-Datenbank existiert data_dir (z. B. %USERPROFILE%\
+# InvestmentAnalyzer) beim allerersten Start auf einem frischen Rechner
+# noch nicht. sqlite3 legt das übergeordnete Verzeichnis nicht selbst
+# an -- ohne dies schlägt die Migration mit "unable to open database
+# file" fehl (in freier Wildbahn gefunden: start.ps1 ruft die Migration
+# auf, BEVOR ui/bootstrap.py beim Start der Oberfläche ensure_data_dirs()
+# aufruft).
+_settings.ensure_data_dirs()
 config.set_main_option("sqlalchemy.url", _settings.resolved_database_url)
 
 
