@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+- Kandidaten-Rangliste (Auftrag §10, Seite 3) umgesetzt — dritte von
+  neun noch fehlenden Oberflächenseiten (siehe ADR-28). Neue Seite
+  `ui/ranking.py`: sortierbare Tabelle aller bereits erfassten
+  Unternehmen nach Gesamtscore, baut je Zeile den vollständigen
+  `ReportBundle` (wie die Detailseite) statt nur `score_entity()`
+  direkt aufzurufen, damit Score/Datenabdeckung/Klassifikation
+  garantiert dieselben Werte zeigen wie auf der Unternehmensdetail-
+  Seite und in den Exporten. Rankt bewusst nur bereits erfasste
+  Unternehmen (keine Breitensuche über ein größeres Universum, noch
+  nicht vorhanden). Warnung bei Unternehmen mit Klassifikation
+  „Datenlage unzureichend". 4 neue Tests (insgesamt 482), `ruff`/`mypy`
+  fehlerfrei, zusätzlich mit echtem Browser gegen eine synthetisch
+  befüllte Testdatenbank mit drei Unternehmen verifiziert.
+
 - Unternehmensdetail mit Quellenleiste (Auftrag §10, Seite 4) umgesetzt
   — zweite von neun noch fehlenden Oberflächenseiten (siehe ADR-27).
   Neue Seite `ui/detail.py` rendert ausschließlich aus demselben

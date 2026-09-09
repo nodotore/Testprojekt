@@ -150,7 +150,33 @@ ein Unternehmen erstmals zur Datenbank hinzugefügt:
 Unten auf der Seite: durchsuchbare Liste aller bereits erfassten
 Unternehmen (Name, Land, Börse, Branche, Kennungen).
 
-## 4b. Unternehmensdetail mit Quellenleiste — der vollständige Bericht
+## 4b. Die Kandidaten-Rangliste — alle erfassten Unternehmen im Vergleich
+
+Über die Seitenleiste („Seite" → „Kandidaten-Rangliste") erreichbar.
+Zeigt eine Tabelle aller bereits über den Marktscreener (Abschnitt 4a)
+erfassten Unternehmen, sortiert nach Gesamtscore (höchster Score
+zuerst):
+
+- **Spalten:** Unternehmen, Score (0–100), Klassifikation,
+  Datenabdeckung und Konfidenz. Auf einen Klick auf eine Spaltenkopf-
+  zeile lässt sich die Tabelle auch nach jeder anderen Spalte sortieren
+  (z. B. alphabetisch nach Unternehmen).
+- Unternehmen mit Klassifikation „Datenlage unzureichend" (zu wenige
+  tatsächlich vorhandene Rohdaten) erscheinen automatisch am Ende und
+  werden zusätzlich in einem Warnhinweis genannt — ein Score von 0,0
+  bei solchen Unternehmen ist kein fehlender oder geratener Wert,
+  sondern das korrekte Ergebnis der Score-Berechnung bei fehlenden
+  Daten.
+- **Wichtig zu wissen:** Diese Rangliste rankt ausschließlich bereits
+  erfasste Unternehmen — sie durchsucht nicht automatisch einen
+  größeren Aktienmarkt nach neuen Kandidaten (diese Fähigkeit
+  existiert im Programm noch nicht, siehe `NEXT_STEPS.md`). Neue
+  Unternehmen werden weiterhin über den Marktscreener (Abschnitt 4a)
+  hinzugefügt.
+- Über die Unternehmensdetail-Seite (Abschnitt 4c) lässt sich jedes
+  Unternehmen aus der Rangliste im Detail nachvollziehen.
+
+## 4c. Unternehmensdetail mit Quellenleiste — der vollständige Bericht
 
 Über die Seitenleiste („Seite" → „Unternehmensdetail") erreichbar.
 Zeigt für ein bereits über den Marktscreener (Abschnitt 4a) erfasstes
@@ -191,21 +217,23 @@ Unternehmen den vollständigen Bericht:
 
 **Bitte diesen Abschnitt aufmerksam lesen.**
 
-Die grafische Oberfläche hat aktuell drei Seiten: **„Start /
+Die grafische Oberfläche hat aktuell vier Seiten: **„Start /
 Datenstatus"** (Ersteinrichtung/Profilverwaltung, ehrliche Zählung
 dessen, was in der Datenbank steht), **„Marktscreener"** (Abschnitt
-4a — Unternehmen hinzufügen, Daten abrufen) und **„Unternehmensdetail"**
-(Abschnitt 4b — vollständiger Bericht mit Quellenleiste für ein
-erfasstes Unternehmen). Solange noch kein Datenabruf stattgefunden
-hat, zeigt die Startseite bewusst **Nullen** — niemals Platzhalter-
-oder Beispielzahlen, die wie echte Marktdaten aussehen könnten.
+4a — Unternehmen hinzufügen, Daten abrufen), **„Kandidaten-Rangliste"**
+(Abschnitt 4b — alle erfassten Unternehmen nach Score sortiert) und
+**„Unternehmensdetail"** (Abschnitt 4c — vollständiger Bericht mit
+Quellenleiste für ein erfasstes Unternehmen). Solange noch kein
+Datenabruf stattgefunden hat, zeigt die Startseite bewusst **Nullen**
+— niemals Platzhalter- oder Beispielzahlen, die wie echte Marktdaten
+aussehen könnten.
 
-Die im Auftrag vorgesehenen weiteren sieben Oberflächen-Seiten
-(Kandidaten-Rangliste, Peer-Vergleich, DCF-/Szenarioanalyse,
-Nachrichten/Ereignisse, Watchlist/Portfolio, Backtest, Einstellungen/
-Quellen/Prüfprotokoll) sind **noch nicht als Bildschirmseiten gebaut**
-— sie werden bewusst nicht als leere Platzhalter vorgezeigt, um keine
-Funktionalität vorzutäuschen, die noch nicht existiert (Auftrag §16).
+Die im Auftrag vorgesehenen weiteren sechs Oberflächen-Seiten
+(Peer-Vergleich, DCF-/Szenarioanalyse, Nachrichten/Ereignisse,
+Watchlist/Portfolio, Backtest, Einstellungen/Quellen/Prüfprotokoll)
+sind **noch nicht als Bildschirmseiten gebaut** — sie werden bewusst
+nicht als leere Platzhalter vorgezeigt, um keine Funktionalität
+vorzutäuschen, die noch nicht existiert (Auftrag §16).
 
 **Was bereits vollständig funktioniert und getestet ist** (nur noch
 nicht über einen Button in der Oberfläche erreichbar): Peer-Vergleich
@@ -215,7 +243,7 @@ unternehmen bereits erfasst sind), Nachrichtenauswertung (GDELT/
 IR-RSS-Abruf selbst ist noch nicht in der Oberfläche, nur SEC EDGAR/
 Alpha Vantage über den Marktscreener), Portfolio-/Watchlist-Analyse,
 Backtesting. Alle diese Bausteine sind unabhängig voneinander getestet
-(478 automatisierte Tests, siehe `PROGRESS.md`) und lassen sich
+(482 automatisierte Tests, siehe `PROGRESS.md`) und lassen sich
 bereits heute über ein kurzes Python-Skript aufrufen — das erfordert
 allerdings Grundkenntnisse in Python. Ein vollständiges, tatsächlich
 lauffähiges Beispiel für den gesamten Weg von der Datenbank bis zum

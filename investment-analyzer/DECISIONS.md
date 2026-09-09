@@ -1026,6 +1026,85 @@ Annahmen, drei Download-Buttons) rendern korrekt und ohne
 Konsolenfehler (abgesehen von erwarteten, harmlosen Streamlit-
 Telemetrie-Fehlschlägen mangels Internetzugang in dieser Sandbox).
 
+## ADR-28: Kandidaten-Rangliste — Rangfolge NUR über bereits erfasste Unternehmen, ReportBundle je Zeile
+
+**Kontext:** Dritte der neun noch fehlenden Auftrag-§10-Oberflächen-
+seiten: **Kandidaten-Rangliste** (Auftrag §10, Seite 3) — eine
+sortierbare Tabelle aller Unternehmen nach Gesamtscore.
+`scoring/score.py::score_entity` bzw. `reports/bundle.py::
+build_report_bundle` lagen bereits vollständig vor (Milestone 4/6);
+es fehlte nur die Bildschirmseite.
+
+**Entscheidung — Rangliste NUR über bereits erfasste Unternehmen, keine
+Breitensuche:** Auftrag §10 nennt die vorherige Seite „Marktscreener
+MIT Filtern" — dieses Programm hat aber (noch) keine Möglichkeit, eine
+größere Grundgesamtheit von Aktien automatisch zu durchsuchen; der
+Marktscreener (ADR-26) fügt Unternehmen einzeln per CIK/Ticker hinzu.
+Die Kandidaten-Rangliste rankt deshalb bewusst NUR die bereits über den
+Marktscreener erfassten Unternehmen (`ui/screener.py::list_entities`),
+nicht ein größeres Universum — alles andere würde eine Fähigkeit
+vortäuschen, die nicht existiert (Auftrag §16). Als dokumentierte
+Lücke in `NEXT_STEPS.md` geführt: eine echte Breitensuche (z. B. über
+eine SEC-EDGAR-Volltextsuche oder eine Ticker-Liste) ist ein möglicher
+künftiger Ausbauschritt des Marktscreeners, kein Bestandteil dieser
+Seite.
+
+**Entscheidung — `build_report_bundle` je Zeile statt nur
+`score_entity`:** Obwohl `score_entity()` laut eigenem Docstring
+bereits „der bequeme Einstiegspunkt für die UI/Rangliste" ist, baut
+`ui/ranking.py` stattdessen für jede Zeile den vollständigen
+`ReportBundle` (wie `ui/detail.py`, ADR-27) und liest Score,
+Datenabdeckung und Klassifikation aus `bundle.header`/`bundle.score`.
+Grund: dieselbe strukturelle Garantie wie auf der Detailseite — die
+Rangliste zeigt garantiert exakt denselben Score, dieselbe
+Datenabdeckung und dieselbe Klassifikation wie die Detailseite und die
+Exporte für dasselbe Unternehmen, da alle drei aus demselben
+`report_bundle_to_dict()`-Dict lesen. Der zusätzliche Rechenaufwand
+(Bewertung/DCF/Peers/Nachrichten werden mitberechnet, obwohl nur Score
+und Datenabdeckung angezeigt werden) ist bei der aktuell kleinen,
+manuell gepflegten Anzahl erfasster Unternehmen unkritisch; sollte die
+Anzahl später groß werden, ist ein schlankerer Pfad über `score_entity`
+direkt eine mögliche spätere Optimierung (in `NEXT_STEPS.md` vermerkt).
+
+**Entscheidung — Score 0.0 bei fehlenden Daten ist ein echter Wert,
+keine Lücke:** Beim Testen zeigte sich, dass ein Unternehmen ganz ohne
+Rohdaten NICHT `total_score=None` erhält, sondern `0.0` — die
+Scoring-Komponente „Datenqualität/Aktualität"
+(`_score_datenqualitaet`) bewertet `data_completeness` immer
+numerisch, auch bei 0 %, und ist damit die einzige verfügbare
+Komponente. Das ist kein Darstellungsfehler und keine geratene Zahl,
+sondern das korrekte, deterministische Ergebnis der bestehenden
+Score-Formel (Milestone 4) — sie wird hier nur zum ersten Mal in der
+Rangliste sichtbar. Statt einer irreführenden Meldung über „fehlende
+Scores" zeigt die Seite stattdessen eine Warnung über die Anzahl
+Unternehmen mit Klassifikation „Datenlage unzureichend" — diese ist
+inhaltlich zutreffend und bereits an anderer Stelle etabliert
+(Kriterium `_classify`, Milestone 4).
+
+**Entscheidung — sortierbare Tabelle über natives `st.dataframe`:**
+Kein eigenes Sortier-UI gebaut — Streamlits `st.dataframe` (auf
+`glide-data-grid` basierend) ist bereits klick-sortierbar über die
+Spaltenkopfzeile. Da dieses Raster auf `<canvas>` statt echtem DOM
+rendert, lässt es sich nicht über Playwrights ARIA-Rollen-Locators
+ansteuern — beim Live-Test wurde daher nur der initiale Render (Daten,
+Standard-Sortierung, Warnhinweis) per Screenshot geprüft, nicht ein
+Klick auf die Kopfzeile selbst; das native Sortierverhalten ist eine
+von Streamlit getestete Plattform-Eigenschaft, keine hier neu gebaute
+Logik.
+
+**Tests:** 4 neue Tests (insgesamt 482) — 2 reine Tests für
+`_rangliste_dataframe()` (`tests/ui/test_ranking.py`: Sortierung nach
+Score absteigend, Score 0.0 bei fehlenden Daten statt eines fehlenden
+Werts), 2 neue `AppTest`-Smoke-Tests (`tests/ui/test_app_smoke.py`):
+leerer Zustand ohne erfasste Unternehmen sowie eine Zeile mit
+synthetisch befüllter Testdatenbank. `ruff`/`mypy` fehlerfrei.
+Zusätzlich mit echtem Playwright-Browser gegen einen laufenden
+Streamlit-Prozess mit drei synthetisch befüllten Unternehmen
+verifiziert (zwei mit unterschiedlich skalierten Finanzdaten, eines
+ganz ohne Daten) — Rangfolge, Score-Werte, Klassifikationen und die
+Warnung bei unzureichender Datenlage rendern korrekt, keine
+unerwarteten Konsolenfehler.
+
 ## Noch zu treffende Entscheidungen
 
 Keine blockierenden Entscheidungen mehr offen für Milestone 1–7 (alle

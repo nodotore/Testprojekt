@@ -201,6 +201,57 @@ def test_app_marktscreener_zeigt_formular_mit_hinterlegter_kontakt_email(tmp_pat
     _reset_caches()
 
 
+def test_app_kandidatenrangliste_ohne_unternehmen_zeigt_hinweis(tmp_path, monkeypatch) -> None:
+    monkeypatch.setenv("IA_DATA_DIR", str(tmp_path))
+    _reset_caches()
+    _migrate_test_db(tmp_path)
+
+    profil = default_profile()
+    profil.haftungsausschluss_akzeptiert = True
+    ProfileStore(tmp_path / "profile.json").save(profil)
+
+    at = AppTest.from_file(APP_PATH)
+    at.run(timeout=30)
+    at.sidebar.radio[0].set_value("Kandidaten-Rangliste").run(timeout=30)
+
+    assert not at.exception, [str(e) for e in at.exception]
+    header_texte = " ".join(h.value for h in at.header)
+    assert "Kandidaten-Rangliste" in header_texte
+    infos = " ".join(i.value for i in at.info)
+    assert "Noch keine Unternehmen erfasst" in infos
+
+    _reset_caches()
+
+
+def test_app_kandidatenrangliste_zeigt_rangfolge_nach_score(tmp_path, monkeypatch) -> None:
+    monkeypatch.setenv("IA_DATA_DIR", str(tmp_path))
+    _reset_caches()
+    _migrate_test_db(tmp_path)
+    _seed_entity_mit_fundamentaldaten(tmp_path)
+
+    profil = default_profile()
+    profil.haftungsausschluss_akzeptiert = True
+    ProfileStore(tmp_path / "profile.json").save(profil)
+
+    at = AppTest.from_file(APP_PATH)
+    at.run(timeout=30)
+    at.sidebar.radio[0].set_value("Kandidaten-Rangliste").run(timeout=30)
+
+    assert not at.exception, [str(e) for e in at.exception]
+    header_texte = " ".join(h.value for h in at.header)
+    assert "Kandidaten-Rangliste" in header_texte
+
+    captions = " ".join(c.value for c in at.caption)
+    assert "1 erfasste Unternehmen" in captions
+
+    assert len(at.dataframe) == 1
+    df = at.dataframe[0].value
+    assert list(df["Unternehmen"]) == ["Firma G (synthetisches Beispiel)"]
+    assert df.loc[0, "Score (0–100)"] > 0
+
+    _reset_caches()
+
+
 def test_app_unternehmensdetail_ohne_unternehmen_zeigt_hinweis(tmp_path, monkeypatch) -> None:
     monkeypatch.setenv("IA_DATA_DIR", str(tmp_path))
     _reset_caches()

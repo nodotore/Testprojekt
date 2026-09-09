@@ -283,9 +283,18 @@ seit Milestone 1–7 fertig, nur die Bedienoberfläche fehlte.
       (Rendering, Navigation, Formularvalidierung) — ein echter SEC-
       EDGAR-Live-Abruf war mangels Internetzugang in dieser Sandbox
       nicht testbar (Nutzer muss das auf dem eigenen Rechner prüfen).
-- [ ] **Kandidaten-Rangliste** (Seite 3): sortierbare Tabelle aller
-      erfassten Unternehmen nach `ScoreResult.total_score`
-      (`scoring/score.py::score_entity` existiert bereits).
+- [x] **Kandidaten-Rangliste** (Seite 3, siehe ADR-28): sortierbare
+      Tabelle aller bereits erfassten Unternehmen nach Gesamtscore.
+      Neues Modul `ui/ranking.py` — baut je Zeile den vollständigen
+      `ReportBundle` (wie `ui/detail.py`), damit Score, Datenabdeckung
+      und Klassifikation garantiert dieselben Werte zeigen wie die
+      Detailseite und die Exporte. Rankt bewusst nur bereits erfasste
+      Unternehmen (keine Breitensuche über ein größeres Universum —
+      existiert in diesem Programm noch nicht). Warnung bei
+      Unternehmen mit Klassifikation „Datenlage unzureichend". 4 neue
+      Tests (insgesamt 482), `ruff`/`mypy` fehlerfrei. Mit echtem
+      Playwright-Browser gegen eine synthetisch befüllte Testdatenbank
+      mit drei Unternehmen verifiziert.
 - [x] **Unternehmensdetail mit Quellenleiste** (Seite 4, siehe ADR-27):
       vollständiger `ReportBundle` (Kopfzeile mit Datenstand/Analysezeit/
       Marktdatenverzögerung/Datenabdeckung/Konfidenz, Kennzahlen,

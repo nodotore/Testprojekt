@@ -1041,3 +1041,67 @@ auf `st.navigation()` sobald mehr Seiten existieren.
 
 **Nächster Schritt:** Kandidaten-Rangliste (Auftrag §10, Seite 3) —
 siehe `NEXT_STEPS.md`.
+
+## Nach Milestone 8 — Kandidaten-Rangliste (Auftrag §10, Seite 3)
+
+**Status:** umgesetzt (2026-09-09), dritte von neun noch fehlenden
+Auftrag-§10-Oberflächenseiten (siehe ADR-28).
+
+**Umgesetzt:**
+
+- Neue UI-Seite `ui/ranking.py`: sortierbare Tabelle aller bereits
+  über den Marktscreener erfassten Unternehmen, gerankt nach
+  Gesamtscore (absteigend als Vorsortierung, per Klick auf eine
+  Spaltenkopfzeile durch Streamlits eingebautes `st.dataframe`
+  zusätzlich frei sortierbar). Baut je Zeile den vollständigen
+  `ReportBundle` (wie `ui/detail.py`, ADR-27) statt nur
+  `score_entity()` direkt aufzurufen — garantiert dadurch dieselbe
+  strukturelle Konsistenz wie zwischen Detailseite und Exporten: Score,
+  Datenabdeckung und Klassifikation können zwischen Rangliste und
+  Detailseite für dasselbe Unternehmen nicht auseinanderlaufen.
+- Rankt bewusst NUR bereits erfasste Unternehmen, keine automatische
+  Breitensuche über ein größeres Aktienuniversum — diese Fähigkeit
+  existiert im Programm noch nicht (dokumentierte Lücke, siehe
+  ADR-28/`NEXT_STEPS.md`).
+- Warnung, wenn Unternehmen mit Klassifikation „Datenlage
+  unzureichend" in der Liste stehen — entdeckt beim Testen: ein
+  Unternehmen ganz ohne Rohdaten erhält `total_score=0.0` (kein
+  fehlender Wert, sondern das korrekte Ergebnis der bestehenden
+  Score-Formel aus Milestone 4, da die Komponente „Datenqualität/
+  Aktualität" immer numerisch bewertet).
+- `app.py`: Sidebar-Navigation um „Kandidaten-Rangliste" als dritte
+  Option erweitert (zwischen Marktscreener und Unternehmensdetail).
+
+**Tests:** 4 neue Tests (insgesamt 482, alle grün) — 2 reine Tests für
+`_rangliste_dataframe()` (`tests/ui/test_ranking.py`: Sortierung,
+Score 0.0 statt fehlendem Wert bei leeren Daten), 2 neue
+`AppTest`-Smoke-Tests (`tests/ui/test_app_smoke.py`): leerer Zustand
+sowie eine Zeile mit synthetisch befüllter Testdatenbank. `ruff check .`
+und `mypy src` beide fehlerfrei.
+
+**Manuell mit echtem Browser verifiziert** (Playwright gegen einen
+laufenden Streamlit-Prozess mit drei synthetisch befüllten
+Unternehmen — zwei mit unterschiedlich skalierten Finanzdaten, eines
+ganz ohne Daten): Rangfolge korrekt (höherer Score zuerst), Score-,
+Datenabdeckungs- und Konfidenzwerte korrekt, Warnung bei
+unzureichender Datenlage erscheint korrekt für das datenlose
+Unternehmen, keine unerwarteten Konsolenfehler. Ein Klick-Sortiertest
+auf die Spaltenkopfzeile selbst war über Playwright nicht möglich, da
+`st.dataframe` auf `<canvas>` statt echtem DOM rendert (siehe ADR-28)
+— das Sortierverhalten selbst ist eine von Streamlit getestete
+Plattform-Eigenschaft.
+
+**Geänderte/neue Dateien:** neue `ui/ranking.py`, `ui/app.py`
+(Navigation, Docstring), zugehörige Tests (`tests/ui/test_ranking.py`,
+`tests/ui/test_app_smoke.py`).
+
+**Offene Punkte** (siehe `TODO.md`): sechs weitere Auftrag-§10-Seiten,
+Einstellungen-Seite für die Alpha-Vantage-Schlüsselverwaltung, Umstieg
+auf `st.navigation()` sobald mehr Seiten existieren, künftig ggf. eine
+echte Breitensuche über ein größeres Aktienuniversum für den
+Marktscreener (würde auch die Kandidaten-Rangliste aussagekräftiger
+machen).
+
+**Nächster Schritt:** Peer-Vergleich oder DCF-/Szenarioanalyse (Auftrag
+§10, Seiten 5/6 — nutzen dieselben Daten wie die Detailseite) — siehe
+`NEXT_STEPS.md`.

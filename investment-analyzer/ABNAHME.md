@@ -16,7 +16,7 @@ tatsächlichen Stand, nicht eine geschönte Abnahme (Auftrag §11/§16).
 | 2 | Keine unbelegte Kennzahl im Bericht | Erfüllt (strukturell, an Syntheticdaten geprüft) |
 | 3 | Datenalter/Marktdatenverzögerung sichtbar | Erfüllt |
 | 4 | Klarer Fehler statt erfundener Analyse bei Quellenausfall | Erfüllt |
-| 5 | ≥30 Unit-/Integrationstests + zentrale End-to-End-Tests | Erfüllt (478 Tests) |
+| 5 | ≥30 Unit-/Integrationstests + zentrale End-to-End-Tests | Erfüllt (482 Tests) |
 | 6 | DCF/Kernkennzahlen gegen Handrechnungen geprüft | Teilweise erfüllt |
 | 7 | Backtests nachweislich ohne Look-ahead | Erfüllt (echter Fund der unabhängigen Prüfung noch in dieser Runde behoben) |
 | 8 | Exporte = Oberflächenwerte | Erfüllt |

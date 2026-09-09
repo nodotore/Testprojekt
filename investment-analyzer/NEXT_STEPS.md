@@ -134,17 +134,30 @@
       (siehe aktualisierte Bewertung in `ABNAHME.md`). 478 Tests grün,
       ruff/mypy fehlerfrei, mit echtem Browser (Playwright) gegen eine
       synthetisch befüllte Testdatenbank verifiziert.
-    - **Ausbau der sieben weiteren Auftrag-§10-UI-Seiten** (Kandidaten-
-      Rangliste, Peer-Vergleich, DCF-/Szenarioanalyse, Nachrichten/
-      Ereignisse, Watchlist/Portfolio, Backtest, Einstellungen/Quellen/
-      Prüfprotokoll) — empfohlene Reihenfolge: Kandidaten-Rangliste als
-      Nächstes (nutzt `scoring/score.py` direkt, keine weiteren
-      Abhängigkeiten), danach Peer-Vergleich/DCF (nutzen dieselben
-      Daten wie die Detailseite), zuletzt Watchlist/Portfolio, Backtest,
-      Einstellungen (jeweils eigene Datenflüsse). Einstellungen-Seite
-      ist zudem Voraussetzung dafür, dass der Alpha-Vantage-Kursabruf
-      im Marktscreener ohne vorherige manuelle OS-Keyring-Einrichtung
-      nutzbar wird.
+    - ~~Ausbau der Auftrag-§10-UI-Seite „Kandidaten-Rangliste"~~ —
+      umgesetzt am 2026-09-09 (siehe `PROGRESS.md`/ADR-28): neue
+      `ui/ranking.py`, baut je Zeile den vollständigen `ReportBundle`
+      wie die Detailseite (garantiert konsistente Werte), rankt bewusst
+      nur bereits erfasste Unternehmen (keine Breitensuche — noch nicht
+      vorhanden, siehe unten). 482 Tests grün, ruff/mypy fehlerfrei, mit
+      echtem Browser (Playwright) gegen drei synthetisch befüllte
+      Unternehmen verifiziert.
+    - **Ausbau der sechs weiteren Auftrag-§10-UI-Seiten** (Peer-
+      Vergleich, DCF-/Szenarioanalyse, Nachrichten/Ereignisse,
+      Watchlist/Portfolio, Backtest, Einstellungen/Quellen/
+      Prüfprotokoll) — empfohlene Reihenfolge: Peer-Vergleich/DCF als
+      Nächstes (nutzen dieselben Daten wie die Detailseite), zuletzt
+      Watchlist/Portfolio, Backtest, Einstellungen (jeweils eigene
+      Datenflüsse). Einstellungen-Seite ist zudem Voraussetzung dafür,
+      dass der Alpha-Vantage-Kursabruf im Marktscreener ohne vorherige
+      manuelle OS-Keyring-Einrichtung nutzbar wird.
+    - Neu, nicht blockierend (aus dem Bau der Kandidaten-Rangliste,
+      ADR-28): eine echte Breitensuche über ein größeres
+      Aktienuniversum für den Marktscreener (z. B. SEC-EDGAR-
+      Volltextsuche oder eine gepflegte Ticker-Liste) würde die
+      Kandidaten-Rangliste erst zu einer echten Screening-Funktion
+      machen — aktuell rankt sie nur bereits manuell hinzugefügte
+      Unternehmen.
     - SSRF-IP-Pinning bis zur tatsächlichen HTTP-Verbindung (ADR-25
       Befund 4, `SECURITY.md`) — behebt die dokumentierte Time-of-
       check-to-time-of-use-Restlücke; erfordert einen eigenen
@@ -187,6 +200,6 @@
       inzwischen mehrfach mit echtem, headless laufendem Chromium
       (Playwright) gegen einen echten `streamlit run`-Prozess verifiziert
       (Ersteinrichtung, Datenstatus, Marktscreener inkl. Formular-
-      validierung, Unternehmensdetail mit synthetisch befüllter
-      Testdatenbank) — kein reiner `AppTest`-Trockentest mehr, siehe
-      `PROGRESS.md`.
+      validierung, Unternehmensdetail und Kandidaten-Rangliste mit
+      synthetisch befüllter Testdatenbank) — kein reiner
+      `AppTest`-Trockentest mehr, siehe `PROGRESS.md`.

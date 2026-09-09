@@ -2,12 +2,13 @@
 bindet weitere Auftrag-§10-Seiten über die Sidebar-Navigation ein.
 
 Bereits gebaut: Marktscreener (``ui/screener.py``, ADR-26),
-Unternehmensdetail mit Quellenleiste (``ui/detail.py``). Sechs weitere
-Auftrag-§10-Seiten (Kandidaten-Rangliste, Peer-Vergleich, DCF-/
-Szenarioanalyse, Nachrichten/Ereignisse, Watchlist/Portfolio, Backtest,
-Einstellungen/Quellen/Prüfprotokoll) fehlen noch — sie werden bewusst
-NICHT als leere Platzhalter vorgebaut, um keine Funktionalität
-vorzutäuschen, die noch nicht existiert (siehe ``TODO.md``).
+Kandidaten-Rangliste (``ui/ranking.py``, ADR-28), Unternehmensdetail
+mit Quellenleiste (``ui/detail.py``, ADR-27). Sechs weitere
+Auftrag-§10-Seiten (Peer-Vergleich, DCF-/Szenarioanalyse, Nachrichten/
+Ereignisse, Watchlist/Portfolio, Backtest, Einstellungen/Quellen/
+Prüfprotokoll) fehlen noch — sie werden bewusst NICHT als leere
+Platzhalter vorgebaut, um keine Funktionalität vorzutäuschen, die noch
+nicht existiert (siehe ``TODO.md``).
 
 Start: ``streamlit run src/investment_analyzer/ui/app.py`` (siehe
 ``start.ps1``/``start.bat`` im Projektstamm für den vollständigen
@@ -31,6 +32,7 @@ from investment_analyzer.ui.bootstrap import AppContext, bootstrap, check_databa
 from investment_analyzer.ui.components import DISCLAIMER, render_disclaimer
 from investment_analyzer.ui.detail import render_unternehmensdetail
 from investment_analyzer.ui.profile_form import build_profile_from_form
+from investment_analyzer.ui.ranking import render_kandidatenrangliste
 from investment_analyzer.ui.screener import render_marktscreener
 from investment_analyzer.ui.status import lade_datenstatus
 
@@ -269,10 +271,13 @@ def main() -> None:
     # Sobald weitere der neun Auftrag-§10-Seiten dazukommen, ist der Wechsel
     # auf st.navigation() vorgesehen (siehe NEXT_STEPS.md).
     seite = st.sidebar.radio(
-        "Seite", ["Start / Datenstatus", "Marktscreener", "Unternehmensdetail"]
+        "Seite",
+        ["Start / Datenstatus", "Marktscreener", "Kandidaten-Rangliste", "Unternehmensdetail"],
     )
     if seite == "Marktscreener":
         render_marktscreener(ctx, profil)
+    elif seite == "Kandidaten-Rangliste":
+        render_kandidatenrangliste(ctx, profil)
     elif seite == "Unternehmensdetail":
         render_unternehmensdetail(ctx, profil)
     else:
