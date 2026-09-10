@@ -1286,6 +1286,71 @@ Cluster erkannt, eine dritte, thematisch andere Meldung → korrekt als
 eigener Einzelquellen-Cluster; aufgeklappter Cluster zeigt Tabelle mit
 klickbarem Quell-Link) — keine unerwarteten Konsolenfehler.
 
+## ADR-32: Watchlist/Portfolio — zwei Tabs, vollständiges PortfolioReport-Rendering, echter Live-Fund eines Skalierungsfehlers
+
+**Kontext:** Siebte der neun noch fehlenden Auftrag-§10-Oberflächen-
+seiten: **Watchlist/Portfolio** (Auftrag §10, Seite 8). CSV-Import
+(`portfolio/csv_import.py`) und die vollständige Orchestrierung
+(`portfolio/report.py::build_portfolio_report` — Konzentration,
+Korrelation, Drawdown, Positionsgrößen-Bandbreite, Milestone 6) lagen
+bereits vor; es fehlte nur die Bildschirmseite.
+
+**Entscheidung — zwei Tabs statt zwei separater Seiten:** Watchlist
+(beobachtet, keine Bestandsdaten) und Portfolio (tatsächlich gehalten)
+sind im Backend bereits als zwei getrennte, schlanke Modelle
+konzipiert (`portfolio/models.py`-Docstring). Auftrag §10 führt beide
+unter einer gemeinsamen Seite „Watchlist/Portfolio" — konsequent über
+`st.tabs(["Watchlist", "Portfolio"])` umgesetzt statt zweier Einträge
+in der Sidebar-Navigation, die die neun Auftrag-§10-Seiten künstlich
+auf zehn Sidebar-Einträge aufgespalten hätte.
+
+**Entscheidung — CSV-Import direkt auf der Seite, kein Umweg über eine
+Datei-Vorschau:** `st.file_uploader` nimmt die CSV-Datei entgegen, ruft
+unverändert `import_watchlist_csv`/`import_portfolio_csv` auf und zeigt
+das vollständige `CsvImportResult` (erstellt/aktualisiert/Fehler je
+Zeile) — genau die vom Backend bereits gesammelten Zeilenfehler
+(Auftrag §4 „Fail loud" auf Zeilenebene, siehe Modul-Docstring von
+`csv_import.py`), nicht nur eine pauschale Erfolgs-/Fehlermeldung.
+
+**Entscheidung — `build_portfolio_report` vollständig rendern, nicht
+nur die Positionsliste:** Die Seite zeigt Positionstabelle,
+Branchen-/Länderkonzentration, Währungsexposure (bewusst ohne
+Umrechnung, ADR-20), Positionsgrößen-Bandbreite (ausdrücklich als
+unverbindlich gekennzeichnet, Auftrag §1 — nie ein konkreter Kauf-
+/Verkaufsbetrag), Drawdown und Korrelation je Position sowie die vom
+Backend bereits gesammelten `gaps` (was mangels Daten NICHT berechnet
+werden konnte, Auftrag §11) — keine Teilmenge, die eine unvollständige
+Analyse vortäuschen würde.
+
+**Echter Fund beim Live-Test — Prozent-Skalierungsfehler:** Der erste
+Playwright-Durchlauf zeigte Branchen-/Länderkonzentration als „0.7%"/
+„0.3%" statt der korrekten „66.7%"/„33.3%" — `ConcentrationBreakdown.
+by_key` liefert Anteile als Bruchzahl (0..1), das `%.1f%%`-
+Spaltenformat von `st.column_config.NumberColumn` skaliert aber NICHT
+automatisch auf 0..100, sondern hängt nur ein Prozentzeichen an den
+Rohwert an. Derselbe Fehler betraf `DrawdownResult.max_drawdown_pct`
+(trotz des `_pct`-Namens ebenfalls eine Bruchzahl). Noch in dieser
+Runde behoben: beide Stellen multiplizieren jetzt explizit mit 100 vor
+der Anzeige, jeweils als eigene reine Funktion (`_konzentration_
+dataframe()`, `_drawdown_dataframe()`) ausgelagert und mit
+Regressionstests abgesichert — dieselbe Disziplin wie bei den anderen
+Seiten (`_rangliste_dataframe()` in ADR-28 usw.), hier aber erst durch
+den Live-Browser-Test statt vorab durch Code-Review gefunden. Ein
+Hinweis für künftige Seiten: `NumberColumn(format="%.1f%%")` erwartet
+bereits skalierte Werte, kein Streamlit-natives „percent"-Format wird
+hier verwendet.
+
+**Tests:** 7 neue Tests (insgesamt 504) — 5 reine Tests
+(`tests/ui/test_watchlist.py`: `_list_watchlist()` inkl. Entity-Namens-
+Vorrang vor CSV-`name`, sowie die beiden Regressionstests für die
+gefundene Skalierungslücke), 2 neue `AppTest`-Smoke-Tests
+(`tests/ui/test_app_smoke.py`): beide Tabs ohne Einträge, sowie eine
+Portfolio-Position mit Kurs und Branchen-/Länderklassifikation. `ruff`/
+`mypy` fehlerfrei. Zusätzlich mit echtem Playwright-Browser gegen zwei
+Portfolio-Positionen unterschiedlicher Branche/Land und einen
+Watchlist-Eintrag verifiziert (vor UND nach dem Fix des
+Skalierungsfehlers) — keine unerwarteten Konsolenfehler.
+
 ## Noch zu treffende Entscheidungen
 
 Keine blockierenden Entscheidungen mehr offen für Milestone 1–7 (alle

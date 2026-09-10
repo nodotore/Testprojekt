@@ -164,13 +164,19 @@
       Abrufweg bleibt weiterhin offen (siehe unten). 497 Tests grün,
       ruff/mypy fehlerfrei, mit echtem Browser (Playwright) gegen
       synthetisch befüllte GDELT-Meldungen verifiziert.
-    - **Ausbau der drei weiteren Auftrag-§10-UI-Seiten** (Watchlist/
-      Portfolio, Backtest, Einstellungen/Quellen/Prüfprotokoll) —
-      empfohlene Reihenfolge: Watchlist/Portfolio als Nächstes (CSV-
-      Import und `PortfolioReport`-Orchestrierung bereits vorhanden),
-      danach Backtest, zuletzt Einstellungen. Einstellungen-Seite ist
-      zudem Voraussetzung dafür, dass der Alpha-Vantage-Kursabruf im
-      Marktscreener ohne vorherige manuelle OS-Keyring-Einrichtung
+    - ~~Ausbau der Auftrag-§10-UI-Seite „Watchlist/Portfolio"~~ —
+      umgesetzt am 2026-09-10 (siehe `PROGRESS.md`/ADR-32): neue
+      `ui/watchlist.py`, zwei Tabs mit CSV-Import und vollständigem
+      `PortfolioReport`-Rendering. Beim Live-Test einen echten Prozent-
+      Skalierungsfehler gefunden und mit Regressionstests behoben
+      (siehe ADR-32). 504 Tests grün, ruff/mypy fehlerfrei, mit echtem
+      Browser (Playwright) gegen zwei Portfolio-Positionen verifiziert.
+    - **Ausbau der zwei weiteren Auftrag-§10-UI-Seiten** (Backtest,
+      Einstellungen/Quellen/Prüfprotokoll) — empfohlene Reihenfolge:
+      Backtest als Nächstes (`backtesting/engine.py::run_backtest`
+      bereits vorhanden), zuletzt Einstellungen. Einstellungen-Seite
+      ist zudem Voraussetzung dafür, dass der Alpha-Vantage-Kursabruf
+      im Marktscreener ohne vorherige manuelle OS-Keyring-Einrichtung
       nutzbar wird.
     - Weiterhin offen, nicht blockierend für die restlichen UI-Seiten:
       ein automatischer Abrufweg über GDELT/IR-RSS für die
@@ -236,6 +242,8 @@
       (Playwright) gegen einen echten `streamlit run`-Prozess verifiziert
       (Ersteinrichtung, Datenstatus, Marktscreener inkl. Formular-
       validierung, Unternehmensdetail, Kandidaten-Rangliste,
-      Peer-Vergleich, DCF-/Szenarioanalyse und Nachrichten/Ereignisse
-      mit synthetisch befüllter Testdatenbank) — kein reiner
-      `AppTest`-Trockentest mehr, siehe `PROGRESS.md`.
+      Peer-Vergleich, DCF-/Szenarioanalyse, Nachrichten/Ereignisse und
+      Watchlist/Portfolio mit synthetisch befüllter Testdatenbank —
+      dabei einmal einen echten Anzeigefehler gefunden und behoben,
+      siehe ADR-32) — kein reiner `AppTest`-Trockentest mehr, siehe
+      `PROGRESS.md`.

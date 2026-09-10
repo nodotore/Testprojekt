@@ -5,11 +5,12 @@ Bereits gebaut: Marktscreener (``ui/screener.py``, ADR-26),
 Kandidaten-Rangliste (``ui/ranking.py``, ADR-28), Unternehmensdetail
 mit Quellenleiste (``ui/detail.py``, ADR-27), Peer-Vergleich
 (``ui/peers.py``, ADR-29), DCF- und Szenarioanalyse (``ui/dcf.py``,
-ADR-30), Nachrichten/Ereignisse (``ui/news.py``, ADR-31). Drei weitere
-Auftrag-§10-Seiten (Watchlist/Portfolio, Backtest, Einstellungen/
-Quellen/Prüfprotokoll) fehlen noch — sie werden bewusst NICHT als
-leere Platzhalter vorgebaut, um keine Funktionalität vorzutäuschen,
-die noch nicht existiert (siehe ``TODO.md``).
+ADR-30), Nachrichten/Ereignisse (``ui/news.py``, ADR-31), Watchlist/
+Portfolio (``ui/watchlist.py``, ADR-32). Zwei weitere Auftrag-§10-
+Seiten (Backtest, Einstellungen/Quellen/Prüfprotokoll) fehlen noch —
+sie werden bewusst NICHT als leere Platzhalter vorgebaut, um keine
+Funktionalität vorzutäuschen, die noch nicht existiert (siehe
+``TODO.md``).
 
 Start: ``streamlit run src/investment_analyzer/ui/app.py`` (siehe
 ``start.ps1``/``start.bat`` im Projektstamm für den vollständigen
@@ -39,6 +40,7 @@ from investment_analyzer.ui.profile_form import build_profile_from_form
 from investment_analyzer.ui.ranking import render_kandidatenrangliste
 from investment_analyzer.ui.screener import render_marktscreener
 from investment_analyzer.ui.status import lade_datenstatus
+from investment_analyzer.ui.watchlist import render_watchlist_portfolio
 
 __all__ = ["DISCLAIMER", "render_disclaimer"]
 
@@ -284,6 +286,7 @@ def main() -> None:
             "Peer-Vergleich",
             "DCF- und Szenarioanalyse",
             "Nachrichten/Ereignisse",
+            "Watchlist/Portfolio",
         ],
     )
     if seite == "Marktscreener":
@@ -298,6 +301,8 @@ def main() -> None:
         render_dcfanalyse(ctx, profil)
     elif seite == "Nachrichten/Ereignisse":
         render_nachrichten(ctx, profil)
+    elif seite == "Watchlist/Portfolio":
+        render_watchlist_portfolio(ctx, profil)
     else:
         render_datenstatus(ctx, profil)
 

@@ -1267,3 +1267,60 @@ weiterhin offen).
 **Nächster Schritt:** Watchlist/Portfolio (Auftrag §10, Seite 8 —
 CSV-Import und `PortfolioReport`-Orchestrierung bereits vorhanden) —
 siehe `NEXT_STEPS.md`.
+
+## Nach Milestone 8 — Watchlist/Portfolio (Auftrag §10, Seite 8)
+
+**Status:** umgesetzt (2026-09-10), achte von neun noch fehlenden
+Auftrag-§10-Oberflächenseiten (siehe ADR-32).
+
+**Umgesetzt:**
+
+- Neue UI-Seite `ui/watchlist.py`: zwei Tabs „Watchlist" und
+  „Portfolio" (`st.tabs`). Beide unterstützen CSV-Import
+  (`import_watchlist_csv`/`import_portfolio_csv`) mit vollständiger
+  Zeilenfehler-Anzeige (`CsvImportResult`), nicht nur einer pauschalen
+  Erfolgs-/Fehlermeldung.
+- Portfolio-Tab rendert `build_portfolio_report` vollständig:
+  Positionstabelle, Gesamtwert, Branchen-/Länderkonzentration,
+  Währungsexposure (ohne Umrechnung, ADR-20), Positionsgrößen-
+  Bandbreite (ausdrücklich unverbindlich, Auftrag §1), Drawdown und
+  Korrelation je Position, sowie die vom Backend gesammelten `gaps`
+  (Auftrag §11).
+- **Echter Fund beim Live-Test:** ein Prozent-Skalierungsfehler —
+  `ConcentrationBreakdown.by_key` und `DrawdownResult.max_drawdown_pct`
+  liefern Bruchzahlen (0..1), `st.column_config.NumberColumn(format=
+  "%.1f%%")` skaliert aber nicht automatisch; 66,7 % erschien als
+  „0.7%". Noch in dieser Runde behoben (explizite ×100-Skalierung,
+  jeweils als eigene reine Funktion `_konzentration_dataframe()`/
+  `_drawdown_dataframe()` ausgelagert) und mit Regressionstests
+  abgesichert, bevor der Fehler dokumentiert als „getestet" gemeldet
+  wurde.
+- `app.py`: Sidebar-Navigation um „Watchlist/Portfolio" als achte
+  Option erweitert.
+
+**Tests:** 7 neue Tests (insgesamt 504, alle grün) — 5 reine Tests
+(`tests/ui/test_watchlist.py`: `_list_watchlist()`, sowie die beiden
+Regressionstests für den gefundenen Skalierungsfehler), 2 neue
+`AppTest`-Smoke-Tests (`tests/ui/test_app_smoke.py`): beide Tabs ohne
+Einträge, sowie eine Portfolio-Position mit Kurs und Klassifikation.
+`ruff check .` und `mypy src` beide fehlerfrei.
+
+**Manuell mit echtem Browser verifiziert** (Playwright gegen einen
+laufenden Streamlit-Prozess mit zwei Portfolio-Positionen
+unterschiedlicher Branche/Land und einem Watchlist-Eintrag) — sowohl
+VOR dem Fund des Skalierungsfehlers (der die Diskrepanz erst sichtbar
+machte) als auch danach zur Bestätigung des Fixes: alle Abschnitte
+rendern korrekt, Prozentwerte jetzt korrekt (66,7 %/33,3 % statt
+0,7 %/0,3 %), keine unerwarteten Konsolenfehler.
+
+**Geänderte/neue Dateien:** neue `ui/watchlist.py`, `ui/app.py`
+(Navigation, Docstring), zugehörige Tests (`tests/ui/test_watchlist.py`,
+`tests/ui/test_app_smoke.py`).
+
+**Offene Punkte** (siehe `TODO.md`): zwei weitere Auftrag-§10-Seiten,
+Einstellungen-Seite für die Alpha-Vantage-Schlüsselverwaltung, Umstieg
+auf `st.navigation()` sobald mehr Seiten existieren.
+
+**Nächster Schritt:** Backtest (Auftrag §10, Seite 9 —
+`backtesting/engine.py::run_backtest` bereits vorhanden) — siehe
+`NEXT_STEPS.md`.

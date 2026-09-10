@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+- Watchlist/Portfolio (Auftrag §10, Seite 8) umgesetzt — achte von
+  neun noch fehlenden Oberflächenseiten (siehe ADR-32). Neue Seite
+  `ui/watchlist.py`: zwei Tabs (Watchlist/Portfolio) mit CSV-Import und
+  vollständigem `PortfolioReport`-Rendering (Positionen, Branchen-/
+  Länderkonzentration, Währungsexposure, Positionsgrößen-Bandbreite,
+  Drawdown, Korrelation, offene Lücken). Beim Live-Test einen echten
+  Prozent-Skalierungsfehler gefunden und behoben: Bruchzahlen aus dem
+  Backend (Konzentrationsanteile, `max_drawdown_pct`) wurden
+  ungeskaliert mit `%.1f%%` formatiert, sodass 66,7 % als „0.7%"
+  erschien — jetzt mit expliziter ×100-Skalierung und
+  Regressionstests. 7 neue Tests (insgesamt 504), `ruff`/`mypy`
+  fehlerfrei, zusätzlich mit echtem Browser gegen zwei Portfolio-
+  Positionen verifiziert.
+
 - Nachrichten/Ereignisse (Auftrag §10, Seite 7) umgesetzt — sechste
   von neun noch fehlenden Oberflächenseiten (siehe ADR-31). Neue Seite
   `ui/news.py`: aufklappbare Ereignis-Cluster mit sichtbarer

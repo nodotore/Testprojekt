@@ -345,9 +345,17 @@ seit Milestone 1–7 fertig, nur die Bedienoberfläche fehlte.
       (insgesamt 497), `ruff`/`mypy` fehlerfrei. Mit echtem
       Playwright-Browser gegen synthetisch befüllte GDELT-Meldungen
       verifiziert.
-- [ ] **Watchlist/Portfolio** (Seite 8): CSV-Import
-      (`portfolio/csv_import.py`) und `PortfolioReport`-Orchestrierung
-      bereits vorhanden, nur keine UI.
+- [x] **Watchlist/Portfolio** (Seite 8, siehe ADR-32): zwei Tabs
+      (Watchlist/Portfolio) mit CSV-Import (`portfolio/csv_import.py`)
+      und vollständigem `build_portfolio_report`-Rendering
+      (Positionen, Branchen-/Länderkonzentration, Währungsexposure,
+      Positionsgrößen-Bandbreite, Drawdown, Korrelation, `gaps`).
+      Neues Modul `ui/watchlist.py`. Beim Live-Test einen echten
+      Prozent-Skalierungsfehler gefunden und behoben (Bruchzahlen aus
+      dem Backend wurden ungeskaliert mit `%.1f%%` formatiert — 66,7 %
+      erschien als „0.7%"), mit Regressionstests abgesichert. 7 neue
+      Tests (insgesamt 504), `ruff`/`mypy` fehlerfrei. Mit echtem
+      Playwright-Browser gegen zwei Portfolio-Positionen verifiziert.
 - [ ] **Backtest** (Seite 9): `backtesting/engine.py::run_backtest`
       bereits vorhanden, nur keine UI (Stichtags-/Top-N-Auswahl,
       Kennzahlen-Anzeige, Diagramm der NAV-Zeitreihe).

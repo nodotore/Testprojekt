@@ -282,11 +282,44 @@ gespeicherten Nachrichtenmeldungen, gruppiert nach Ereignis:
   diese Seite in der Praxis meist leer. Das wird auf der Seite selbst
   offen benannt statt verschwiegen (siehe `NEXT_STEPS.md`).
 
+## 4g. Watchlist/Portfolio — beobachtete und gehaltene Positionen
+
+Über die Seitenleiste („Seite" → „Watchlist/Portfolio") erreichbar,
+zwei Reiter:
+
+**Watchlist** (beobachtete, nicht gehaltene Unternehmen):
+
+- CSV-Import mit den Spalten `id_type,id_value,name,note`
+  (`id_type` ist `isin`, `lei` oder `cik` — ein Ticker allein wird
+  nicht akzeptiert, da er nicht eindeutig ist).
+- Darunter die aktuelle Watchlist mit Unternehmen, Notiz und
+  Hinzufügedatum.
+
+**Portfolio** (tatsächlich gehaltene Positionen):
+
+- CSV-Import mit den Spalten
+  `id_type,id_value,name,quantity,average_cost,currency,note`.
+- Jede fehlerhafte CSV-Zeile wird einzeln mit Zeilennummer und
+  Fehlergrund angezeigt statt den ganzen Import abzubrechen oder die
+  Zeile stillschweigend zu überspringen.
+- Darunter die vollständige Portfolio-Übersicht: Positionstabelle mit
+  Marktwert (aus dem letzten bekannten Kurs), Gesamtwert, Branchen-
+  und Länderkonzentration, Währungsexposure (nur Rohwerte je
+  Bestandswährung — bewusst keine Umrechnung zwischen Währungen, siehe
+  `DECISIONS.md`), eine **unverbindliche** Positionsgrößen-Bandbreite
+  auf Basis des im Analyseprofil eingestellten Limits (niemals ein
+  konkreter Kauf-/Verkaufsbetrag — das wäre eine Anlageempfehlung),
+  sowie maximaler Drawdown und Korrelation je Position, soweit
+  genügend Kursdaten vorliegen.
+- Was mangels Daten nicht berechnet werden konnte (z. B. fehlender
+  Kurs für eine Position), erscheint als eigener, aufklappbarer
+  Hinweisblock — nicht als stillschweigend fehlender Wert.
+
 ## 5. Was die Oberfläche heute zeigt — und was noch nicht
 
 **Bitte diesen Abschnitt aufmerksam lesen.**
 
-Die grafische Oberfläche hat aktuell sieben Seiten: **„Start /
+Die grafische Oberfläche hat aktuell acht Seiten: **„Start /
 Datenstatus"** (Ersteinrichtung/Profilverwaltung, ehrliche Zählung
 dessen, was in der Datenbank steht), **„Marktscreener"** (Abschnitt
 4a — Unternehmen hinzufügen, Daten abrufen), **„Kandidaten-Rangliste"**
@@ -295,23 +328,24 @@ dessen, was in der Datenbank steht), **„Marktscreener"** (Abschnitt
 Quellenleiste für ein erfasstes Unternehmen), **„Peer-Vergleich"**
 (Abschnitt 4d — ein Unternehmen und seine Branchen-Peers nebeneinander),
 **„DCF- und Szenarioanalyse"** (Abschnitt 4e — Bewertungsdetail und
-Sensitivitätsmatrizen) und **„Nachrichten/Ereignisse"** (Abschnitt
-4f — bereits gespeicherte Meldungen als Ereignis-Cluster). Solange
-noch kein Datenabruf stattgefunden hat, zeigt die Startseite bewusst
-**Nullen** — niemals Platzhalter- oder Beispielzahlen, die wie echte
-Marktdaten aussehen könnten.
+Sensitivitätsmatrizen), **„Nachrichten/Ereignisse"** (Abschnitt
+4f — bereits gespeicherte Meldungen als Ereignis-Cluster) und
+**„Watchlist/Portfolio"** (Abschnitt 4g — beobachtete und gehaltene
+Positionen inkl. CSV-Import und Konzentrations-/Risikoanalyse).
+Solange noch kein Datenabruf stattgefunden hat, zeigt die Startseite
+bewusst **Nullen** — niemals Platzhalter- oder Beispielzahlen, die wie
+echte Marktdaten aussehen könnten.
 
-Die im Auftrag vorgesehenen weiteren drei Oberflächen-Seiten
-(Watchlist/Portfolio, Backtest, Einstellungen/Quellen/Prüfprotokoll)
-sind **noch nicht als Bildschirmseiten gebaut** — sie werden bewusst
-nicht als leere Platzhalter vorgezeigt, um keine Funktionalität
-vorzutäuschen, die noch nicht existiert (Auftrag §16).
+Die im Auftrag vorgesehenen weiteren zwei Oberflächen-Seiten
+(Backtest, Einstellungen/Quellen/Prüfprotokoll) sind **noch nicht als
+Bildschirmseiten gebaut** — sie werden bewusst nicht als leere
+Platzhalter vorgezeigt, um keine Funktionalität vorzutäuschen, die
+noch nicht existiert (Auftrag §16).
 
 **Was bereits vollständig funktioniert und getestet ist** (nur noch
-nicht über einen Button in der Oberfläche erreichbar):
-Portfolio-/Watchlist-Analyse, Backtesting. Beide Bausteine sind
-unabhängig voneinander getestet (497 automatisierte Tests, siehe
-`PROGRESS.md`) und lassen sich
+nicht über einen Button in der Oberfläche erreichbar): Backtesting.
+Dieser Baustein ist unabhängig getestet (504 automatisierte Tests,
+siehe `PROGRESS.md`) und lässt sich
 bereits heute über ein kurzes Python-Skript aufrufen — das erfordert
 allerdings Grundkenntnisse in Python. Ein vollständiges, tatsächlich
 lauffähiges Beispiel für den gesamten Weg von der Datenbank bis zum

@@ -17,6 +17,7 @@ from investment_analyzer.entity_resolution.service import IdentifierSpec, find_o
 from investment_analyzer.fundamentals.metrics import Metric
 from investment_analyzer.news.ingest import ingest_gdelt_articles
 from investment_analyzer.normalization.models import DataPoint, ValueKind
+from investment_analyzer.portfolio.models import PortfolioPosition
 
 APP_PATH = str(
     Path(__file__).resolve().parents[2] / "src" / "investment_analyzer" / "ui" / "app.py"
@@ -143,6 +144,47 @@ def _seed_nachrichten_fuer_firma_g(data_dir: Path) -> None:
             ),
         )
         ingest_gdelt_articles(session, entity=entity, source=sources["gdelt"], articles=articles)
+        session.commit()
+    engine.dispose()
+
+
+def _seed_portfolio_position_mit_kurs(data_dir: Path) -> None:
+    """Legt eine einzelne Portfolio-Position mit bekanntem Kurs an, damit
+    ``ui/watchlist.py`` eine vollständige Portfolio-Übersicht rendert."""
+
+    engine = create_db_engine(f"sqlite:///{data_dir / 'investment_analyzer.db'}")
+    session_factory = create_session_factory(engine)
+    with session_factory() as session:
+        sources = ensure_default_sources(session)
+        entity = find_or_create_entity(
+            session, name="Firma J (Portfolio-Beispiel)",
+            identifiers=[IdentifierSpec(id_type=IdentifierType.CIK, id_value="0000000010")],
+        )
+        entity.sic_description = "Software"
+        entity.country = "US"
+        session.flush()
+
+        session.add(PortfolioPosition(entity_id=entity.id, quantity=10.0, currency="EUR"))
+        session.add(
+            DataPoint(
+                entity_id=entity.id,
+                source_id=sources["alpha_vantage"].id,
+                metric_name=Metric.PRICE_CLOSE.value,
+                period_start=None,
+                period_end=date(2024, 1, 15),
+                published_at=date(2024, 1, 15),
+                retrieved_at_utc=datetime(2024, 1, 15, tzinfo=UTC),
+                value_raw="50.0",
+                value_normalized=50.0,
+                unit="price_per_share",
+                currency=None,
+                value_kind=ValueKind.REPORTED,
+                document_url="https://example.invalid/quote",
+                document_type="market_data_snapshot",
+                content_hash="y" * 64,
+                document_id=None,
+            )
+        )
         session.commit()
     engine.dispose()
 
@@ -540,6 +582,59 @@ def test_app_nachrichten_zeigt_mehrquellenbestaetigten_cluster(tmp_path, monkeyp
     df = at.dataframe[0].value
     assert len(df) == 2
     assert set(df["Domain"]) == {"outlet-a.test", "outlet-b.test"}
+
+    _reset_caches()
+
+
+def test_app_watchlist_portfolio_ohne_eintraege_zeigt_hinweise(tmp_path, monkeypatch) -> None:
+    monkeypatch.setenv("IA_DATA_DIR", str(tmp_path))
+    _reset_caches()
+    _migrate_test_db(tmp_path)
+
+    profil = default_profile()
+    profil.haftungsausschluss_akzeptiert = True
+    ProfileStore(tmp_path / "profile.json").save(profil)
+
+    at = AppTest.from_file(APP_PATH)
+    at.run(timeout=30)
+    at.sidebar.radio[0].set_value("Watchlist/Portfolio").run(timeout=30)
+
+    assert not at.exception, [str(e) for e in at.exception]
+    header_texte = " ".join(h.value for h in at.header)
+    assert "Watchlist/Portfolio" in header_texte
+    infos = " ".join(i.value for i in at.info)
+    assert "Noch keine Watchlist-Einträge" in infos
+    assert "Noch keine Portfolio-Positionen" in infos
+
+    _reset_caches()
+
+
+def test_app_watchlist_portfolio_zeigt_position_und_konzentration(tmp_path, monkeypatch) -> None:
+    monkeypatch.setenv("IA_DATA_DIR", str(tmp_path))
+    _reset_caches()
+    _migrate_test_db(tmp_path)
+    _seed_portfolio_position_mit_kurs(tmp_path)
+
+    profil = default_profile()
+    profil.haftungsausschluss_akzeptiert = True
+    ProfileStore(tmp_path / "profile.json").save(profil)
+
+    at = AppTest.from_file(APP_PATH)
+    at.run(timeout=30)
+    at.sidebar.radio[0].set_value("Watchlist/Portfolio").run(timeout=30)
+
+    assert not at.exception, [str(e) for e in at.exception]
+    metrik_werte = {m.label: m.value for m in at.metric}
+    assert metrik_werte.get("Gesamtwert (bekannter Anteil)") == "500.00"
+
+    assert len(at.dataframe) >= 1
+    positionen_df = at.dataframe[0].value
+    assert list(positionen_df["Unternehmen"]) == ["Firma J (Portfolio-Beispiel)"]
+    assert positionen_df.loc[0, "Marktwert"] == 500.0
+
+    markdown_texte = " ".join(m.value for m in at.markdown)
+    assert "Branchenkonzentration" in markdown_texte
+    assert "Länderkonzentration" in markdown_texte
 
     _reset_caches()
 
