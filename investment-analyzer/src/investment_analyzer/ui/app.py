@@ -6,11 +6,11 @@ Kandidaten-Rangliste (``ui/ranking.py``, ADR-28), Unternehmensdetail
 mit Quellenleiste (``ui/detail.py``, ADR-27), Peer-Vergleich
 (``ui/peers.py``, ADR-29), DCF- und Szenarioanalyse (``ui/dcf.py``,
 ADR-30), Nachrichten/Ereignisse (``ui/news.py``, ADR-31), Watchlist/
-Portfolio (``ui/watchlist.py``, ADR-32). Zwei weitere Auftrag-§10-
-Seiten (Backtest, Einstellungen/Quellen/Prüfprotokoll) fehlen noch —
-sie werden bewusst NICHT als leere Platzhalter vorgebaut, um keine
-Funktionalität vorzutäuschen, die noch nicht existiert (siehe
-``TODO.md``).
+Portfolio (``ui/watchlist.py``, ADR-32), Backtest (``ui/backtest.py``,
+ADR-33). Eine weitere Auftrag-§10-Seite (Einstellungen/Quellen/
+Prüfprotokoll) fehlt noch — sie wird bewusst NICHT als leerer
+Platzhalter vorgebaut, um keine Funktionalität vorzutäuschen, die noch
+nicht existiert (siehe ``TODO.md``).
 
 Start: ``streamlit run src/investment_analyzer/ui/app.py`` (siehe
 ``start.ps1``/``start.bat`` im Projektstamm für den vollständigen
@@ -30,6 +30,7 @@ from investment_analyzer.config.models import (
     NutzerProfil,
     Risikoklasse,
 )
+from investment_analyzer.ui.backtest import render_backtest
 from investment_analyzer.ui.bootstrap import AppContext, bootstrap, check_database_ready
 from investment_analyzer.ui.components import DISCLAIMER, render_disclaimer
 from investment_analyzer.ui.dcf import render_dcfanalyse
@@ -271,11 +272,12 @@ def main() -> None:
         render_ersteinrichtungsdialog(ctx, vorbelegung=profil or default_profile())
         return
 
-    # Einfache Sidebar-Navigation statt st.navigation()/st.Page(): mit nur
-    # zwei Seiten bleibt eine feste Auswahl klarer und lässt sich unverändert
-    # mit AppTest.from_file testen (siehe tests/ui/test_app_smoke.py).
-    # Sobald weitere der neun Auftrag-§10-Seiten dazukommen, ist der Wechsel
-    # auf st.navigation() vorgesehen (siehe NEXT_STEPS.md).
+    # Einfache Sidebar-Navigation statt st.navigation()/st.Page(): ursprünglich
+    # gewählt, solange nur zwei Seiten existierten (ADR-26), inzwischen auf
+    # neun Einträge gewachsen und weiterhin unverändert mit AppTest.from_file
+    # testbar (siehe tests/ui/test_app_smoke.py). Der Wechsel auf
+    # st.navigation() ist als nicht blockierender Ausbauschritt in
+    # NEXT_STEPS.md vermerkt, sobald die letzte Auftrag-§10-Seite fertig ist.
     seite = st.sidebar.radio(
         "Seite",
         [
@@ -287,6 +289,7 @@ def main() -> None:
             "DCF- und Szenarioanalyse",
             "Nachrichten/Ereignisse",
             "Watchlist/Portfolio",
+            "Backtest",
         ],
     )
     if seite == "Marktscreener":
@@ -303,6 +306,8 @@ def main() -> None:
         render_nachrichten(ctx, profil)
     elif seite == "Watchlist/Portfolio":
         render_watchlist_portfolio(ctx, profil)
+    elif seite == "Backtest":
+        render_backtest(ctx, profil)
     else:
         render_datenstatus(ctx, profil)
 

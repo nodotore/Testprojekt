@@ -189,6 +189,80 @@ def _seed_portfolio_position_mit_kurs(data_dir: Path) -> None:
     engine.dispose()
 
 
+def _seed_zwei_firmen_fuer_backtest(data_dir: Path) -> None:
+    """Legt zwei synthetische Unternehmen mit vollständigem, berechenbarem
+    Score-Profil und monatlichen Kurspunkten Jan–Mär 2024 an, damit
+    ``ui/backtest.py`` einen echten Backtest über drei Rebalancing-Stichtage
+    (1.1./1.2./1.3.2024, Intervall „Monatlich") ausführen kann."""
+
+    engine = create_db_engine(f"sqlite:///{data_dir / 'investment_analyzer.db'}")
+    session_factory = create_session_factory(engine)
+    with session_factory() as session:
+        sources = ensure_default_sources(session)
+        source = sources["sec_edgar"]
+        retrieved_at = datetime(2023, 12, 1, tzinfo=UTC)
+
+        def dp(entity, metric: Metric, period_end: date, value: float, retrieved_at_utc: datetime) -> DataPoint:
+            return DataPoint(
+                entity_id=entity.id,
+                source_id=source.id,
+                metric_name=metric.value,
+                period_start=None,
+                period_end=period_end,
+                published_at=period_end,
+                retrieved_at_utc=retrieved_at_utc,
+                value_raw=str(value),
+                value_normalized=value,
+                unit="USD",
+                currency="USD",
+                value_kind=ValueKind.REPORTED,
+                document_url="https://example.invalid/doc",
+                document_type="10-K",
+                content_hash=f"bt-{entity.id}-{metric.value}-{period_end.isoformat()}",
+                document_id=None,
+            )
+
+        def seed(name: str, cik: str, kurse: tuple[float, float, float]) -> None:
+            entity = find_or_create_entity(
+                session, name=name, identifiers=[IdentifierSpec(id_type=IdentifierType.CIK, id_value=cik)]
+            )
+            session.flush()
+
+            jahre = [date(2020, 12, 31), date(2021, 12, 31), date(2022, 12, 31), date(2023, 12, 31)]
+            umsatz = [1000.0, 1100.0, 1210.0, 1331.0]
+            for jahr, u in zip(jahre, umsatz, strict=True):
+                session.add(dp(entity, Metric.REVENUE, jahr, u, retrieved_at))
+                session.add(dp(entity, Metric.OPERATING_CASH_FLOW, jahr, u * 0.15, retrieved_at))
+                session.add(dp(entity, Metric.CAPEX, jahr, -u * 0.05, retrieved_at))
+                session.add(dp(entity, Metric.NET_INCOME, jahr, u * 0.1, retrieved_at))
+
+            letztes_jahr = date(2023, 12, 31)
+            for metric, value in (
+                (Metric.OPERATING_INCOME, 180.0),
+                (Metric.DEPRECIATION_AND_AMORTIZATION, 40.0),
+                (Metric.TOTAL_EQUITY, 1000.0),
+                (Metric.LONG_TERM_DEBT, 300.0),
+                (Metric.SHORT_TERM_DEBT, 100.0),
+                (Metric.CASH_AND_EQUIVALENTS, 200.0),
+                (Metric.SHARES_DILUTED, 100.0),
+                (Metric.EPS_DILUTED, 2.0),
+                (Metric.INTEREST_EXPENSE, 20.0),
+                (Metric.CURRENT_ASSETS, 500.0),
+                (Metric.CURRENT_LIABILITIES, 250.0),
+                (Metric.DIVIDENDS_PAID, 30.0),
+                (Metric.GROSS_PROFIT, 500.0),
+            ):
+                session.add(dp(entity, metric, letztes_jahr, value, retrieved_at))
+
+            for monat, kurs in zip((date(2024, 1, 1), date(2024, 2, 1), date(2024, 3, 1)), kurse, strict=True):
+                session.add(dp(entity, Metric.PRICE_CLOSE, monat, kurs, datetime.combine(monat, datetime.min.time(), tzinfo=UTC)))
+
+        seed("Firma M (Backtest-Beispiel)", "0000000013", (100.0, 110.0, 121.0))
+        seed("Firma N (Backtest-Beispiel)", "0000000014", (100.0, 95.0, 99.0))
+        session.commit()
+    engine.dispose()
+
+
 def _seed_zwei_peer_unternehmen(data_dir: Path) -> None:
     """Legt zwei synthetische Unternehmen mit identischem SIC-Code an,
     damit ``Peer-Vergleich`` (ui/peers.py) einen Peer findet und eine
@@ -635,6 +709,65 @@ def test_app_watchlist_portfolio_zeigt_position_und_konzentration(tmp_path, monk
     markdown_texte = " ".join(m.value for m in at.markdown)
     assert "Branchenkonzentration" in markdown_texte
     assert "Länderkonzentration" in markdown_texte
+
+    _reset_caches()
+
+
+def test_app_backtest_ohne_ausfuehrung_zeigt_hinweis(tmp_path, monkeypatch) -> None:
+    monkeypatch.setenv("IA_DATA_DIR", str(tmp_path))
+    _reset_caches()
+    _migrate_test_db(tmp_path)
+
+    profil = default_profile()
+    profil.haftungsausschluss_akzeptiert = True
+    ProfileStore(tmp_path / "profile.json").save(profil)
+
+    at = AppTest.from_file(APP_PATH)
+    at.run(timeout=30)
+    at.sidebar.radio[0].set_value("Backtest").run(timeout=30)
+
+    assert not at.exception, [str(e) for e in at.exception]
+    header_texte = " ".join(h.value for h in at.header)
+    assert "Backtest" in header_texte
+    infos = " ".join(i.value for i in at.info)
+    assert "Backtest ausführen" in infos
+
+    _reset_caches()
+
+
+def test_app_backtest_zeigt_kennzahlen_und_perioden(tmp_path, monkeypatch) -> None:
+    monkeypatch.setenv("IA_DATA_DIR", str(tmp_path))
+    _reset_caches()
+    _migrate_test_db(tmp_path)
+    _seed_zwei_firmen_fuer_backtest(tmp_path)
+
+    profil = default_profile()
+    profil.haftungsausschluss_akzeptiert = True
+    ProfileStore(tmp_path / "profile.json").save(profil)
+
+    at = AppTest.from_file(APP_PATH)
+    at.run(timeout=30)
+    at.sidebar.radio[0].set_value("Backtest").run(timeout=30)
+    assert not at.exception, [str(e) for e in at.exception]
+
+    at.date_input[0].set_value(date(2024, 1, 1))
+    at.date_input[1].set_value(date(2024, 3, 1))
+    at.selectbox[0].set_value("Monatlich")
+    at.number_input[0].set_value(2)
+    at.button[0].click().run(timeout=30)
+
+    assert not at.exception, [str(e) for e in at.exception]
+    metrik_werte = {m.label: m.value for m in at.metric}
+    assert "Gesamtrendite" in metrik_werte
+    assert metrik_werte["Gesamtrendite"] != "—"
+
+    subheader_texte = " ".join(h.value for h in at.subheader)
+    assert "NAV-Verlauf" in subheader_texte
+    assert "Rebalancing-Perioden" in subheader_texte
+
+    assert len(at.dataframe) == 1
+    perioden_df = at.dataframe[0].value
+    assert len(perioden_df) == 2  # 3 Stichtage -> 2 Halteperioden
 
     _reset_caches()
 

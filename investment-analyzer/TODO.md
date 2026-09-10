@@ -356,9 +356,19 @@ seit Milestone 1–7 fertig, nur die Bedienoberfläche fehlte.
       erschien als „0.7%"), mit Regressionstests abgesichert. 7 neue
       Tests (insgesamt 504), `ruff`/`mypy` fehlerfrei. Mit echtem
       Playwright-Browser gegen zwei Portfolio-Positionen verifiziert.
-- [ ] **Backtest** (Seite 9): `backtesting/engine.py::run_backtest`
-      bereits vorhanden, nur keine UI (Stichtags-/Top-N-Auswahl,
-      Kennzahlen-Anzeige, Diagramm der NAV-Zeitreihe).
+- [x] **Backtest** (Seite 9, siehe ADR-33): Zeitraum/Rebalancing-
+      Intervall/Top-N-Auswahl (baut daraus die vom Backend erwartete
+      Stichtagsliste), vollständige Kennzahlen-Anzeige (Gesamtrendite,
+      CAGR, Volatilität, Sharpe/Sortino, maximaler Drawdown, Turnover,
+      Benchmark-Vergleich — „—" wo mangels Daten nicht berechenbar),
+      NAV-Verlaufsdiagramm, Rebalancing-Perioden-Tabelle mit
+      Unternehmensnamen, sowie die Backend-Lücken in verständliche
+      Sätze übersetzt statt als rohe Schlüssel gezeigt. Neues Modul
+      `ui/backtest.py`. 6 neue Tests (insgesamt 510), `ruff`/`mypy`
+      fehlerfrei. Mit echtem Playwright-Browser gegen zwei synthetisch
+      befüllte Unternehmen über drei Rebalancing-Stichtage verifiziert
+      (inkl. Lösung der react-aria-`DateField`-Interaktion, siehe
+      ADR-33).
 - [ ] **Einstellungen, Quellen und Prüfprotokoll** (Seite 10):
       Schlüsselverwaltung (`SecretStore.set_secret`/`delete_secret`,
       inkl. Master-Passwort-Dialog für den verschlüsselten Datei-

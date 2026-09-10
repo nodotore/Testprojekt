@@ -315,11 +315,40 @@ zwei Reiter:
   Kurs für eine Position), erscheint als eigener, aufklappbarer
   Hinweisblock — nicht als stillschweigend fehlender Wert.
 
+## 4h. Backtest — die Strategie gegen die eigene Vergangenheit testen
+
+Über die Seitenleiste („Seite" → „Backtest") erreichbar. Simuliert, wie
+sich die deterministische „Top-N nach Gesamtscore"-Strategie über
+einen gewählten Zeitraum entwickelt hätte:
+
+- **Startdatum, Enddatum, Rebalancing-Intervall** (Monatlich/
+  Quartalsweise/Jährlich) und **Top-N** (Anzahl Positionen je
+  Rebalancing) wählen, dann „Backtest ausführen" klicken.
+- Zu jedem Rebalancing-Stichtag wählt die Strategie automatisch die
+  Top-N-Unternehmen nach Gesamtscore aus den bereits erfassten
+  Unternehmen aus — deterministisch, ohne einen auf den gewählten
+  Zeitraum „trainierten" Parameter (Auftrag §9).
+- Ergebnis: Gesamtrendite, CAGR, annualisierte Volatilität, Sharpe-
+  und Sortino-Ratio, maximaler Drawdown, durchschnittlicher Turnover
+  sowie ein Vergleich gegen eine Benchmark — Letzterer zeigt aktuell
+  „—", da keine Index-/Benchmark-Kursquelle angebunden ist (dieselbe
+  Kostenlos-Datenquellen-Einschränkung wie an anderer Stelle
+  dokumentiert).
+- Ein **NAV-Verlaufsdiagramm** (Startwert 1,0 — reine Simulation, kein
+  tatsächlich investierter Betrag) sowie eine **Tabelle aller
+  Rebalancing-Perioden** mit den jeweils gehaltenen Unternehmen,
+  Periodenrendite und ausgeschlossenen Positionen (fehlender Kurs).
+- Am Ende der Seite ein aufklappbarer Hinweis auf bekannte,
+  dokumentierte Lücken dieser Version (u. a. kein Benchmark-Vergleich,
+  keine Währungsumrechnung, kein vollständiges historisches
+  Aktienuniversum) — jeweils als verständlicher Satz, nicht als
+  interner Fachbegriff.
+
 ## 5. Was die Oberfläche heute zeigt — und was noch nicht
 
 **Bitte diesen Abschnitt aufmerksam lesen.**
 
-Die grafische Oberfläche hat aktuell acht Seiten: **„Start /
+Die grafische Oberfläche hat aktuell neun Seiten: **„Start /
 Datenstatus"** (Ersteinrichtung/Profilverwaltung, ehrliche Zählung
 dessen, was in der Datenbank steht), **„Marktscreener"** (Abschnitt
 4a — Unternehmen hinzufügen, Daten abrufen), **„Kandidaten-Rangliste"**
@@ -329,34 +358,24 @@ Quellenleiste für ein erfasstes Unternehmen), **„Peer-Vergleich"**
 (Abschnitt 4d — ein Unternehmen und seine Branchen-Peers nebeneinander),
 **„DCF- und Szenarioanalyse"** (Abschnitt 4e — Bewertungsdetail und
 Sensitivitätsmatrizen), **„Nachrichten/Ereignisse"** (Abschnitt
-4f — bereits gespeicherte Meldungen als Ereignis-Cluster) und
+4f — bereits gespeicherte Meldungen als Ereignis-Cluster),
 **„Watchlist/Portfolio"** (Abschnitt 4g — beobachtete und gehaltene
-Positionen inkl. CSV-Import und Konzentrations-/Risikoanalyse).
-Solange noch kein Datenabruf stattgefunden hat, zeigt die Startseite
-bewusst **Nullen** — niemals Platzhalter- oder Beispielzahlen, die wie
-echte Marktdaten aussehen könnten.
+Positionen inkl. CSV-Import und Konzentrations-/Risikoanalyse) und
+**„Backtest"** (Abschnitt 4h — die Score-Strategie gegen die eigene
+Vergangenheit testen). Solange noch kein Datenabruf stattgefunden hat,
+zeigt die Startseite bewusst **Nullen** — niemals Platzhalter- oder
+Beispielzahlen, die wie echte Marktdaten aussehen könnten.
 
-Die im Auftrag vorgesehenen weiteren zwei Oberflächen-Seiten
-(Backtest, Einstellungen/Quellen/Prüfprotokoll) sind **noch nicht als
-Bildschirmseiten gebaut** — sie werden bewusst nicht als leere
-Platzhalter vorgezeigt, um keine Funktionalität vorzutäuschen, die
-noch nicht existiert (Auftrag §16).
+Die im Auftrag vorgesehene letzte Oberflächen-Seite (Einstellungen/
+Quellen/Prüfprotokoll — Schlüsselverwaltung, Quellenübersicht,
+Prüfprotokoll-Ansicht) ist **noch nicht als Bildschirmseite gebaut**
+— sie wird bewusst nicht als leerer Platzhalter vorgezeigt, um keine
+Funktionalität vorzutäuschen, die noch nicht existiert (Auftrag §16).
+Alle übrigen im Auftrag beschriebenen Analysebausteine sind damit über
+die Oberfläche erreichbar; lediglich ihre Verwaltungsseite (Secrets,
+Quellen, Audit-Log) fehlt noch.
 
-**Was bereits vollständig funktioniert und getestet ist** (nur noch
-nicht über einen Button in der Oberfläche erreichbar): Backtesting.
-Dieser Baustein ist unabhängig getestet (504 automatisierte Tests,
-siehe `PROGRESS.md`) und lässt sich
-bereits heute über ein kurzes Python-Skript aufrufen — das erfordert
-allerdings Grundkenntnisse in Python. Ein vollständiges, tatsächlich
-lauffähiges Beispiel für den gesamten Weg von der Datenbank bis zum
-fertigen Bericht (JSON/Excel/PDF) findet sich in
-`tests/reports/test_bundle.py` und
-`tests/reports/test_excel_export.py`/`test_pdf_export.py` — diese
-Testdateien sind bewusst der verlässlichste Startpunkt für ein eigenes
-Skript, da sie (anders als eine gesondert gepflegte Beispieldatei) bei
-jeder Änderung automatisch mitgetestet werden und daher nie veralten.
-
-Der Ausbau der restlichen Bildschirmseiten läuft — siehe `TODO.md`/
+Der Ausbau der letzten Bildschirmseite läuft — siehe `TODO.md`/
 `NEXT_STEPS.md` für die geplante Reihenfolge.
 
 ## 6. Datenschutz und Sicherheit

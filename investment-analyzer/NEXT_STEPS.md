@@ -171,13 +171,24 @@
       Skalierungsfehler gefunden und mit Regressionstests behoben
       (siehe ADR-32). 504 Tests grün, ruff/mypy fehlerfrei, mit echtem
       Browser (Playwright) gegen zwei Portfolio-Positionen verifiziert.
-    - **Ausbau der zwei weiteren Auftrag-§10-UI-Seiten** (Backtest,
-      Einstellungen/Quellen/Prüfprotokoll) — empfohlene Reihenfolge:
-      Backtest als Nächstes (`backtesting/engine.py::run_backtest`
-      bereits vorhanden), zuletzt Einstellungen. Einstellungen-Seite
-      ist zudem Voraussetzung dafür, dass der Alpha-Vantage-Kursabruf
-      im Marktscreener ohne vorherige manuelle OS-Keyring-Einrichtung
-      nutzbar wird.
+    - ~~Ausbau der Auftrag-§10-UI-Seite „Backtest"~~ — umgesetzt am
+      2026-09-10 (siehe `PROGRESS.md`/ADR-33): neue `ui/backtest.py`,
+      Zeitraum/Intervall/Top-N-Auswahl statt manueller Stichtagsliste,
+      vollständige Kennzahlen-/NAV-/Perioden-Anzeige, Backend-
+      Lücken-Schlüssel in verständliche Sätze übersetzt. 510 Tests
+      grün, ruff/mypy fehlerfrei, mit echtem Browser (Playwright)
+      verifiziert (inkl. Lösung der react-aria-DateField-Interaktion).
+    - **Letzte noch fehlende Auftrag-§10-UI-Seite: Einstellungen,
+      Quellen und Prüfprotokoll** (Seite 10) — Schlüsselverwaltung
+      (`SecretStore.set_secret`/`delete_secret`, inkl. Master-Passwort-
+      Dialog für den verschlüsselten Datei-Fallback), Quellenübersicht
+      (`Source`-Tabelle), Prüfprotokoll-Ansicht (`AuditLogEntry`-
+      Tabelle). Wichtig, da sie den Alpha-Vantage-Kursabruf im
+      Marktscreener ohne vorherige manuelle OS-Keyring-Einrichtung
+      nutzbar macht — damit wäre der Ausbau aller zehn Auftrag-§10-
+      Seiten abgeschlossen. Danach: Umstieg von `st.sidebar.radio` auf
+      `st.navigation()`/`st.Page()` (siehe ADR-26, seit Langem
+      vorgemerkt, jetzt mit allen zehn Seiten überfällig).
     - Weiterhin offen, nicht blockierend für die restlichen UI-Seiten:
       ein automatischer Abrufweg über GDELT/IR-RSS für die
       Nachrichten/Ereignisse-Seite — bislang in keiner Oberflächenseite
@@ -242,8 +253,9 @@
       (Playwright) gegen einen echten `streamlit run`-Prozess verifiziert
       (Ersteinrichtung, Datenstatus, Marktscreener inkl. Formular-
       validierung, Unternehmensdetail, Kandidaten-Rangliste,
-      Peer-Vergleich, DCF-/Szenarioanalyse, Nachrichten/Ereignisse und
-      Watchlist/Portfolio mit synthetisch befüllter Testdatenbank —
-      dabei einmal einen echten Anzeigefehler gefunden und behoben,
-      siehe ADR-32) — kein reiner `AppTest`-Trockentest mehr, siehe
-      `PROGRESS.md`.
+      Peer-Vergleich, DCF-/Szenarioanalyse, Nachrichten/Ereignisse,
+      Watchlist/Portfolio und Backtest mit synthetisch befüllter
+      Testdatenbank — dabei einmal einen echten Anzeigefehler gefunden
+      und behoben (ADR-32) und einmal eine react-aria-DateField-
+      Interaktionshürde gelöst (ADR-33)) — kein reiner
+      `AppTest`-Trockentest mehr, siehe `PROGRESS.md`.

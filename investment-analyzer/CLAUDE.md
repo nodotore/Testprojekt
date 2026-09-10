@@ -33,8 +33,9 @@ Ehrliche Abnahmebewertung gegen alle neun Auftrag-§15-Kriterien:
 Oberflächenseiten (aktuell fertig: „Start/Datenstatus", „Marktscreener",
 „Kandidaten-Rangliste", „Unternehmensdetail mit Quellenleiste",
 „Peer-Vergleich", „DCF- und Szenarioanalyse", „Nachrichten/Ereignisse",
-„Watchlist/Portfolio"; zwei weitere offen, siehe `NEXT_STEPS.md`).
-Details/offene Punkte: `PROGRESS.md`/`TODO.md`/`NEXT_STEPS.md`.
+„Watchlist/Portfolio", „Backtest"; eine weitere offen — Einstellungen/
+Quellen/Prüfprotokoll, siehe `NEXT_STEPS.md`). Details/offene Punkte:
+`PROGRESS.md`/`TODO.md`/`NEXT_STEPS.md`.
 
 ## Nicht verhandelbare Leitplanken
 

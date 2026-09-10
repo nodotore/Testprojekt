@@ -1324,3 +1324,70 @@ auf `st.navigation()` sobald mehr Seiten existieren.
 **Nächster Schritt:** Backtest (Auftrag §10, Seite 9 —
 `backtesting/engine.py::run_backtest` bereits vorhanden) — siehe
 `NEXT_STEPS.md`.
+
+## Nach Milestone 8 — Backtest (Auftrag §10, Seite 9)
+
+**Status:** umgesetzt (2026-09-10), neunte von neun noch fehlenden
+Auftrag-§10-Oberflächenseiten (siehe ADR-33) — damit ist nur noch
+„Einstellungen, Quellen und Prüfprotokoll" (Seite 10) offen.
+
+**Umgesetzt:**
+
+- Neue UI-Seite `ui/backtest.py`: Nutzer wählt Start-/Enddatum,
+  Rebalancing-Intervall (Monatlich/Quartalsweise/Jährlich) und Top-N;
+  `_rebalance_dates()` (reine Funktion) baut daraus die vom Backend
+  erwartete aufsteigend sortierte Stichtagsliste. Annualisierung
+  (Volatilität/Sharpe/Sortino) nutzt die zum Intervall passende
+  Perioden-pro-Jahr-Zahl (12/4/1) statt des sonst falschen
+  Default-Werts.
+- Vollständige Kennzahlen-Anzeige (Gesamtrendite, CAGR, annualisierte
+  Volatilität, Sharpe/Sortino, maximaler Drawdown, durchschnittlicher
+  Turnover, Benchmark-Vergleich — „—" wo mangels Daten nicht
+  berechenbar, nie eine geratene Zahl), NAV-Verlaufsdiagramm
+  (`st.line_chart`), Rebalancing-Perioden-Tabelle mit aufgelösten
+  Unternehmensnamen statt Entity-IDs.
+- Die vom Backend gelieferten Lücken-Schlüssel
+  (`NOT_YET_IMPLEMENTABLE_BACKTEST_FEATURES`, bislang nur als rohe
+  interne Bezeichner wie `"benchmark_kursreihe"`) werden über ein
+  neues `_GAP_LABELS`-Mapping in vollständige, verständliche Sätze
+  übersetzt, bevor sie angezeigt werden.
+- Aus der Erfahrung mit ADR-32 (Watchlist/Portfolio) direkt
+  angewendete Lehre: `RebalancePeriod.portfolio_return` von Anfang an
+  korrekt ×100 skaliert vor dem `%.1f%%`-Spaltenformat — kein erneuter
+  Skalierungsfehler.
+- `app.py`: Sidebar-Navigation um „Backtest" als neunte Option
+  erweitert; die seit dem Marktscreener stehen gebliebene, inzwischen
+  falsche Sidebar-Kommentarzeile („mit nur zwei Seiten...") korrigiert.
+
+**Tests:** 6 neue Tests (insgesamt 510, alle grün) — 4 reine Tests
+(`tests/ui/test_backtest.py`: `_rebalance_dates()` für alle drei
+Intervalle inkl. Randfälle), 2 neue `AppTest`-Smoke-Tests
+(`tests/ui/test_app_smoke.py`): Hinweis ohne Ausführung, sowie ein
+vollständiger Backtest-Lauf mit zwei synthetisch befüllten
+Unternehmen über drei monatliche Stichtage. `ruff check .` und
+`mypy src` beide fehlerfrei.
+
+**Manuell mit echtem Browser verifiziert** (Playwright gegen einen
+laufenden Streamlit-Prozess mit zwei synthetisch befüllten
+Unternehmen): Streamlits `st.date_input` erwies sich als segmentiertes
+react-aria-`DateField` statt eines einfachen Text-Inputs — die
+Playwright-Interaktion dafür erst experimentell gelöst (Klick, mehrere
+`ArrowLeft` zum Jahres-Segment, dann Jahr/Monat/Tag ohne zusätzliche
+`ArrowRight`-Drücke eintippen, siehe ADR-33), danach lief der komplette
+Backtest korrekt durch: plausible Kennzahlen, korrekt aufsteigender
+NAV-Chart, drei Rebalancing-Perioden mit richtigen Firmennamen und
+Renditen, die Lücken-Liste zeigte die übersetzten Sätze statt roher
+Schlüssel, keine unerwarteten Konsolenfehler.
+
+**Geänderte/neue Dateien:** neue `ui/backtest.py`, `ui/app.py`
+(Navigation, Docstring, Kommentar-Korrektur), zugehörige Tests
+(`tests/ui/test_backtest.py`, `tests/ui/test_app_smoke.py`).
+
+**Offene Punkte** (siehe `TODO.md`): eine letzte Auftrag-§10-Seite
+(Einstellungen/Quellen/Prüfprotokoll), danach Umstieg auf
+`st.navigation()` sobald diese Seite fertig ist (siehe NEXT_STEPS.md).
+
+**Nächster Schritt:** Einstellungen, Quellen und Prüfprotokoll
+(Auftrag §10, Seite 10 — letzte noch fehlende UI-Seite; macht den
+Alpha-Vantage-Kursabruf im Marktscreener ohne vorherige manuelle
+OS-Keyring-Einrichtung nutzbar) — siehe `NEXT_STEPS.md`.

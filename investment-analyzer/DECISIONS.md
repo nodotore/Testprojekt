@@ -1351,6 +1351,72 @@ Portfolio-Positionen unterschiedlicher Branche/Land und einen
 Watchlist-Eintrag verifiziert (vor UND nach dem Fix des
 Skalierungsfehlers) — keine unerwarteten Konsolenfehler.
 
+## ADR-33: Backtest — Zeitraum/Intervall statt einzelner Stichtage, react-aria-DateField-Interaktion beim Live-Test gelöst
+
+**Kontext:** Achte der neun noch fehlenden Auftrag-§10-Oberflächen-
+seiten: **Backtest** (Auftrag §10, Seite 9). `backtesting/engine.py::
+run_backtest` und `backtesting/report.py::build_backtest_report`
+(Milestone 7) — deterministische Top-N-Score-Strategie, CAGR/
+Volatilität/Sharpe/Sortino/maximaler Drawdown/Turnover, dokumentierte
+Lücken (`NOT_YET_IMPLEMENTABLE_BACKTEST_FEATURES`, u. a. kein
+Benchmark-Vergleich) — lagen bereits vollständig vor; es fehlte nur
+die Bildschirmseite.
+
+**Entscheidung — Zeitraum + Intervall statt manueller Stichtagsliste:**
+`run_backtest`/`build_backtest_report` erwarten eine explizite Liste
+aufsteigend sortierter `datetime`-Stichtage. Statt den Nutzer eine
+beliebig lange Liste einzelner Termine eintippen zu lassen, wählt er
+Start-/Enddatum und ein Rebalancing-Intervall (Monatlich/
+Quartalsweise/Jährlich) — `ui/backtest.py::_rebalance_dates()` (reine,
+eigens getestete Funktion) baut daraus die Stichtagsliste. Die
+Perioden-pro-Jahr-Konstante für die Annualisierung von Volatilität/
+Sharpe/Sortino wird passend zum gewählten Intervall mitgegeben
+(12/4/1) statt des sonst falschen Default-Werts 12 bei einem
+gröberen Intervall.
+
+**Entscheidung — Gap-Labels statt roher interner Schlüssel:**
+`NOT_YET_IMPLEMENTABLE_BACKTEST_FEATURES` liefert interne Schlüssel
+(`"benchmark_kursreihe"`, `"waehrungsumrechnung"`,
+`"vollstaendiges_survivorship_universum"`) ohne zugehörige
+Anzeige-Texte im Backend — anders als z. B. `scoring/score.py::
+_COMPONENT_LABELS`. `ui/backtest.py::_GAP_LABELS` übersetzt diese
+Schlüssel in vollständige, verständliche Sätze, bevor sie angezeigt
+werden; ein nicht gemappter (neu hinzugekommener) Schlüssel fällt
+defensiv auf den Rohtext zurück statt eine `KeyError` auszulösen.
+
+**Entscheidung — Perioden-Rendite dieses Mal von Anfang an korrekt
+skaliert:** Nach dem beim Bau der Watchlist/Portfolio-Seite gefundenen
+Prozent-Skalierungsfehler (ADR-32) wurde `RebalancePeriod.
+portfolio_return` von Anfang an explizit mit ×100 vor dem
+`NumberColumn(format="%.1f%%")` skaliert — dieselbe Lehre direkt
+angewendet, statt erneut auf einen Live-Test-Fund angewiesen zu sein.
+
+**Live-Test-Hürde — react-aria-`DateField` statt einfachem
+Text-Input:** Streamlits `st.date_input` rendert (in der hier
+verwendeten Version) ein segmentiertes react-aria-`DateField`
+(getrennte Jahr-/Monat-/Tag-„Spinbutton"-Segmente), kein einzelnes
+`<input>`-Textfeld — `get_by_role("textbox", name=...)` findet es
+daher nicht. Playwright-Interaktion gelöst durch: Klick auf das Feld,
+mehrfach `ArrowLeft` bis zum Jahres-Segment, dann Jahr (4 Ziffern),
+Monat (2 Ziffern), Tag (2 Ziffern) OHNE zusätzliche `ArrowRight`-Drücke
+tippen — das Segment springt nach vollständiger Eingabe automatisch
+zum nächsten weiter; ein zusätzlicher `ArrowRight` überspringt dadurch
+ein Segment und verschiebt die Eingabe. Für künftige Playwright-Tests
+gegen weitere `st.date_input`-Felder in diesem Projekt relevant.
+
+**Tests:** 6 neue Tests (insgesamt 510) — 4 reine Tests
+(`tests/ui/test_backtest.py`: `_rebalance_dates()` für alle drei
+Intervalle sowie Randfälle mit zu kurzem Zeitraum), 2 neue
+`AppTest`-Smoke-Tests (`tests/ui/test_app_smoke.py`): Hinweis ohne
+Ausführung, sowie ein vollständiger Backtest-Lauf mit zwei synthetisch
+befüllten Unternehmen über drei monatliche Rebalancing-Stichtage.
+`ruff`/`mypy` fehlerfrei. Zusätzlich mit echtem Playwright-Browser
+gegen einen laufenden Streamlit-Prozess verifiziert (inkl. der oben
+gelösten DateField-Interaktion): Kennzahlen, NAV-Verlaufsdiagramm,
+Rebalancing-Perioden-Tabelle mit korrekten Unternehmensnamen und
+Prozentwerten, sowie die in verständliche Sätze übersetzte
+Lücken-Liste rendern korrekt, keine unerwarteten Konsolenfehler.
+
 ## Noch zu treffende Entscheidungen
 
 Keine blockierenden Entscheidungen mehr offen für Milestone 1–7 (alle

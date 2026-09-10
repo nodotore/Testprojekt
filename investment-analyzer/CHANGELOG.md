@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+- Backtest (Auftrag §10, Seite 9) umgesetzt — neunte von neun
+  ursprünglich noch fehlenden Oberflächenseiten (siehe ADR-33); nur
+  noch „Einstellungen, Quellen und Prüfprotokoll" (Seite 10) offen.
+  Neue Seite `ui/backtest.py`: Zeitraum/Rebalancing-Intervall/Top-N-
+  Auswahl baut die vom Backend erwartete Stichtagsliste, vollständige
+  Kennzahlen-Anzeige (Gesamtrendite, CAGR, Volatilität, Sharpe/
+  Sortino, maximaler Drawdown, Turnover, Benchmark-Vergleich),
+  NAV-Verlaufsdiagramm, Rebalancing-Perioden-Tabelle mit
+  Unternehmensnamen. Backend-Lücken-Schlüssel werden in verständliche
+  Sätze übersetzt statt als rohe Bezeichner gezeigt. Aus ADR-32 direkt
+  angewendete Lehre: Prozentwerte von Anfang an korrekt skaliert. 6
+  neue Tests (insgesamt 510), `ruff`/`mypy` fehlerfrei, zusätzlich mit
+  echtem Browser verifiziert (inkl. Lösung der react-aria-DateField-
+  Interaktion für Playwright).
+
 - Watchlist/Portfolio (Auftrag §10, Seite 8) umgesetzt — achte von
   neun noch fehlenden Oberflächenseiten (siehe ADR-32). Neue Seite
   `ui/watchlist.py`: zwei Tabs (Watchlist/Portfolio) mit CSV-Import und
