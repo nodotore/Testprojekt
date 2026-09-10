@@ -344,39 +344,62 @@ einen gewählten Zeitraum entwickelt hätte:
   Aktienuniversum) — jeweils als verständlicher Satz, nicht als
   interner Fachbegriff.
 
+## 4i. Einstellungen, Quellen und Prüfprotokoll — Schlüssel, Quellen, Audit-Log
+
+Über die Seitenleiste („Seite" → „Einstellungen, Quellen und
+Prüfprotokoll") erreichbar, in drei Reitern:
+
+- **Schlüsselverwaltung:** Steht kein Windows Credential Manager
+  (System-Keyring) zur Verfügung, erscheint zuerst ein Formular zur
+  Einrichtung des verschlüsselten Datei-Fallbacks — ein selbst
+  gewähltes Master-Passwort wird zweimal eingegeben; das Passwort
+  selbst wird nirgends gespeichert und ist nach jedem Neustart der
+  Anwendung erneut einzugeben. Danach (oder direkt, falls ein
+  System-Keyring vorhanden ist) lässt sich hier der Alpha-Vantage-
+  API-Schlüssel setzen oder löschen — der Marktscreener kann den
+  optionalen Kursabruf erst nutzen, wenn hier ein Schlüssel hinterlegt
+  wurde. Der Schlüsselwert selbst wird zu keinem Zeitpunkt angezeigt
+  oder im Prüfprotokoll mitgeschrieben (Auftrag §12) — nur, dass ein
+  Schlüssel gesetzt oder gelöscht wurde.
+- **Quellen:** Übersicht aller registrierten Datenquellen (SEC EDGAR,
+  Alpha Vantage, GDELT, Investor-Relations-RSS) mit Lizenzhinweis und
+  Basis-URL — dieselbe Quellenmatrix wie in `DATA_SOURCES.md`.
+- **Prüfprotokoll:** die letzten 200 Einträge des unveränderlichen
+  Audit-Logs (Auftrag §12), nach Ereignistyp filterbar — zeigt u. a.
+  jede Profiländerung, jede Schlüssel-Verwaltungsaktion sowie jeden
+  erzeugten Bericht, jeweils mit Zeitpunkt und Akteur.
+
 ## 5. Was die Oberfläche heute zeigt — und was noch nicht
 
 **Bitte diesen Abschnitt aufmerksam lesen.**
 
-Die grafische Oberfläche hat aktuell neun Seiten: **„Start /
-Datenstatus"** (Ersteinrichtung/Profilverwaltung, ehrliche Zählung
-dessen, was in der Datenbank steht), **„Marktscreener"** (Abschnitt
-4a — Unternehmen hinzufügen, Daten abrufen), **„Kandidaten-Rangliste"**
-(Abschnitt 4b — alle erfassten Unternehmen nach Score sortiert),
-**„Unternehmensdetail"** (Abschnitt 4c — vollständiger Bericht mit
-Quellenleiste für ein erfasstes Unternehmen), **„Peer-Vergleich"**
-(Abschnitt 4d — ein Unternehmen und seine Branchen-Peers nebeneinander),
-**„DCF- und Szenarioanalyse"** (Abschnitt 4e — Bewertungsdetail und
+Die grafische Oberfläche hat aktuell alle zehn im Auftrag
+vorgesehenen Seiten: **„Start / Datenstatus"** (Ersteinrichtung/
+Profilverwaltung, ehrliche Zählung dessen, was in der Datenbank
+steht), **„Marktscreener"** (Abschnitt 4a — Unternehmen hinzufügen,
+Daten abrufen), **„Kandidaten-Rangliste"** (Abschnitt 4b — alle
+erfassten Unternehmen nach Score sortiert), **„Unternehmensdetail"**
+(Abschnitt 4c — vollständiger Bericht mit Quellenleiste für ein
+erfasstes Unternehmen), **„Peer-Vergleich"** (Abschnitt 4d — ein
+Unternehmen und seine Branchen-Peers nebeneinander), **„DCF- und
+Szenarioanalyse"** (Abschnitt 4e — Bewertungsdetail und
 Sensitivitätsmatrizen), **„Nachrichten/Ereignisse"** (Abschnitt
 4f — bereits gespeicherte Meldungen als Ereignis-Cluster),
 **„Watchlist/Portfolio"** (Abschnitt 4g — beobachtete und gehaltene
-Positionen inkl. CSV-Import und Konzentrations-/Risikoanalyse) und
+Positionen inkl. CSV-Import und Konzentrations-/Risikoanalyse),
 **„Backtest"** (Abschnitt 4h — die Score-Strategie gegen die eigene
-Vergangenheit testen). Solange noch kein Datenabruf stattgefunden hat,
-zeigt die Startseite bewusst **Nullen** — niemals Platzhalter- oder
-Beispielzahlen, die wie echte Marktdaten aussehen könnten.
+Vergangenheit testen) und **„Einstellungen, Quellen und
+Prüfprotokoll"** (Abschnitt 4i — Schlüsselverwaltung, Quellenübersicht,
+Prüfprotokoll-Ansicht). Solange noch kein Datenabruf stattgefunden
+hat, zeigt die Startseite bewusst **Nullen** — niemals Platzhalter-
+oder Beispielzahlen, die wie echte Marktdaten aussehen könnten.
 
-Die im Auftrag vorgesehene letzte Oberflächen-Seite (Einstellungen/
-Quellen/Prüfprotokoll — Schlüsselverwaltung, Quellenübersicht,
-Prüfprotokoll-Ansicht) ist **noch nicht als Bildschirmseite gebaut**
-— sie wird bewusst nicht als leerer Platzhalter vorgezeigt, um keine
-Funktionalität vorzutäuschen, die noch nicht existiert (Auftrag §16).
-Alle übrigen im Auftrag beschriebenen Analysebausteine sind damit über
-die Oberfläche erreichbar; lediglich ihre Verwaltungsseite (Secrets,
-Quellen, Audit-Log) fehlt noch.
-
-Der Ausbau der letzten Bildschirmseite läuft — siehe `TODO.md`/
-`NEXT_STEPS.md` für die geplante Reihenfolge.
+Alle im Auftrag beschriebenen Analysebausteine sind damit über die
+Oberfläche erreichbar. Offen bleibt weiterhin die in `NEXT_STEPS.md`
+dokumentierte Live-Verifikation mit echten Datenquellen (diese
+Sandbox-Entwicklungsumgebung hat keinen ausgehenden Internetzugang zu
+SEC EDGAR/Alpha Vantage/GDELT) sowie ein automatischer Abrufweg für
+Nachrichten/Ereignisse — siehe `TODO.md`/`NEXT_STEPS.md` für Details.
 
 ## 6. Datenschutz und Sicherheit
 

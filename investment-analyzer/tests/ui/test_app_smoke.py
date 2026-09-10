@@ -6,6 +6,7 @@ from pathlib import Path
 import streamlit as st
 from streamlit.testing.v1 import AppTest
 
+from investment_analyzer.audit.models import AuditEventType, AuditLogEntry
 from investment_analyzer.config.defaults import default_profile
 from investment_analyzer.config.settings import get_settings
 from investment_analyzer.config.store import ProfileStore
@@ -183,6 +184,29 @@ def _seed_portfolio_position_mit_kurs(data_dir: Path) -> None:
                 document_type="market_data_snapshot",
                 content_hash="y" * 64,
                 document_id=None,
+            )
+        )
+        session.commit()
+    engine.dispose()
+
+
+def _seed_quellen_und_pruefprotokoll(data_dir: Path) -> None:
+    """Registriert die Standardquellen und schreibt zwei Audit-Log-Einträge
+    unterschiedlichen Ereignistyps, damit ``ui/settings.py`` sowohl die
+    Quellen- als auch die Prüfprotokoll-Tabelle mit echten Zeilen rendert."""
+
+    engine = create_db_engine(f"sqlite:///{data_dir / 'investment_analyzer.db'}")
+    session_factory = create_session_factory(engine)
+    with session_factory() as session:
+        ensure_default_sources(session)
+        session.add(
+            AuditLogEntry(
+                event_type=AuditEventType.CONFIG_CHANGED, actor="test", detail="Testeintrag Konfiguration"
+            )
+        )
+        session.add(
+            AuditLogEntry(
+                event_type=AuditEventType.REPORT_GENERATED, actor="test", detail="Testeintrag Bericht"
             )
         )
         session.commit()
@@ -768,6 +792,112 @@ def test_app_backtest_zeigt_kennzahlen_und_perioden(tmp_path, monkeypatch) -> No
     assert len(at.dataframe) == 1
     perioden_df = at.dataframe[0].value
     assert len(perioden_df) == 2  # 3 Stichtage -> 2 Halteperioden
+
+    _reset_caches()
+
+
+def test_app_einstellungen_ohne_daten_zeigt_leere_zustaende(tmp_path, monkeypatch) -> None:
+    monkeypatch.setenv("IA_DATA_DIR", str(tmp_path))
+    _reset_caches()
+    _migrate_test_db(tmp_path)
+
+    profil = default_profile()
+    profil.haftungsausschluss_akzeptiert = True
+    ProfileStore(tmp_path / "profile.json").save(profil)
+
+    at = AppTest.from_file(APP_PATH)
+    at.run(timeout=30)
+    at.sidebar.radio[0].set_value("Einstellungen, Quellen und Prüfprotokoll").run(timeout=30)
+
+    assert not at.exception, [str(e) for e in at.exception]
+    header_texte = " ".join(h.value for h in at.header)
+    assert "Einstellungen, Quellen und Prüfprotokoll" in header_texte
+
+    # In dieser Sandbox ist kein OS-Keyring verfügbar (per keyring.get_keyring()
+    # bestätigt) -- ctx.secret_store ist daher None, die Seite muss den
+    # Master-Passwort-Einrichtungsdialog zeigen statt abzustürzen.
+    warnungen = " ".join(w.value for w in at.warning)
+    assert "Kein OS-Keyring verfügbar" in warnungen
+
+    infos = " ".join(i.value for i in at.info)
+    assert "Noch keine Quellen registriert" in infos
+    assert "Noch keine Prüfprotokoll-Einträge" in infos
+
+    _reset_caches()
+
+
+def test_app_einstellungen_zeigt_quellen_und_pruefprotokoll(tmp_path, monkeypatch) -> None:
+    monkeypatch.setenv("IA_DATA_DIR", str(tmp_path))
+    _reset_caches()
+    _migrate_test_db(tmp_path)
+    _seed_quellen_und_pruefprotokoll(tmp_path)
+
+    profil = default_profile()
+    profil.haftungsausschluss_akzeptiert = True
+    ProfileStore(tmp_path / "profile.json").save(profil)
+
+    at = AppTest.from_file(APP_PATH)
+    at.run(timeout=30)
+    at.sidebar.radio[0].set_value("Einstellungen, Quellen und Prüfprotokoll").run(timeout=30)
+    assert not at.exception, [str(e) for e in at.exception]
+
+    assert len(at.dataframe) == 2
+    quellen_df = at.dataframe[0].value
+    assert set(quellen_df["Schlüssel"]) == {"sec_edgar", "alpha_vantage", "gdelt", "ir_rss"}
+
+    protokoll_df = at.dataframe[1].value
+    assert len(protokoll_df) == 2
+    assert set(protokoll_df["Ereignistyp"]) == {
+        AuditEventType.CONFIG_CHANGED, AuditEventType.REPORT_GENERATED,
+    }
+
+    # Nach Ereignistyp filtern -- nur config_changed soll übrig bleiben.
+    at.selectbox[0].set_value(AuditEventType.CONFIG_CHANGED).run(timeout=30)
+    assert not at.exception, [str(e) for e in at.exception]
+    gefiltert = at.dataframe[1].value
+    assert list(gefiltert["Ereignistyp"]) == [AuditEventType.CONFIG_CHANGED]
+
+    _reset_caches()
+
+
+def test_app_einstellungen_richtet_secret_store_ein_und_setzt_schluessel(tmp_path, monkeypatch) -> None:
+    monkeypatch.setenv("IA_DATA_DIR", str(tmp_path))
+    _reset_caches()
+    _migrate_test_db(tmp_path)
+
+    profil = default_profile()
+    profil.haftungsausschluss_akzeptiert = True
+    ProfileStore(tmp_path / "profile.json").save(profil)
+
+    at = AppTest.from_file(APP_PATH)
+    at.run(timeout=30)
+    at.sidebar.radio[0].set_value("Einstellungen, Quellen und Prüfprotokoll").run(timeout=30)
+    assert not at.exception, [str(e) for e in at.exception]
+
+    # ``st.rerun()`` im Formular-Handler wird innerhalb desselben ``.run()``
+    # automatisch nachvollzogen (AppTest führt den erneuten Skriptlauf sofort
+    # aus) — die einmalige ``st.success("Eingerichtet.")``-Meldung aus dem
+    # verworfenen Lauf ist danach nicht mehr sichtbar. Geprüft wird daher der
+    # dauerhafte Effekt: ``ctx.secret_store`` ist gesetzt, wodurch die
+    # Alpha-Vantage-Schluesselverwaltung an ihrer Stelle erscheint.
+    passwort_felder = [ti for ti in at.text_input if ti.proto.type == ti.proto.PASSWORD]
+    assert len(passwort_felder) == 2
+    passwort_felder[0].set_value("ein-sehr-sicheres-master-passwort")
+    passwort_felder[1].set_value("ein-sehr-sicheres-master-passwort")
+    at.button[0].click().run(timeout=30)
+
+    assert not at.exception, [str(e) for e in at.exception]
+    infos = " ".join(i.value for i in at.info)
+    assert "Kein Alpha-Vantage-API-Schlüssel hinterlegt" in infos
+
+    schluessel_felder = [ti for ti in at.text_input if ti.proto.type == ti.proto.PASSWORD]
+    assert len(schluessel_felder) == 1
+    schluessel_felder[0].set_value("dummy-test-schluessel")
+    at.button[0].click().run(timeout=30)
+
+    assert not at.exception, [str(e) for e in at.exception]
+    erfolge = " ".join(s.value for s in at.success)
+    assert "Ein Alpha-Vantage-API-Schlüssel ist hinterlegt" in erfolge
 
     _reset_caches()
 

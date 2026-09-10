@@ -1417,6 +1417,104 @@ Rebalancing-Perioden-Tabelle mit korrekten Unternehmensnamen und
 Prozentwerten, sowie die in verständliche Sätze übersetzte
 Lücken-Liste rendern korrekt, keine unerwarteten Konsolenfehler.
 
+## ADR-34: Einstellungen, Quellen und Prüfprotokoll — letzte der zehn Auftrag-§10-Seiten, mutabler `AppContext.secret_store`
+
+**Kontext:** Zehnte und letzte der ursprünglich fehlenden Auftrag-§10-
+Oberflächenseiten: **Einstellungen, Quellen und Prüfprotokoll**
+(Auftrag §10, Seite 10). Backend lag bereits vollständig vor:
+`SecretStore`-ABC mit `KeyringSecretStore`/`EncryptedFileSecretStore`
+(ADR-5), `Source`-Modell (`connectors/models.py`), `AuditLogEntry`/
+`AuditEventType` (`audit/models.py`, per eigenem Docstring bereits für
+genau diese Seite vorgesehen). Es fehlte nur die Bildschirmseite.
+
+**Entscheidung — drei Tabs statt drei Seiten:** Wie bei Watchlist/
+Portfolio (ADR-32) fasst `st.tabs(["Schlüsselverwaltung", "Quellen",
+"Prüfprotokoll"])` alle drei fachlich zusammengehörigen Bereiche unter
+einem Sidebar-Eintrag zusammen, statt die zehn Auftrag-§10-Seiten
+künstlich auf zwölf Sidebar-Einträge aufzuspalten.
+
+**Entscheidung — `AppContext.secret_store` bleibt bewusst mutabel:**
+`AppContext` ist als nicht eingefrorenes (`@dataclass`, nicht
+`frozen=True`) Objekt angelegt und über `@st.cache_resource` über
+Streamlit-Reruns hinweg zwischengespeichert. Ist beim Start kein
+OS-Keyring verfügbar (`ctx.secret_store is None`, in dieser Sandbox
+z. B. weil `keyring.get_keyring()` auf den `fail`-Backend auflöst),
+bietet die Seite ein Formular zur Einrichtung des verschlüsselten
+Datei-Fallbacks per selbst gewähltem Master-Passwort
+(`EncryptedFileSecretStore`, ADR-5) an. Nach erfolgreicher Einrichtung
+wird `ctx.secret_store` direkt in der laufenden `AppContext`-Instanz
+gesetzt (`ctx.secret_store = store`) — dadurch steht der Secret-Store
+für den Rest der Server-Sitzung zur Verfügung, ohne dass der Nutzer
+die Anwendung neu starten muss. Das Master-Passwort selbst wird zu
+keinem Zeitpunkt persistiert (weder in der Datenbank noch im
+Audit-Log) — nur ein `log_config_changed`-Eintrag ohne den
+Passwort-Wert wird geschrieben.
+
+**Entscheidung — Schlüsselwert nie anzeigen oder loggen (Auftrag
+§12):** Die Schlüsselverwaltung prüft nur `bool(ctx.secret_store.
+get_secret(...))`, um zu entscheiden, ob ein Schlüssel hinterlegt ist,
+und zeigt nie den Wert selbst an. Speichern/Löschen schreiben je einen
+Audit-Log-Eintrag, dessen `detail`-Text ausschließlich die Aktion
+beschreibt („Alpha-Vantage-API-Schlüssel gesetzt"/„...gelöscht"), nie
+den Schlüsselwert.
+
+**Entscheidung — Quellen/Prüfprotokoll als reine Anzeige:** Beide Tabs
+lesen ausschließlich bereits vorhandene `Source`- bzw.
+`AuditLogEntry`-Zeilen (letztere auf die neuesten 200 begrenzt,
+absteigend sortiert) und erzeugen keine neuen Werte — konsistent mit
+allen bisherigen Seiten. Das Prüfprotokoll bietet einen
+Ereignistyp-Filter (`st.selectbox`), der clientseitig auf der bereits
+geladenen Zeilenliste filtert.
+
+**Live-Test-Fund — `AppTest`s `TextInput.type` ist immer
+`"text_input"`, nicht der HTML-Input-Typ:** Der erste Testentwurf
+prüfte `ti.type == "password"`, um Passwortfelder von normalen
+Textfeldern zu unterscheiden — `Widget.type` in `streamlit.testing.
+v1.element_tree` ist aber ein fester String je Widget-Klasse
+(„text_input" für alle `st.text_input`-Instanzen, unabhängig vom
+`type="password"`-Parameter), keine Kopie des Streamlit-`type`-
+Arguments. Der tatsächliche Passwort-/Standard-Unterschied steckt im
+zugrundeliegenden Protobuf: `ti.proto.type == ti.proto.PASSWORD`.
+Relevant für künftige `AppTest`-Tests gegen weitere `st.text_input(
+type="password")`-Felder in diesem Projekt.
+
+**Live-Test-Fund — `st.rerun()` wird innerhalb eines `AppTest.run()`-
+Aufrufs automatisch nachvollzogen:** Ruft ein Formular-Handler
+`st.success(...)` gefolgt von `st.rerun()` auf, führt `AppTest`
+den durch `st.rerun()` ausgelösten erneuten Skriptlauf sofort und
+innerhalb desselben `.run()`-Aufrufs aus — die einmalige
+Erfolgsmeldung aus dem dadurch verworfenen ersten Lauf ist im
+zurückgegebenen Element-Baum nicht mehr vorhanden (entspricht dem
+Verhalten im echten Browser: die Meldung blitzt nie sichtbar auf,
+weil der Rerun sofort neu rendert). Tests auf ein solches Muster
+(`st.success(...); st.rerun()`) müssen daher den dauerhaften Effekt
+nach dem Rerun prüfen (hier: `ctx.secret_store is not None`, erkennbar
+am Erscheinen der Alpha-Vantage-Schlüsselverwaltung bzw. an der
+persistent gerenderten „Ein Alpha-Vantage-API-Schlüssel ist
+hinterlegt"-Erfolgsmeldung im Zustands-Zweig), nicht die transiente
+Einmalmeldung selbst.
+
+**Tests:** 3 neue `AppTest`-Smoke-Tests (insgesamt 513; kein
+zusätzlicher reiner Funktions-Testfile nötig, da die Seite keine
+eigenen Datentransformationen vornimmt) — leere Zustände (kein
+Keyring, keine Quellen, kein Prüfprotokoll-Eintrag), Anzeige
+vorhandener Quellen/Prüfprotokoll-Einträge inkl. Ereignistyp-Filter,
+sowie der vollständige Master-Passwort-Einrichtungs- und Alpha-
+Vantage-Schlüssel-Speicherfluss (inkl. der beiden oben beschriebenen
+Live-Test-Korrekturen). `ruff`/`mypy` fehlerfrei. Zusätzlich mit
+echtem Playwright-Browser gegen einen laufenden Streamlit-Prozess mit
+seedierten `Source`- und `AuditLogEntry`-Zeilen verifiziert: alle drei
+Tabs, vollständiger Master-Passwort-Einrichtungsfluss, Speichern und
+Löschen eines Alpha-Vantage-Testschlüssels mit korrekten
+Zustandsübergängen — die verschlüsselte `secrets.enc.json` enthält nach
+dem Löschen keinen Schlüsselwert mehr (`{"secrets": {}}`), das
+Prüfprotokoll zeigt alle drei Konfigurationsänderungen korrekt
+protokolliert, keine unerwarteten Konsolenfehler.
+
+**Damit sind alle zehn Auftrag-§10-Oberflächenseiten gebaut.** Nächster
+nicht blockierender Schritt: Migration von `st.sidebar.radio` auf
+`st.navigation()`/`st.Page()` (siehe `NEXT_STEPS.md`).
+
 ## Noch zu treffende Entscheidungen
 
 Keine blockierenden Entscheidungen mehr offen für Milestone 1–7 (alle

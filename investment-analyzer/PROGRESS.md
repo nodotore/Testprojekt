@@ -1391,3 +1391,82 @@ Schlüssel, keine unerwarteten Konsolenfehler.
 (Auftrag §10, Seite 10 — letzte noch fehlende UI-Seite; macht den
 Alpha-Vantage-Kursabruf im Marktscreener ohne vorherige manuelle
 OS-Keyring-Einrichtung nutzbar) — siehe `NEXT_STEPS.md`.
+
+## Nach Milestone 8 — Einstellungen, Quellen und Prüfprotokoll (Auftrag §10, Seite 10)
+
+**Auftrag:** Zehnte und letzte der ursprünglich fehlenden Auftrag-§10-
+Oberflächenseiten bauen (siehe ADR-34).
+
+**Umgesetzt:**
+
+- Neue UI-Seite `ui/settings.py`: drei Tabs
+  (`st.tabs(["Schlüsselverwaltung", "Quellen", "Prüfprotokoll"])`).
+- **Schlüsselverwaltung:** Ist beim Start kein OS-Keyring verfügbar
+  (`ctx.secret_store is None`), zeigt ein Formular zur Einrichtung des
+  verschlüsselten Datei-Fallbacks per selbst gewähltem Master-Passwort
+  (`EncryptedFileSecretStore`, ADR-5) — nach Einrichtung wird
+  `ctx.secret_store` direkt in der laufenden, über `st.cache_resource`
+  zwischengespeicherten `AppContext`-Instanz gesetzt, sodass der
+  Secret-Store für den Rest der Server-Sitzung ohne Neustart nutzbar
+  ist. Ist ein Secret-Store vorhanden, kann der Alpha-Vantage-
+  API-Schlüssel gesetzt/gelöscht werden — der Wert selbst wird nie
+  angezeigt oder geloggt (Auftrag §12), nur ob ein Schlüssel hinterlegt
+  ist. Jede Aktion schreibt einen `log_config_changed`-Audit-Eintrag
+  ohne den Passwort-/Schlüsselwert.
+- **Quellen:** reine Anzeige aller registrierten `Source`-Zeilen
+  (Auftrag §3).
+- **Prüfprotokoll:** reine Anzeige der letzten 200 `AuditLogEntry`-
+  Zeilen (absteigend sortiert) mit Ereignistyp-Filter (`st.selectbox`).
+- `app.py`: Sidebar-Navigation um „Einstellungen, Quellen und
+  Prüfprotokoll" als zehnte und letzte Option erweitert; Modul-
+  Docstring aktualisiert, um alle zehn fertigen Auftrag-§10-Seiten
+  aufzulisten.
+
+**Zwei Live-Test-Funde bei den `AppTest`-Smoke-Tests** (keine
+Produktivcode-Fehler, beide nur Testcode betreffend):
+
+1. `Widget.type` in `streamlit.testing.v1.element_tree` ist für alle
+   `st.text_input`-Instanzen fest `"text_input"`, unabhängig vom
+   `type="password"`-Parameter — der ursprüngliche Testentwurf prüfte
+   fälschlich `ti.type == "password"`. Korrekt ist
+   `ti.proto.type == ti.proto.PASSWORD` (Zugriff auf das zugrunde
+   liegende Protobuf-Feld).
+2. Ein `st.rerun()` am Ende eines Formular-Handlers wird von `AppTest`
+   innerhalb desselben `.run()`-Aufrufs automatisch nachvollzogen — die
+   davor gesetzte einmalige `st.success(...)`-Meldung aus dem dadurch
+   verworfenen ersten Lauf ist im zurückgegebenen Element-Baum nicht
+   mehr vorhanden (entspricht dem echten Browser-Verhalten: die Meldung
+   blitzt nie sichtbar auf). Tests auf dieses Muster müssen den
+   dauerhaften Effekt nach dem Rerun prüfen statt der transienten
+   Einmalmeldung. Beide Funde in ADR-34 dokumentiert.
+
+**Tests:** 3 neue `AppTest`-Smoke-Tests (insgesamt 513, alle grün) —
+leere Zustände, Anzeige vorhandener Quellen/Prüfprotokoll-Einträge
+inkl. Ereignistyp-Filter, sowie der vollständige Master-Passwort-
+Einrichtungs- und Alpha-Vantage-Schlüssel-Speicherfluss. Kein
+zusätzlicher reiner Funktions-Testfile nötig, da die Seite keine
+eigenen Datentransformationen vornimmt. `ruff check .` und `mypy src`
+beide fehlerfrei.
+
+**Manuell mit echtem Browser verifiziert** (Playwright gegen einen
+laufenden Streamlit-Prozess mit seedierten `Source`- und
+`AuditLogEntry`-Zeilen): alle drei Tabs rendern korrekt mit echten
+Daten; vollständiger Master-Passwort-Einrichtungsfluss (Formular
+ausfüllen, absenden, Alpha-Vantage-Schlüsselverwaltung erscheint
+danach an derselben Stelle); Speichern eines Test-Schlüssels zeigt
+danach „Ein Alpha-Vantage-API-Schlüssel ist hinterlegt" und aktiviert
+den „Löschen"-Button; Löschen setzt den Zustand korrekt zurück, die
+verschlüsselte `secrets.enc.json` enthält danach keinen Schlüsselwert
+mehr (`{"secrets": {}}`); das Prüfprotokoll zeigt alle drei
+Konfigurationsänderungen (Einrichtung, Setzen, Löschen) korrekt
+protokolliert; keine unerwarteten Konsolenfehler.
+
+**Geänderte/neue Dateien:** neue `ui/settings.py`, `ui/app.py`
+(Navigation, Docstring), `tests/ui/test_app_smoke.py` (drei neue
+Tests, neuer Seed-Helper `_seed_quellen_und_pruefprotokoll`).
+
+**Damit sind alle zehn Auftrag-§10-Oberflächenseiten gebaut.**
+
+**Nächster Schritt:** Umstieg von `st.sidebar.radio` auf
+`st.navigation()`/`st.Page()` (siehe ADR-26, seit Langem vorgemerkt,
+jetzt mit allen zehn Seiten überfällig) — siehe `NEXT_STEPS.md`.

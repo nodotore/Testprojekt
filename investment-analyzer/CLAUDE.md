@@ -29,13 +29,15 @@ können.
 **Milestone 0–8 (aller ursprüngliche Auftragsplan) abgeschlossen.**
 Ehrliche Abnahmebewertung gegen alle neun Auftrag-§15-Kriterien:
 `ABNAHME.md`. Bedienungsanleitung für Endnutzer: `BENUTZERHANDBUCH.md`.
-**Laufende Erweiterung darüber hinaus:** Ausbau der zehn Auftrag-§10-
-Oberflächenseiten (aktuell fertig: „Start/Datenstatus", „Marktscreener",
-„Kandidaten-Rangliste", „Unternehmensdetail mit Quellenleiste",
-„Peer-Vergleich", „DCF- und Szenarioanalyse", „Nachrichten/Ereignisse",
-„Watchlist/Portfolio", „Backtest"; eine weitere offen — Einstellungen/
-Quellen/Prüfprotokoll, siehe `NEXT_STEPS.md`). Details/offene Punkte:
-`PROGRESS.md`/`TODO.md`/`NEXT_STEPS.md`.
+**Erweiterung über den ursprünglichen Plan hinaus abgeschlossen:** Alle
+zehn Auftrag-§10-Oberflächenseiten sind gebaut („Start/Datenstatus",
+„Marktscreener", „Kandidaten-Rangliste", „Unternehmensdetail mit
+Quellenleiste", „Peer-Vergleich", „DCF- und Szenarioanalyse",
+„Nachrichten/Ereignisse", „Watchlist/Portfolio", „Backtest",
+„Einstellungen, Quellen und Prüfprotokoll", siehe ADR-34). Nächster
+nicht blockierender Schritt: Umstieg von `st.sidebar.radio` auf
+`st.navigation()`/`st.Page()` (siehe `NEXT_STEPS.md`). Details/offene
+Punkte: `PROGRESS.md`/`TODO.md`/`NEXT_STEPS.md`.
 
 ## Nicht verhandelbare Leitplanken
 

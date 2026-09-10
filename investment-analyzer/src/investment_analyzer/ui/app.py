@@ -1,16 +1,16 @@
 """Streamlit-Einstiegspunkt: Seite 1 „Start/Datenstatus" + Ersteinrichtungsdialog,
 bindet weitere Auftrag-§10-Seiten über die Sidebar-Navigation ein.
 
-Bereits gebaut: Marktscreener (``ui/screener.py``, ADR-26),
-Kandidaten-Rangliste (``ui/ranking.py``, ADR-28), Unternehmensdetail
-mit Quellenleiste (``ui/detail.py``, ADR-27), Peer-Vergleich
-(``ui/peers.py``, ADR-29), DCF- und Szenarioanalyse (``ui/dcf.py``,
-ADR-30), Nachrichten/Ereignisse (``ui/news.py``, ADR-31), Watchlist/
-Portfolio (``ui/watchlist.py``, ADR-32), Backtest (``ui/backtest.py``,
-ADR-33). Eine weitere Auftrag-§10-Seite (Einstellungen/Quellen/
-Prüfprotokoll) fehlt noch — sie wird bewusst NICHT als leerer
-Platzhalter vorgebaut, um keine Funktionalität vorzutäuschen, die noch
-nicht existiert (siehe ``TODO.md``).
+Alle zehn Auftrag-§10-Seiten sind inzwischen gebaut: Marktscreener
+(``ui/screener.py``, ADR-26), Kandidaten-Rangliste (``ui/ranking.py``,
+ADR-28), Unternehmensdetail mit Quellenleiste (``ui/detail.py``,
+ADR-27), Peer-Vergleich (``ui/peers.py``, ADR-29), DCF- und
+Szenarioanalyse (``ui/dcf.py``, ADR-30), Nachrichten/Ereignisse
+(``ui/news.py``, ADR-31), Watchlist/Portfolio (``ui/watchlist.py``,
+ADR-32), Backtest (``ui/backtest.py``, ADR-33), Einstellungen/Quellen/
+Prüfprotokoll (``ui/settings.py``, ADR-34). Nächster, nicht
+blockierender Ausbauschritt: Umstieg von ``st.sidebar.radio`` auf
+``st.navigation()``/``st.Page()`` (siehe ``NEXT_STEPS.md``).
 
 Start: ``streamlit run src/investment_analyzer/ui/app.py`` (siehe
 ``start.ps1``/``start.bat`` im Projektstamm für den vollständigen
@@ -40,6 +40,7 @@ from investment_analyzer.ui.peers import render_peervergleich
 from investment_analyzer.ui.profile_form import build_profile_from_form
 from investment_analyzer.ui.ranking import render_kandidatenrangliste
 from investment_analyzer.ui.screener import render_marktscreener
+from investment_analyzer.ui.settings import render_einstellungen
 from investment_analyzer.ui.status import lade_datenstatus
 from investment_analyzer.ui.watchlist import render_watchlist_portfolio
 
@@ -290,6 +291,7 @@ def main() -> None:
             "Nachrichten/Ereignisse",
             "Watchlist/Portfolio",
             "Backtest",
+            "Einstellungen, Quellen und Prüfprotokoll",
         ],
     )
     if seite == "Marktscreener":
@@ -308,6 +310,8 @@ def main() -> None:
         render_watchlist_portfolio(ctx, profil)
     elif seite == "Backtest":
         render_backtest(ctx, profil)
+    elif seite == "Einstellungen, Quellen und Prüfprotokoll":
+        render_einstellungen(ctx, profil)
     else:
         render_datenstatus(ctx, profil)
 

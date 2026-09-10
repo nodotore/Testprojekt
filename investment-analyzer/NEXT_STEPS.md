@@ -178,15 +178,18 @@
       Lücken-Schlüssel in verständliche Sätze übersetzt. 510 Tests
       grün, ruff/mypy fehlerfrei, mit echtem Browser (Playwright)
       verifiziert (inkl. Lösung der react-aria-DateField-Interaktion).
-    - **Letzte noch fehlende Auftrag-§10-UI-Seite: Einstellungen,
-      Quellen und Prüfprotokoll** (Seite 10) — Schlüsselverwaltung
-      (`SecretStore.set_secret`/`delete_secret`, inkl. Master-Passwort-
-      Dialog für den verschlüsselten Datei-Fallback), Quellenübersicht
-      (`Source`-Tabelle), Prüfprotokoll-Ansicht (`AuditLogEntry`-
-      Tabelle). Wichtig, da sie den Alpha-Vantage-Kursabruf im
-      Marktscreener ohne vorherige manuelle OS-Keyring-Einrichtung
-      nutzbar macht — damit wäre der Ausbau aller zehn Auftrag-§10-
-      Seiten abgeschlossen. Danach: Umstieg von `st.sidebar.radio` auf
+    - ~~Ausbau der Auftrag-§10-UI-Seite „Einstellungen, Quellen und
+      Prüfprotokoll"~~ — umgesetzt am 2026-09-10 (siehe
+      `PROGRESS.md`/ADR-34): neue `ui/settings.py`, drei Tabs
+      (Schlüsselverwaltung mit Master-Passwort-Einrichtungsfluss für
+      den verschlüsselten Datei-Fallback, Quellenübersicht,
+      Prüfprotokoll mit Ereignistyp-Filter). Macht den Alpha-Vantage-
+      Kursabruf im Marktscreener erstmals ohne vorherige manuelle
+      OS-Keyring-Einrichtung nutzbar. **Damit ist der Ausbau aller zehn
+      Auftrag-§10-Oberflächenseiten abgeschlossen.** 513 Tests grün,
+      ruff/mypy fehlerfrei, mit echtem Browser (Playwright) inkl.
+      vollständigem Einrichtungs-/Speichern-/Löschen-Roundtrip
+      verifiziert. Nächster Schritt: Umstieg von `st.sidebar.radio` auf
       `st.navigation()`/`st.Page()` (siehe ADR-26, seit Langem
       vorgemerkt, jetzt mit allen zehn Seiten überfällig).
     - Weiterhin offen, nicht blockierend für die restlichen UI-Seiten:

@@ -369,13 +369,21 @@ seit Milestone 1–7 fertig, nur die Bedienoberfläche fehlte.
       befüllte Unternehmen über drei Rebalancing-Stichtage verifiziert
       (inkl. Lösung der react-aria-`DateField`-Interaktion, siehe
       ADR-33).
-- [ ] **Einstellungen, Quellen und Prüfprotokoll** (Seite 10):
-      Schlüsselverwaltung (`SecretStore.set_secret`/`delete_secret`,
-      inkl. Master-Passwort-Dialog für den verschlüsselten Datei-
-      Fallback, falls kein OS-Keyring verfügbar ist), Quellenübersicht
-      (`Source`-Tabelle), Prüfprotokoll-Ansicht (`AuditLogEntry`-Tabelle).
-      Wichtig für den Alpha-Vantage-Kursabruf im Marktscreener, der
-      aktuell nur funktioniert, wenn der Schlüssel bereits anderweitig
-      im OS-Keyring hinterlegt wurde.
-- [ ] Sobald mehr als drei/vier Seiten existieren: Umstieg von
-      `st.sidebar.radio` auf `st.navigation()`/`st.Page()` (siehe ADR-26).
+- [x] **Einstellungen, Quellen und Prüfprotokoll** (Seite 10, siehe
+      ADR-34): drei Tabs — Schlüsselverwaltung (`SecretStore.
+      set_secret`/`delete_secret`, inkl. Master-Passwort-Dialog für den
+      verschlüsselten Datei-Fallback, falls kein OS-Keyring verfügbar
+      ist; `ctx.secret_store` wird nach Einrichtung direkt in der
+      laufenden `AppContext`-Instanz gesetzt), Quellenübersicht
+      (`Source`-Tabelle), Prüfprotokoll-Ansicht (`AuditLogEntry`-
+      Tabelle, auf 200 neueste Einträge begrenzt, mit Ereignistyp-
+      Filter). Schlüsselwert wird nie angezeigt oder geloggt (Auftrag
+      §12). Macht den Alpha-Vantage-Kursabruf im Marktscreener erstmals
+      ohne vorherige manuelle OS-Keyring-Einrichtung nutzbar. Neues
+      Modul `ui/settings.py`. **Damit sind alle zehn Auftrag-§10-
+      Oberflächenseiten gebaut.** 3 neue Tests (insgesamt 513), `ruff`/
+      `mypy` fehlerfrei. Mit echtem Playwright-Browser inkl.
+      vollständigem Einrichtungs-/Speichern-/Löschen-Roundtrip
+      verifiziert.
+- [ ] Umstieg von `st.sidebar.radio` auf `st.navigation()`/`st.Page()`
+      (siehe ADR-26) — mit allen zehn Seiten jetzt überfällig.

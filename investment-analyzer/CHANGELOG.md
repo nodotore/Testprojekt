@@ -2,6 +2,23 @@
 
 ## Unreleased
 
+- Einstellungen, Quellen und Prüfprotokoll (Auftrag §10, Seite 10)
+  umgesetzt — letzte der ursprünglich zehn fehlenden Oberflächenseiten
+  (siehe ADR-34). **Damit sind alle zehn Auftrag-§10-Oberflächenseiten
+  gebaut.** Neue Seite `ui/settings.py`: drei Tabs —
+  Schlüsselverwaltung (Alpha-Vantage-API-Schlüssel setzen/löschen,
+  inkl. Master-Passwort-Einrichtungsdialog für den verschlüsselten
+  Datei-Fallback, falls kein OS-Keyring verfügbar ist; `ctx.
+  secret_store` wird nach Einrichtung direkt in der laufenden
+  `AppContext`-Instanz gesetzt), Quellenübersicht (`Source`-Tabelle),
+  Prüfprotokoll (`AuditLogEntry`-Tabelle mit Ereignistyp-Filter).
+  Schlüsselwert wird nie angezeigt oder geloggt (Auftrag §12). Macht
+  den Alpha-Vantage-Kursabruf im Marktscreener erstmals ohne vorherige
+  manuelle OS-Keyring-Einrichtung nutzbar. 3 neue Tests (insgesamt
+  513), `ruff`/`mypy` fehlerfrei, zusätzlich mit echtem Browser
+  verifiziert (vollständiger Einrichtungs-/Speichern-/Löschen-
+  Roundtrip).
+
 - Backtest (Auftrag §10, Seite 9) umgesetzt — neunte von neun
   ursprünglich noch fehlenden Oberflächenseiten (siehe ADR-33); nur
   noch „Einstellungen, Quellen und Prüfprotokoll" (Seite 10) offen.
