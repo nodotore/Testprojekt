@@ -19,13 +19,32 @@ Weitere Aufrufe (in der Eingabeaufforderung oder PowerShell):
 | Aufruf | Wirkung |
 |---|---|
 | `Starter-erstellen.bat -Vorschau` | nur anzeigen, was erkannt würde |
-| `Starter-erstellen.bat -Force` | vorhandene `Starten.exe` neu erstellen |
+| `Starter-erstellen.bat -Force` | auch eine fremde Datei namens `Starten.exe` überschreiben |
+| `Starter-erstellen.bat -Ausschliessen Claude_Backup,Alt` | diese Ordner nicht durchsuchen (Standard: `Claude_Backup`) |
 | `Starter-erstellen.bat -Root "D:\Projekte"` | anderen Grundordner verwenden |
 | `Starter-erstellen.bat -ExeName "Projekt.exe"` | anderen EXE-Namen verwenden |
 | `Starter-erstellen.bat -Tiefe 6` | tiefer verschachtelte Ordner durchsuchen (Standard: 4) |
 
 Neue Projekte hinzugekommen? Einfach die `.bat` erneut ausführen –
-vorhandene EXEs bleiben unverändert, nur neue werden angelegt.
+neue EXEs werden angelegt, vorhandene auf den neuesten Stand gebracht.
+In ausgeschlossenen Ordnern (Backups) werden früher erzeugte
+`Starten.exe` wieder entfernt.
+
+## Python-Umgebung (.venv) – automatisch
+
+Eine `.venv` merkt sich den Pfad des Python, mit dem sie erstellt wurde.
+Nach einem Umzug auf einen anderen Rechner/Benutzer oder einer
+Python-Neuinstallation ist sie deshalb kaputt („did not find executable
+at …“). Die `Starten.exe` erkennt das und kümmert sich selbst darum:
+
+- **Python-Projekte** (`requirements.txt`/`pyproject.toml`): fehlende
+  oder defekte `.venv` wird angelegt, die Pakete werden installiert –
+  erneut, sobald sich `requirements.txt`/`pyproject.toml` ändern.
+  Braucht das Projekt Playwright, wird auch der Browser installiert.
+- **Projekte mit eigenem Startskript**, das die `.venv` selbst anlegt:
+  eine defekte `.venv` wird gelöscht, das Skript legt sie neu an.
+
+Der erste Start eines Projekts dauert dadurch einige Minuten.
 
 ## Wenn ein Projekt nicht startet: `Diagnose.bat`
 
@@ -53,17 +72,24 @@ als „übersprungen“ in der Tabelle.
 
 Pro Ordner wird in dieser Reihenfolge gesucht:
 
-1. `start.ps1`, `starten.ps1`, `run.ps1`, `launch.ps1` → PowerShell-Skript
-2. `start.bat`, `starten.bat`, `run.bat` (oder `.cmd`) → Batch-Datei
-3. genau ein einziges `.ps1`- bzw. `.bat`/`.cmd`-Skript im Ordner
-4. `package.json` mit `start`- oder `dev`-Skript → `npm start` (beim
+1. `start.ps1`, `starten.ps1`, `run.ps1`, `launch.ps1` oder genau ein
+   anderes `.ps1`-Skript → PowerShell-Skript
+2. `start.bat`, `starten.bat`, `run.bat` (oder `.cmd`) oder genau eine
+   andere `.bat`/`.cmd` → Batch-Datei
+
+   Hilfsskripte (`build…`, `publish…`, `install…`, `exe_bauen…` usw.) und
+   Platzhalter-Skripte („Kein automatischer Startbefehl hinterlegt“)
+   zählen nicht.
+3. `package.json` mit `start`- oder `dev`-Skript → `npm start` (beim
    ersten Start automatisch `npm install`)
-5. `app.py`, `main.py`, `streamlit_app.py`, `run.py`, `start.py`,
-   `gui.py`, `<Ordnername>.py` oder genau eine `.py`-Datei → Python.
-   Enthält die Datei `import streamlit`, wird sie mit
-   `python -m streamlit run` gestartet. Eine projekteigene virtuelle
-   Umgebung (`.venv`, `venv`, `env`) wird automatisch bevorzugt.
-6. `index.html` (oder genau eine `.html`-Datei) → im Standardbrowser öffnen
+4. Python, in dieser Reihenfolge:
+   - `app.py`, `main.py`, `streamlit_app.py`, `run_app.py`, `run.py`,
+     `start.py`, `gui.py`, `<Ordnername>.py` (Streamlit wird erkannt)
+   - ein Paket mit `__main__.py` (auch unter `src\`) → `python -m paket`
+   - ein Einstiegspunkt aus `pyproject.toml` (`[project.scripts]`)
+   - `app\main.py` bzw. `src\main.py` → `python -m app.main`
+   - genau eine `.py`-Datei (ohne `test_…`, `scratch…`, `setup.py`)
+5. `index.html` (oder genau eine `.html`-Datei) → im Standardbrowser öffnen
 
 Liegt eine `.ico`-Datei im Projektordner, bekommt die EXE dieses Symbol.
 

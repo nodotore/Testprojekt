@@ -33,11 +33,16 @@
 .PARAMETER Tiefe
     Wie viele Ordnerebenen unter -Root durchsucht werden. Standard: 4
 
+.PARAMETER Ausschliessen
+    Ordnernamen (mit * als Platzhalter), die nicht durchsucht werden.
+    Standard: Claude_Backup. Darin früher erzeugte Starten.exe werden entfernt.
+
 .PARAMETER ExeName
     Dateiname der erzeugten Start-EXE. Standard: Starten.exe
 
 .PARAMETER Force
-    Bereits vorhandene Start-EXEs überschreiben (z. B. nach Änderungen).
+    Auch eine fremde (große) Datei mit dem EXE-Namen überschreiben.
+    Eigene Start-EXEs werden bei jedem Lauf ohnehin aktualisiert.
 
 .PARAMETER Vorschau
     Nur anzeigen, was erkannt würde – nichts erstellen.
@@ -54,6 +59,7 @@
 param(
     [string]$Root,
     [int]$Tiefe = 4,
+    [string[]]$Ausschliessen = @('Claude_Backup'),
     [string]$ExeName = 'Starten.exe',
     [switch]$Force,
     [switch]$Vorschau
@@ -94,19 +100,89 @@ function Get-Single([string]$Dir, [string[]]$Extensions) {
     return $null
 }
 
+# Hilfsskripte, die nie als Startskript gelten.
+$helperScripts = '^(build|publish|install|setup|exe_bauen|test|clean|deploy)'
+
+# Skripte, die nur einen Platzhalter enthalten, zählen nicht als Startdatei.
+function Test-RealScript([string]$Path) {
+    $code = [IO.File]::ReadAllText($Path)
+    return -not ($code -match 'Kein automatischer Startbefehl')
+}
+
+function Get-StartScript([string]$Dir, [string[]]$Names, [string[]]$Extensions) {
+    foreach ($n in $Names) {
+        $p = Join-Path $Dir $n
+        if ((Test-Path -LiteralPath $p -PathType Leaf) -and (Test-RealScript $p)) { return $n }
+    }
+    $files = @(Get-ChildItem -LiteralPath $Dir -File | Where-Object {
+        $Extensions -contains $_.Extension.ToLowerInvariant() -and
+        $_.BaseName -notmatch $helperScripts -and (Test-RealScript $_.FullName) })
+    if ($files.Count -eq 1) { return $files[0].Name }
+    return $null
+}
+
+# Code ohne Kommentare und Bildschirmausgaben (echo "python -m venv ..."
+# in einer Fehlermeldung soll nicht als "legt venv selbst an" zählen).
+function Get-ActiveCode([string]$Path) {
+    return ([IO.File]::ReadAllLines($Path) | Where-Object {
+        $_ -notmatch '^\s*(@?echo\b|Write-(Host|Output|Warning|Error)\b|#|rem\b|::)' }) -join "`n"
+}
+
+function Find-PythonStart([string]$Dir) {
+    $name = Split-Path -Leaf $Dir
+
+    $f = Get-FirstExisting $Dir @('app.py', 'main.py', 'streamlit_app.py', 'run_app.py', 'run.py', 'start.py', 'gui.py', "$name.py")
+    if ($f) {
+        $code = [IO.File]::ReadAllText((Join-Path $Dir $f))
+        $mode = if ($code -match '(?m)^\s*(import\s+streamlit|from\s+streamlit\s+import)') { 'streamlit' } else { 'python' }
+        return @{ Mode = $mode; Target = $f }
+    }
+
+    # Paket mit __main__.py (auch im src-Layout) -> python -m paket
+    foreach ($base in @($Dir, (Join-Path $Dir 'src'))) {
+        if (-not (Test-Path -LiteralPath $base -PathType Container)) { continue }
+        $pkgs = @(Get-ChildItem -LiteralPath $base -Directory | Where-Object {
+            Test-Path -LiteralPath (Join-Path $_.FullName '__main__.py') })
+        if ($pkgs.Count -eq 1) { return @{ Mode = 'module'; Target = $pkgs[0].Name } }
+    }
+
+    # Einstiegspunkt aus pyproject.toml ([project.scripts] / [project.gui-scripts])
+    $pyproject = Join-Path $Dir 'pyproject.toml'
+    if (Test-Path -LiteralPath $pyproject -PathType Leaf) {
+        $toml = [IO.File]::ReadAllText($pyproject)
+        foreach ($section in 'gui-scripts', 'scripts') {
+            $m = [regex]::Match($toml, "(?ms)^\[project\.$section\]\s*\n(.*?)(^\[|\z)")
+            if ($m.Success) {
+                $e = [regex]::Match($m.Groups[1].Value, '(?m)^\s*[\w.-]+\s*=\s*["'']([\w.]+):(\w+)["'']')
+                if ($e.Success) { return @{ Mode = 'entry'; Target = "$($e.Groups[1].Value):$($e.Groups[2].Value)" } }
+            }
+        }
+    }
+
+    # main.py/app.py in einem Unterordner app\ oder src\ -> python -m app.main
+    foreach ($sub in 'app', 'src') {
+        foreach ($file in 'main', 'app', '__main__') {
+            if (Test-Path -LiteralPath (Join-Path $Dir "$sub\$file.py") -PathType Leaf) {
+                if ($file -eq '__main__') { return @{ Mode = 'module'; Target = $sub } }
+                return @{ Mode = 'module'; Target = "$sub.$file" }
+            }
+        }
+    }
+
+    $files = @(Get-ChildItem -LiteralPath $Dir -File | Where-Object {
+        '.py', '.pyw' -contains $_.Extension.ToLowerInvariant() -and
+        $_.BaseName -notmatch '^(test_|scratch|conftest|setup$)' })
+    if ($files.Count -eq 1) { return @{ Mode = 'python'; Target = $files[0].Name } }
+    return $null
+}
+
 function Find-StartMethod([string]$Dir) {
     $name = Split-Path -Leaf $Dir
 
-    $f = Get-FirstExisting $Dir @('start.ps1', 'starten.ps1', 'run.ps1', 'launch.ps1')
+    $f = Get-StartScript $Dir @('start.ps1', 'starten.ps1', 'run.ps1', 'launch.ps1') @('.ps1')
     if ($f) { return @{ Mode = 'ps1'; Target = $f } }
 
-    $f = Get-FirstExisting $Dir @('start.bat', 'start.cmd', 'starten.bat', 'starten.cmd', 'run.bat', 'run.cmd')
-    if ($f) { return @{ Mode = 'bat'; Target = $f } }
-
-    $f = Get-Single $Dir @('.ps1')
-    if ($f) { return @{ Mode = 'ps1'; Target = $f } }
-
-    $f = Get-Single $Dir @('.bat', '.cmd')
+    $f = Get-StartScript $Dir @('start.bat', 'start.cmd', 'starten.bat', 'starten.cmd', 'run.bat', 'run.cmd') @('.bat', '.cmd')
     if ($f) { return @{ Mode = 'bat'; Target = $f } }
 
     $pkgPath = Join-Path $Dir 'package.json'
@@ -120,19 +196,31 @@ function Find-StartMethod([string]$Dir) {
         }
     }
 
-    $f = Get-FirstExisting $Dir @('app.py', 'main.py', 'streamlit_app.py', 'run.py', 'start.py', 'gui.py', "$name.py")
-    if (-not $f) { $f = Get-Single $Dir @('.py', '.pyw') }
-    if ($f) {
-        $code = [IO.File]::ReadAllText((Join-Path $Dir $f))
-        $mode = if ($code -match '(?m)^\s*(import\s+streamlit|from\s+streamlit\s+import)') { 'streamlit' } else { 'python' }
-        return @{ Mode = $mode; Target = $f }
-    }
+    $py = Find-PythonStart $Dir
+    if ($py) { return $py }
 
     $f = Get-FirstExisting $Dir @('index.html', 'index.htm')
     if (-not $f) { $f = Get-Single $Dir @('.html', '.htm') }
     if ($f) { return @{ Mode = 'open'; Target = $f } }
 
     return $null
+}
+
+# Wie viel sich die EXE um die Python-Umgebung (.venv) kümmern soll.
+function Get-SetupLevel([string]$Dir, [hashtable]$Method) {
+    $isPython = (Test-Path -LiteralPath (Join-Path $Dir 'requirements.txt')) -or
+                (Test-Path -LiteralPath (Join-Path $Dir 'pyproject.toml'))
+    if ($Method.Mode -in 'python', 'streamlit', 'module', 'entry') {
+        if ($isPython) { return 'full' } else { return 'none' }
+    }
+    if ($Method.Mode -in 'ps1', 'bat') {
+        $code = Get-ActiveCode (Join-Path $Dir $Method.Target)
+        if ($code -notmatch 'venv') { return 'none' }
+        # Skript legt die Umgebung selbst an -> nur eine defekte entfernen.
+        if ($code -match '-m\s+venv|virtualenv|\buv\s+(venv|sync)') { return 'repair' }
+        if ($isPython) { return 'full' } else { return 'repair' }
+    }
+    return 'none'
 }
 
 function ConvertTo-CSharpLiteral([string]$s) {
@@ -143,6 +231,7 @@ function New-StarterExe([string]$Dir, [hashtable]$Method, [string]$ExePath) {
     $source = $template.Replace('@@MODE@@', (ConvertTo-CSharpLiteral $Method.Mode))
     $source = $source.Replace('@@TARGET@@', (ConvertTo-CSharpLiteral $Method.Target))
     $source = $source.Replace('@@TITLE@@', (ConvertTo-CSharpLiteral (Split-Path -Leaf $Dir)))
+    $source = $source.Replace('@@SETUP@@', $Method.Setup)
 
     $work = Join-Path ([IO.Path]::GetTempPath()) ('starter_' + [guid]::NewGuid().ToString('N'))
     New-Item -ItemType Directory -Path $work | Out-Null
@@ -154,7 +243,7 @@ function New-StarterExe([string]$Dir, [hashtable]$Method, [string]$ExePath) {
         # Webseiten ohne Konsolenfenster öffnen, alles andere mit Konsole,
         # damit Ausgaben und Fehlermeldungen sichtbar sind.
         $kind = if ($Method.Mode -eq 'open') { 'winexe' } else { 'exe' }
-        $cscArgs = @('/nologo', '/optimize+', '/nowarn:162', "/target:$kind",
+        $cscArgs = @('/nologo', '/optimize+', '/nowarn:162,429', "/target:$kind",
             '/r:System.Windows.Forms.dll', "/out:$tmpExe")
         $icon = Get-ChildItem -LiteralPath $Dir -Filter '*.ico' -File | Select-Object -First 1
         if ($icon) { $cscArgs += "/win32icon:$($icon.FullName)" }
@@ -185,9 +274,27 @@ function Test-ProjectRoot([string]$Dir) {
         Select-Object -First 1)
 }
 
+# Entfernt in ausgeschlossenen Ordnern die früher erzeugten Start-EXEs
+# (nur Dateien mit dem EXE-Namen, die klein genug für einen Starter sind).
+function Remove-OldStarters([string]$Dir) {
+    Get-ChildItem -LiteralPath $Dir -Filter $ExeName -File -Recurse -Depth 6 -ErrorAction SilentlyContinue |
+        Where-Object { $_.Length -lt 64KB } | ForEach-Object {
+            if ($Vorschau) {
+                Write-Host "Würde entfernt (ausgeschlossener Ordner): $($_.FullName)"
+            } else {
+                Remove-Item -LiteralPath $_.FullName -Force
+                Write-Host "Entfernt (ausgeschlossener Ordner): $($_.FullName)"
+            }
+        }
+}
+
 function Find-Projects([string]$Dir, [int]$Depth) {
     $children = Get-ChildItem -LiteralPath $Dir -Directory -ErrorAction SilentlyContinue | Sort-Object Name
     foreach ($child in $children) {
+        if (@($Ausschliessen | Where-Object { $child.Name -like $_ }).Count) {
+            Remove-OldStarters $child.FullName
+            continue
+        }
         if ($child.Name.StartsWith('.') -or $skipNames -contains $child.Name -or
             $child.FullName -eq $PSScriptRoot -or
             ($child.Attributes -band [IO.FileAttributes]::ReparsePoint)) { continue }
@@ -210,6 +317,8 @@ $modeText = @{
     npm       = 'npm'
     python    = 'Python'
     streamlit = 'Streamlit'
+    module    = 'Python-Modul'
+    entry     = 'Python-Einstieg'
     open      = 'im Browser öffnen'
 }
 
@@ -218,10 +327,14 @@ Write-Host ''
 
 $results = foreach ($project in Find-Projects $Root 1) {
     $method = $project.Method
+    if ($method) { $method.Setup = Get-SetupLevel $project.Dir $method }
     $exePath = Join-Path $project.Dir $ExeName
     $row = [pscustomobject]@{
         Projekt  = $project.Dir.Substring($Root.TrimEnd('\').Length).TrimStart('\', '/')
-        Startart = if ($method) { "$($modeText[$method.Mode]): $($method.Target)" } else { '-' }
+        Startart = if ($method) {
+            "$($modeText[$method.Mode]): $($method.Target)" + $(switch ($method.Setup) {
+                'full' { ' (+ .venv einrichten)' } 'repair' { ' (+ defekte .venv reparieren)' } default { '' } })
+        } else { '-' }
         Ergebnis = ''
     }
 
@@ -229,12 +342,14 @@ $results = foreach ($project in Find-Projects $Root 1) {
         $row.Ergebnis = 'übersprungen (keine Startdatei erkannt)'
     } elseif ($Vorschau) {
         $row.Ergebnis = if (Test-Path -LiteralPath $exePath) { 'EXE vorhanden' } else { 'würde erstellt' }
-    } elseif ((Test-Path -LiteralPath $exePath) -and -not $Force) {
-        $row.Ergebnis = 'EXE vorhanden (mit -Force neu erstellen)'
+    } elseif ((Test-Path -LiteralPath $exePath) -and -not $Force -and (Get-Item -LiteralPath $exePath).Length -ge 64KB) {
+        # Große Datei gleichen Namens stammt nicht von diesem Werkzeug.
+        $row.Ergebnis = 'fremde EXE gleichen Namens vorhanden (mit -Force überschreiben)'
     } else {
         try {
+            $existed = Test-Path -LiteralPath $exePath
             New-StarterExe $project.Dir $method $exePath
-            $row.Ergebnis = "$ExeName erstellt"
+            $row.Ergebnis = if ($existed) { "$ExeName aktualisiert" } else { "$ExeName erstellt" }
         } catch {
             $row.Ergebnis = "FEHLER: $($_.Exception.Message)"
         }
