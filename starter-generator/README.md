@@ -22,13 +22,21 @@ Weitere Aufrufe (in der Eingabeaufforderung oder PowerShell):
 | `Starter-erstellen.bat -Force` | vorhandene `Starten.exe` neu erstellen |
 | `Starter-erstellen.bat -Root "D:\Projekte"` | anderen Grundordner verwenden |
 | `Starter-erstellen.bat -ExeName "Projekt.exe"` | anderen EXE-Namen verwenden |
+| `Starter-erstellen.bat -Tiefe 6` | tiefer verschachtelte Ordner durchsuchen (Standard: 4) |
 
 Neue Projekte hinzugekommen? Einfach die `.bat` erneut ausführen –
 vorhandene EXEs bleiben unverändert, nur neue werden angelegt.
 
 ## Wie wird erkannt, wie ein Projekt startet?
 
-In dieser Reihenfolge, jeweils im obersten Ordner des Projekts:
+Die Unterordner des Grundordners werden bis zu 4 Ebenen tief
+durchsucht (z. B. `Y:\claude\projekt\MeinProjekt`). Ist ein Ordner als
+Projekt erkannt, wird darunter nicht weiter gesucht. Ordner mit `.git`,
+`pyproject.toml`, `requirements.txt`, `package.json` oder einer
+`.sln`-Datei gelten auch ohne Startdatei als Projekt und erscheinen dann
+als „übersprungen“ in der Tabelle.
+
+Pro Ordner wird in dieser Reihenfolge gesucht:
 
 1. `start.ps1`, `starten.ps1`, `run.ps1`, `launch.ps1` → PowerShell-Skript
 2. `start.bat`, `starten.bat`, `run.bat` (oder `.cmd`) → Batch-Datei

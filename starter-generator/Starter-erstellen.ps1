@@ -3,9 +3,10 @@
     Erstellt für jedes Projekt unter einem Grundordner eine Start-EXE.
 
 .DESCRIPTION
-    Durchsucht alle direkten Unterordner von -Root (Standard: Y:\claude),
-    erkennt, wie das jeweilige Projekt gestartet wird, und legt im
-    Projektordner eine "Starten.exe" an. Ein Doppelklick darauf startet das
+    Durchsucht die Unterordner von -Root (Standard: Y:\claude) bis zur
+    Tiefe -Tiefe, erkennt, wie das jeweilige Projekt gestartet wird, und
+    legt im Projektordner eine "Starten.exe" an. Sobald ein Ordner als
+    Projekt erkannt ist, wird darunter nicht weiter gesucht. Ein Doppelklick darauf startet das
     Projekt – ohne PowerShell-Kenntnisse und ohne Ausführungsrichtlinie.
 
     Die EXE enthält nur relative Pfade. Ein Projektordner kann deshalb
@@ -29,6 +30,9 @@
     Grundordner mit den Projekten. Standard: Y:\claude, falls vorhanden,
     sonst der übergeordnete Ordner dieses Skripts.
 
+.PARAMETER Tiefe
+    Wie viele Ordnerebenen unter -Root durchsucht werden. Standard: 4
+
 .PARAMETER ExeName
     Dateiname der erzeugten Start-EXE. Standard: Starten.exe
 
@@ -49,6 +53,7 @@
 [CmdletBinding()]
 param(
     [string]$Root,
+    [int]$Tiefe = 4,
     [string]$ExeName = 'Starten.exe',
     [switch]$Force,
     [switch]$Vorschau
@@ -165,6 +170,40 @@ function New-StarterExe([string]$Dir, [hashtable]$Method, [string]$ExePath) {
     }
 }
 
+# Ordner, in denen nie nach Projekten gesucht wird.
+$skipNames = @('node_modules', 'venv', 'env', '__pycache__', 'site-packages',
+    'dist', 'build', 'bin', 'obj', 'target', 'Lib', 'Scripts', 'Include')
+
+# Merkmale eines Projektordners (auch ohne erkannte Startdatei): darunter
+# nicht weitersuchen, sonst würden z. B. src\-Unterordner als Projekt gelten.
+function Test-ProjectRoot([string]$Dir) {
+    foreach ($n in '.git', 'pyproject.toml', 'requirements.txt', 'setup.py', 'package.json') {
+        if (Test-Path -LiteralPath (Join-Path $Dir $n)) { return $true }
+    }
+    return [bool](Get-ChildItem -LiteralPath $Dir -File -ErrorAction SilentlyContinue |
+        Where-Object { '.sln', '.csproj' -contains $_.Extension.ToLowerInvariant() } |
+        Select-Object -First 1)
+}
+
+function Find-Projects([string]$Dir, [int]$Depth) {
+    $children = Get-ChildItem -LiteralPath $Dir -Directory -ErrorAction SilentlyContinue | Sort-Object Name
+    foreach ($child in $children) {
+        if ($child.Name.StartsWith('.') -or $skipNames -contains $child.Name -or
+            $child.FullName -eq $PSScriptRoot -or
+            ($child.Attributes -band [IO.FileAttributes]::ReparsePoint)) { continue }
+
+        $method = $null
+        try { $method = Find-StartMethod $child.FullName } catch {
+            Write-Warning "$($child.FullName): $($_.Exception.Message)"
+        }
+        if ($method -or (Test-ProjectRoot $child.FullName)) {
+            [pscustomobject]@{ Dir = $child.FullName; Method = $method }
+        } elseif ($Depth -lt $Tiefe) {
+            Find-Projects $child.FullName ($Depth + 1)
+        }
+    }
+}
+
 $modeText = @{
     ps1       = 'PowerShell-Skript'
     bat       = 'Batch-Datei'
@@ -177,13 +216,11 @@ $modeText = @{
 Write-Host "Grundordner: $Root"
 Write-Host ''
 
-$results = foreach ($project in Get-ChildItem -LiteralPath $Root -Directory | Sort-Object Name) {
-    if ($project.Name.StartsWith('.') -or $project.FullName -eq $PSScriptRoot) { continue }
-
-    $method = Find-StartMethod $project.FullName
-    $exePath = Join-Path $project.FullName $ExeName
+$results = foreach ($project in Find-Projects $Root 1) {
+    $method = $project.Method
+    $exePath = Join-Path $project.Dir $ExeName
     $row = [pscustomobject]@{
-        Projekt  = $project.Name
+        Projekt  = $project.Dir.Substring($Root.TrimEnd('\').Length).TrimStart('\', '/')
         Startart = if ($method) { "$($modeText[$method.Mode]): $($method.Target)" } else { '-' }
         Ergebnis = ''
     }
@@ -196,7 +233,7 @@ $results = foreach ($project in Get-ChildItem -LiteralPath $Root -Directory | So
         $row.Ergebnis = 'EXE vorhanden (mit -Force neu erstellen)'
     } else {
         try {
-            New-StarterExe $project.FullName $method $exePath
+            New-StarterExe $project.Dir $method $exePath
             $row.Ergebnis = "$ExeName erstellt"
         } catch {
             $row.Ergebnis = "FEHLER: $($_.Exception.Message)"
@@ -205,4 +242,9 @@ $results = foreach ($project in Get-ChildItem -LiteralPath $Root -Directory | So
     $row
 }
 
-$results | Format-Table -AutoSize -Wrap | Out-String -Width 300 | Write-Host
+if ($results) {
+    $results | Format-Table -AutoSize -Wrap | Out-String -Width 300 | Write-Host
+} else {
+    Write-Host "Unter $Root wurde bis zur Tiefe $Tiefe kein Projekt gefunden."
+    Write-Host 'Tipp: mit -Tiefe 6 tiefer suchen oder -Root auf einen Unterordner setzen.'
+}
