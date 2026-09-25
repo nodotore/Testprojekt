@@ -27,6 +27,21 @@ Weitere Aufrufe (in der Eingabeaufforderung oder PowerShell):
 Neue Projekte hinzugekommen? Einfach die `.bat` erneut ausführen –
 vorhandene EXEs bleiben unverändert, nur neue werden angelegt.
 
+## Wenn ein Projekt nicht startet: `Diagnose.bat`
+
+`Diagnose.bat` doppelklicken. Das Skript
+- erfasst die Umgebung (Python, Node.js, npm, git, PowerShell),
+- startet jede gefundene `Starten.exe` einzeln für 20 Sekunden (ohne
+  sichtbares Fenster), zeichnet alle Ausgaben und Fehlermeldungen auf
+  und beendet das Programm wieder,
+- listet Projektordner ohne `Starten.exe` mit ihrem Inhalt auf.
+
+Der Bericht landet in `Diagnose.txt` im Werkzeug-Ordner. Er enthält nur
+Datei- und Ordnernamen sowie die Programmausgaben. Vor dem Weitergeben
+kurz durchsehen, ob darin etwas Vertrauliches steht.
+`Diagnose.bat -Sekunden 40` lässt langsame Programme länger laufen,
+`Diagnose.bat -OhneStarttest` startet gar nichts.
+
 ## Wie wird erkannt, wie ein Projekt startet?
 
 Die Unterordner des Grundordners werden bis zu 4 Ebenen tief
