@@ -62,8 +62,12 @@ param(
     [string[]]$Ausschliessen = @('Claude_Backup'),
     [string]$ExeName = 'Starten.exe',
     [switch]$Force,
-    [switch]$Vorschau
+    [switch]$Vorschau,
+    [switch]$PassThru
 )
+
+# Version der erzeugten Start-EXEs (bei Änderungen an Launcher.cs erhöhen).
+$StarterVersion = '6.0.0.0'
 
 $ErrorActionPreference = 'Stop'
 
@@ -175,12 +179,35 @@ function Find-PythonStart([string]$Dir) {
         }
     }
 
+    # Einstiegspunkt aus *.egg-info\entry_points.txt (pip install -e .)
+    $ep = Get-ChildItem -LiteralPath $Dir -Filter 'entry_points.txt' -File -Recurse -Depth 2 -ErrorAction SilentlyContinue |
+        Where-Object { $_.DirectoryName -like '*.egg-info' } | Select-Object -First 1
+    if ($ep) {
+        $e = [regex]::Match([IO.File]::ReadAllText($ep.FullName), '(?m)^\s*[\w.-]+\s*=\s*([\w.]+):(\w+)')
+        if ($e.Success) { return @{ Mode = 'entry'; Target = "$($e.Groups[1].Value):$($e.Groups[2].Value)" } }
+    }
+
     # main.py/app.py in einem Unterordner app\ oder src\ -> python -m app.main
     foreach ($sub in 'app', 'src') {
         foreach ($file in 'main', 'app', '__main__') {
             if (Test-Path -LiteralPath (Join-Path $Dir "$sub\$file.py") -PathType Leaf) {
                 if ($file -eq '__main__') { return @{ Mode = 'module'; Target = $sub } }
                 return @{ Mode = 'module'; Target = "$sub.$file" }
+            }
+        }
+    }
+
+    # Startbefehl "python -m paket" aus README.md/CLAUDE.md, sofern das Paket hier liegt
+    foreach ($doc in 'README.md', 'CLAUDE.md') {
+        $docPath = Join-Path $Dir $doc
+        if (-not (Test-Path -LiteralPath $docPath -PathType Leaf)) { continue }
+        foreach ($m in [regex]::Matches([IO.File]::ReadAllText($docPath), 'python\s+-m\s+([A-Za-z_][\w.]*)')) {
+            $mod = $m.Groups[1].Value
+            if ($mod -match '^(pip|venv|pytest|playwright|streamlit|http|unittest|build|ruff|mypy|black)\b') { continue }
+            $first = $mod.Split('.')[0]
+            if ((Test-Path -LiteralPath (Join-Path $Dir $first)) -or (Test-Path -LiteralPath (Join-Path $Dir "src\$first")) -or
+                (Test-Path -LiteralPath (Join-Path $Dir "$first.py"))) {
+                return @{ Mode = 'module'; Target = $mod }
             }
         }
     }
@@ -260,6 +287,7 @@ function New-StarterExe([string]$Dir, [hashtable]$Method, [string]$ExePath) {
     $source = $source.Replace('@@TARGET@@', (ConvertTo-CSharpLiteral $Method.Target))
     $source = $source.Replace('@@TITLE@@', (ConvertTo-CSharpLiteral (Split-Path -Leaf $Dir)))
     $source = $source.Replace('@@SETUP@@', $Method.Setup)
+    $source = $source.Replace('@@VERSION@@', $StarterVersion)
     $source = $source.Replace('@@ASKFILE@@', $(if ($Method.AskFile) { '1' } else { '0' }))
 
     $work = Join-Path ([IO.Path]::GetTempPath()) ('starter_' + [guid]::NewGuid().ToString('N'))
@@ -326,6 +354,7 @@ function Find-Projects([string]$Dir, [int]$Depth) {
         }
         if ($child.Name.StartsWith('.') -or $skipNames -contains $child.Name -or
             $child.FullName -eq $PSScriptRoot -or
+            (Test-Path -LiteralPath (Join-Path $child.FullName 'Launcher.cs')) -or
             ($child.Attributes -band [IO.FileAttributes]::ReparsePoint)) { continue }
 
         $method = $null
@@ -398,6 +427,7 @@ $results = foreach ($project in Find-Projects $Root 1) {
     $row
 }
 
+if ($PassThru) { return $results }
 if ($results) {
     $results | Format-Table -AutoSize -Wrap | Out-String -Width 300 | Write-Host
 } else {

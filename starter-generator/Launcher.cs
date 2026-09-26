@@ -13,6 +13,10 @@ using System.IO;
 using System.Security.Cryptography;
 using System.Text;
 
+// Kennung + Version, damit Diagnose.ps1 veraltete Start-EXEs erkennt.
+[assembly: System.Reflection.AssemblyProduct("Projekt-Starter")]
+[assembly: System.Reflection.AssemblyFileVersion("@@VERSION@@")]
+
 internal static class Launcher
 {
     // Von Starter-erstellen.ps1 ersetzt.
@@ -35,13 +39,20 @@ internal static class Launcher
 
         try { Console.Title = Title; } catch (IOException) { }
 
+        // Von Diagnose.ps1 gesetzt: nur die Python-Umgebung einrichten, nichts starten.
+        if (Environment.GetEnvironmentVariable("STARTER_NUR_EINRICHTEN") == "1")
+        {
+            return Setup == "none" || PreparePythonEnv(baseDir) ? 0 : 1;
+        }
+        bool diagnose = Environment.GetEnvironmentVariable("STARTER_DIAGNOSE") == "1";
+
         // Strg+C soll nur das gestartete Programm beenden, nicht den Starter,
         // damit eine Fehlermeldung danach noch lesbar bleibt.
         Console.CancelKeyPress += delegate(object sender, ConsoleCancelEventArgs e) { e.Cancel = true; };
 
         // Programme, die eine Datei erwarten (Datei auf die EXE ziehen):
         // ohne Datei einen Auswahldialog zeigen.
-        if (AskFile == "1" && args.Length == 0)
+        if (AskFile == "1" && args.Length == 0 && !diagnose)
         {
             string file = AskForFile();
             if (file == null) return 0;

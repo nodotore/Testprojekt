@@ -3,6 +3,9 @@
     Prüft jedes Projekt einzeln und schreibt einen Bericht (Diagnose.txt).
 
 .DESCRIPTION
+    Erstellt zuerst mit Starter-erstellen.ps1 alle Start-EXEs neu (damit
+    immer die aktuelle Version geprüft wird), richtet dann je Projekt die
+    Python-Umgebung ohne Zeitlimit ein und startet es erst danach.
     Sammelt Angaben zur Umgebung (Python, Node.js, PowerShell, ...),
     startet danach jede gefundene Starten.exe einzeln für einige Sekunden,
     zeichnet alle Ausgaben und Fehlermeldungen auf und beendet das
@@ -19,6 +22,9 @@
     Wie lange jedes Programm laufen darf, bevor es wieder beendet wird.
     Läuft es nach dieser Zeit noch, gilt es als erfolgreich gestartet.
 
+.PARAMETER EinrichtenMinuten
+    Höchstdauer für das Einrichten (Python-Pakete installieren) je Projekt.
+
 .PARAMETER OhneStarttest
     Nur Umgebung und Ordnerinhalte erfassen, keine Programme starten.
 #>
@@ -28,6 +34,7 @@ param(
     [string]$Root,
     [int]$Sekunden = 20,
     [switch]$OhneStarttest,
+    [int]$EinrichtenMinuten = 30,
     [string]$ExeName = 'Starten.exe'
 )
 
@@ -88,55 +95,106 @@ $blocked = @(Get-ChildItem -LiteralPath $PSScriptRoot -File | Where-Object { Tes
 Add "Gesperrte Dateien (aus dem Internet) im Werkzeug-Ordner: $($blocked.Count)"
 Add ''
 
+# Start-EXEs mit genau dieser Werkzeug-Version neu erstellen.
+$StarterVersion = ([regex]::Match([IO.File]::ReadAllText((Join-Path $PSScriptRoot 'Starter-erstellen.ps1')),
+    "StarterVersion = '([\d.]+)'")).Groups[1].Value
+Add "Werkzeug-Ordner: $PSScriptRoot (Version $StarterVersion)"
+Add ''
+Add '=== Start-EXEs neu erstellen ==='
+Write-Host 'Erstelle Start-EXEs neu ...' -ForegroundColor Cyan
+try {
+    $gen = & (Join-Path $PSScriptRoot 'Starter-erstellen.ps1') -Root $Root -ExeName $ExeName -PassThru
+    ($gen | Format-Table -AutoSize -Wrap | Out-String -Width 300) -split "`r?`n" |
+        Where-Object { $_.Trim() } | ForEach-Object { Add $_ }
+} catch {
+    Add "FEHLER beim Erstellen: $($_.Exception.Message)"
+}
+Add ''
+
 # Alle Starten.exe finden (bis 6 Ebenen tief, ohne node_modules/.venv).
 $skip = '\\(node_modules|\.venv|venv|\.git|__pycache__|site-packages)(\\|$)'
 $allDirs = @(Get-ChildItem -LiteralPath $Root -Directory -Recurse -Depth 5 -ErrorAction SilentlyContinue |
     Where-Object { $_.FullName -notmatch $skip -and $_.FullName -ne $PSScriptRoot })
 $exeDirs = @($allDirs | Where-Object { Test-Path -LiteralPath (Join-Path $_.FullName $ExeName) })
 
+# Startet die EXE unsichtbar, sammelt alle Ausgaben und beendet sie nach
+# $Seconds Sekunden (samt Unterprozessen), falls sie dann noch läuft.
+function Invoke-Captured([string]$Exe, [string]$WorkDir, [int]$Seconds, [hashtable]$Env) {
+    $psi = New-Object Diagnostics.ProcessStartInfo $Exe
+    $psi.WorkingDirectory = $WorkDir
+    $psi.UseShellExecute = $false
+    $psi.CreateNoWindow = $true
+    $psi.RedirectStandardInput = $true
+    $psi.RedirectStandardOutput = $true
+    $psi.RedirectStandardError = $true
+    foreach ($k in $Env.Keys) { $psi.EnvironmentVariables[$k] = $Env[$k] }
+    $p = [Diagnostics.Process]::Start($psi)
+    $p.StandardInput.Close()   # Eingabe leer: "Taste drücken" blockiert nicht
+    $outTask = $p.StandardOutput.ReadToEndAsync()
+    $errTask = $p.StandardError.ReadToEndAsync()
+    $finished = $p.WaitForExit($Seconds * 1000)
+    if (-not $finished) { & taskkill.exe /PID $p.Id /T /F 2>&1 | Out-Null }
+    [void]$outTask.Wait(5000)
+    [void]$errTask.Wait(5000)
+    $text = ''
+    if ($outTask.IsCompleted) { $text += $outTask.Result }
+    if ($errTask.IsCompleted) { $text += "`n" + $errTask.Result }
+    return @{
+        Finished = $finished
+        ExitCode = $(if ($finished) { $p.ExitCode } else { $null })
+        Output   = @($text -split "`r?`n" | Where-Object { $_.Trim() })
+    }
+}
+
+function Add-Output([string[]]$Output, [int]$Max = 40) {
+    if ($Output.Count -gt $Max) {
+        Add "   Ausgabe (letzte $Max von $($Output.Count) Zeilen):"
+        $Output = $Output[-$Max..-1]
+    } else {
+        Add '   Ausgabe:'
+    }
+    if ($Output.Count -eq 0) { Add '      (keine)' }
+    $Output | ForEach-Object { Add "      $_" }
+}
+
 $index = 0
 foreach ($dir in $exeDirs) {
     $index++
+    $exe = Join-Path $dir.FullName $ExeName
     Add "=== [$index/$($exeDirs.Count)] $(Get-Relative $dir.FullName) ==="
     Add '   Inhalt:'
     Get-Listing $dir.FullName | ForEach-Object { Add $_ }
-    if (Test-Blocked (Join-Path $dir.FullName $ExeName)) { Add "   ACHTUNG: $ExeName ist als 'aus dem Internet' gesperrt." }
+    if (Test-Blocked $exe) { Add "   ACHTUNG: $ExeName ist als 'aus dem Internet' gesperrt." }
+    $ver = (Get-Item -LiteralPath $exe).VersionInfo.FileVersion
+    if ($ver -ne $StarterVersion) {
+        Add "   ACHTUNG: veraltete $ExeName (Version '$ver', aktuell $StarterVersion) - Neuerstellung fehlgeschlagen?"
+    }
 
     if ($OhneStarttest) { Add ''; continue }
 
-    Write-Host "   Starte für $Sekunden Sekunden ..." -ForegroundColor Cyan
     try {
-        $psi = New-Object Diagnostics.ProcessStartInfo (Join-Path $dir.FullName $ExeName)
-        $psi.WorkingDirectory = $dir.FullName
-        $psi.UseShellExecute = $false
-        $psi.CreateNoWindow = $true
-        $psi.RedirectStandardInput = $true
-        $psi.RedirectStandardOutput = $true
-        $psi.RedirectStandardError = $true
-        $p = [Diagnostics.Process]::Start($psi)
-        $p.StandardInput.Close()   # Eingabe leer: "Taste drücken" blockiert nicht
-        $outTask = $p.StandardOutput.ReadToEndAsync()
-        $errTask = $p.StandardError.ReadToEndAsync()
-        if ($p.WaitForExit($Sekunden * 1000)) {
-            Add "   ERGEBNIS: nach kurzer Zeit beendet, Fehlercode $($p.ExitCode)"
-        } else {
-            Add "   ERGEBNIS: läuft nach $Sekunden s noch (Start vermutlich erfolgreich) - wird beendet"
-            & taskkill.exe /PID $p.Id /T /F 2>&1 | Out-Null
+        # 1. Python-Umgebung einrichten, ohne Zeitdruck (erster Start kann dauern).
+        Write-Host "   Richte ein (Python-Pakete o. ä., kann einige Minuten dauern) ..." -ForegroundColor Cyan
+        $r = Invoke-Captured $exe $dir.FullName (60 * $EinrichtenMinuten) @{ STARTER_NUR_EINRICHTEN = '1' }
+        if (-not $r.Finished) {
+            Add "   EINRICHTEN: nach $EinrichtenMinuten Minuten abgebrochen"
+            Add-Output $r.Output
+        } elseif ($r.ExitCode -ne 0) {
+            Add "   EINRICHTEN: FEHLGESCHLAGEN (Fehlercode $($r.ExitCode))"
+            Add-Output $r.Output
+        } elseif ($r.Output.Count) {
+            Add '   EINRICHTEN: ok'
         }
-        [void]$outTask.Wait(5000)
-        [void]$errTask.Wait(5000)
-        $text = ''
-        if ($outTask.IsCompleted) { $text += $outTask.Result }
-        if ($errTask.IsCompleted) { $text += "`n" + $errTask.Result }
-        $output = @($text -split "`r?`n" | Where-Object { $_.Trim() })
-        if ($output.Count -gt 40) {
-            Add "   Ausgabe (letzte 40 von $($output.Count) Zeilen):"
-            $output = $output[-40..-1]
+
+        # 2. Starttest
+        Write-Host "   Starte für $Sekunden Sekunden ..." -ForegroundColor Cyan
+        $r = Invoke-Captured $exe $dir.FullName $Sekunden @{ STARTER_DIAGNOSE = '1' }
+        if ($r.Finished) {
+            Add "   ERGEBNIS: nach kurzer Zeit beendet, Fehlercode $($r.ExitCode)"
         } else {
-            Add '   Ausgabe:'
+            Add "   ERGEBNIS: läuft nach $Sekunden s noch (Start erfolgreich) - wird beendet"
         }
-        if ($output.Count -eq 0) { Add '      (keine)' }
-        $output | ForEach-Object { Add "      $_" }
+        Add-Output $r.Output
     } catch {
         Add "   ERGEBNIS: konnte nicht gestartet werden: $($_.Exception.Message)"
     }

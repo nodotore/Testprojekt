@@ -49,9 +49,13 @@ Der erste Start eines Projekts dauert dadurch einige Minuten.
 ## Wenn ein Projekt nicht startet: `Diagnose.bat`
 
 `Diagnose.bat` doppelklicken. Das Skript
+- erstellt zuerst alle `Starten.exe` neu (also immer mit der aktuellen
+  Werkzeug-Version),
+- richtet je Projekt die Python-Umgebung ein, ohne Zeitlimit (höchstens
+  30 Minuten je Projekt, `-EinrichtenMinuten`),
 - erfasst die Umgebung (Python, Node.js, npm, git, PowerShell),
-- startet jede gefundene `Starten.exe` einzeln für 20 Sekunden (ohne
-  sichtbares Fenster), zeichnet alle Ausgaben und Fehlermeldungen auf
+- startet danach jede `Starten.exe` einzeln für 20 Sekunden (ohne
+  sichtbares Fenster und ohne Dateiauswahl-Dialog), zeichnet alle Ausgaben und Fehlermeldungen auf
   und beendet das Programm wieder,
 - listet Projektordner ohne `Starten.exe` mit ihrem Inhalt auf.
 
