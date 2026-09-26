@@ -5,10 +5,57 @@ Vanilla-JavaScript. Dient als Beispiel für eine responsive, barrierefreie
 Website mit Navigation samt Dropdown-Menü, Hamburger-Menü für mobile
 Ansichten und einem clientseitig validierten Kontaktformular.
 
+## Alle Projekte auf einen Schlag starten (Windows)
+
+Dieser Ordner enthält mehrere unabhängige Projekte: die Website samt
+zwei PWAs (CD Musikfinder, Use-Case-Interview-App) und den
+Investment-Analysator (`investment-analyzer/`, eigenes Python-Programm).
+Statt jedes Projekt einzeln zu starten:
+
+```powershell
+.\Alle-Projekte-starten.ps1
+```
+
+oder im Explorer `Alle-Projekte-starten.bat` doppelklicken. Das Skript
+startet einen lokalen Webserver für Website + PWAs, öffnet die
+Startseite im Browser (CD Musikfinder und Use-Case-App sind darüber per
+Navigation erreichbar) und startet danach den Investment-Analysator in
+einem eigenen Fenster. Bereits laufende Server werden erkannt und nicht
+doppelt gestartet.
+
+Zum Beenden: `Alle-Projekte-stoppen.ps1` bzw. `Alle-Projekte-stoppen.bat`,
+oder die geöffneten Fenster einfach schließen.
+
+**Automatischer Start bei jeder Windows-Anmeldung (optional):**
+`scripts\windows\Autostart-einrichten.ps1` einmalig ausführen (legt eine
+Verknüpfung im persönlichen Autostart-Ordner an, keine Adminrechte
+nötig). Rückgängig: `scripts\windows\Autostart-entfernen.ps1`.
+
+## Projekte auf einen USB-Stick mitnehmen
+
+Jedes Projekt in diesem Repo ist eigenständig kopierbar (keine
+Verweise auf Pfade außerhalb seines eigenen Ordners):
+
+- **Website + PWAs**: reine Dateien (HTML/CSS/JS) - den ganzen
+  Repo-Ordner (mindestens `index.html`, `leistungen.html`,
+  `kontakt.html`, `cd-musikfinder.html`, `use-case-app.html`, `css/`,
+  `js/`, `icons/`, `sw.js`, `manifest*.webmanifest`) auf den Stick
+  kopieren und dort `Alle-Projekte-starten.bat` ausführen oder die
+  Dateien direkt öffnen. Alle Daten (CD-Sammlung, Interview-Verlauf)
+  liegen ausschließlich im Browser des jeweiligen Rechners (IndexedDB/
+  localStorage), nicht in den Dateien selbst.
+- **Investment-Analysator**: nur den Ordner `investment-analyzer/`
+  kopieren genügt - Details (inkl. wie die eigenen Daten mitreisen)
+  siehe `investment-analyzer/README.md` → „Portabler Einsatz".
+  Voraussetzung auf dem Zielrechner: Python 3.12+.
+
 ## Dateistruktur
 
 ```
 Testprojekt/
+├── Alle-Projekte-starten.ps1/.bat   Startet alle Projekte auf einmal (Windows)
+├── Alle-Projekte-stoppen.ps1/.bat   Beendet sie wieder
+├── scripts/windows/                  Optionale Autostart-Einrichtung
 ├── index.html          Startseite (Hero-Bereich, Vorstellung, Call-to-Action)
 ├── leistungen.html      Leistungsseite mit drei Karten (Webdesign, Beratung, Support)
 ├── kontakt.html          Kontaktseite mit validiertem Formular (Demo, kein echter Versand)
@@ -16,6 +63,7 @@ Testprojekt/
 │   └── style.css         Gemeinsames Stylesheet für alle Seiten (responsive)
 ├── js/
 │   └── script.js          Hamburger-Menü, Dropdown-Menü, Formularvalidierung
+├── investment-analyzer/  Eigenständiges Python/Streamlit-Programm (siehe eigenes README)
 └── README.md
 ```
 

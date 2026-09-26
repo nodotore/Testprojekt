@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+- **Bugfix:** Start schlug auf jeder frischen Maschine fehl
+  (`sqlite3.OperationalError: unable to open database file` bei
+  `alembic upgrade head`, da `alembic/env.py` den Datenordner nicht
+  anlegte, bevor die DB-Verbindung geöffnet wurde). Siehe `PROGRESS.md`
+  für Details. Zusätzlich zwei `mypy`-Fehler in `fundamentals/series.py`
+  behoben.
+- Portabler Datenordner ergänzt: `.env.example` mit `IA_DATA_DIR`, damit
+  Datenbank/Profil/Logs bei Bedarf im Projektordner selbst liegen
+  (praktisch für den Betrieb von einem USB-Stick) statt unter
+  `%USERPROFILE%`.
 - Milestone 5 (Nachrichtenanalyse) umgesetzt: Connector-Grundgerüst um
   `get_text()` erweitert (Rohtext statt JSON, für Quellen ohne
   JSON-API), GDELT-DOC-2.0-Connector (`connectors/gdelt.py`,

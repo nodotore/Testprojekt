@@ -31,6 +31,10 @@ target_metadata = Base.metadata
 # so bleibt eine einzige Quelle der Wahrheit für die Verbindung
 # (siehe investment_analyzer.config.settings.AppSettings).
 _settings = get_settings()
+# Muss vor dem ersten Verbindungsaufbau laufen: bei einem frischen Start
+# (frische venv, frische Maschine) existiert data_dir/InvestmentAnalyzer
+# noch nicht, sonst schlägt SQLite mit "unable to open database file" fehl.
+_settings.ensure_data_dirs()
 config.set_main_option("sqlalchemy.url", _settings.resolved_database_url)
 
 

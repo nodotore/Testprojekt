@@ -1,6 +1,18 @@
 # Changelog
 
 ## Unreleased
+- Neue Windows-Startroutine `Alle-Projekte-starten.ps1`/`.bat` (+ Gegenstück
+  `Alle-Projekte-stoppen.ps1`/`.bat`): startet Website, PWAs und den
+  Investment-Analysator mit einem Aufruf; erkennt bereits laufende
+  Server über den belegten Port. Optionaler Windows-Autostart über
+  `scripts/windows/Autostart-einrichten.ps1` (Verknüpfung im
+  persönlichen Autostart-Ordner, kein Admin nötig).
+- Dokumentiert, wie einzelne Projekte auf einen USB-Stick mitgenommen
+  und auf einem anderen Rechner betrieben werden können (README.md,
+  investment-analyzer/README.md → „Portabler Einsatz").
+- Bugfix: `js/cd-musikfinder.js` enthielt zwei eingebettete NUL-Bytes
+  (`"\x00ohne-regal"` statt `"ohne-regal"`), vermutlich ein
+  Encoding-Artefakt aus einem früheren Bearbeitungsschritt — entfernt.
 - UC-001 „CD Musikfinder" implementiert: neue PWA (`cd-musikfinder.html`,
   `js/cd-musikfinder.js`, `css/cd-musikfinder.css`,
   `manifest-cd-musikfinder.webmanifest`) zum Fotografieren von

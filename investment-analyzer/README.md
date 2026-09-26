@@ -43,6 +43,28 @@ Für die Entwicklungsabhängigkeiten (Tests, Linter):
 .\start.ps1 -Dev
 ```
 
+## Portabler Einsatz (z. B. USB-Stick)
+
+Dieser Ordner (`investment-analyzer/`) ist eigenständig kopierbar - er
+enthält keine Verweise auf Dateien außerhalb von sich selbst. Zum
+Mitnehmen auf einen USB-Stick und Betrieb auf einem anderen Rechner:
+
+1. Den Ordner `investment-analyzer` auf den Stick kopieren (der Ordner
+   `.venv`, falls vorhanden, muss nicht mitkopiert werden - er wird auf
+   dem Zielrechner beim ersten Start automatisch neu angelegt und ist
+   ohnehin nicht portabel, da er absolute Pfade enthält).
+2. Auf dem Zielrechner muss Python 3.12+ installiert sein (siehe
+   „Voraussetzungen" oben).
+3. Standardmäßig legt das Programm seine Datenbank/Profil/Logs unter
+   `%USERPROFILE%\InvestmentAnalyzer` an (siehe `MILESTONE_0.md`, Punkt
+   12) - das bleibt dann auf dem ersten Rechner zurück. Damit die
+   eigenen Daten mit auf den Stick wandern, `.env.example` nach `.env`
+   kopieren und `IA_DATA_DIR=./data` aktivieren (Zeile einkommentieren).
+   Datenbank, Profil und Logs liegen dann in `investment-analyzer\data\`
+   und reisen beim Kopieren des Ordners automatisch mit.
+4. `start.bat` auf dem Zielrechner ausführen - der Rest (venv anlegen,
+   Abhängigkeiten installieren, Datenbank migrieren) läuft automatisch.
+
 ## Tests ausführen
 
 ```powershell

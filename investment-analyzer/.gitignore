@@ -24,6 +24,8 @@ secrets.enc.json
 profile.json
 logs/
 .env
+# Portabler Modus (IA_DATA_DIR=./data, siehe .env.example)
+/data/
 
 # Editor/OS
 .DS_Store

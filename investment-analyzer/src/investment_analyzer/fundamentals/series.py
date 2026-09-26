@@ -54,6 +54,9 @@ def get_series(
     # daher gewinnt beim Überschreiben automatisch der zuletzt bekannte Wert.
     latest_by_period: dict[date, float] = {}
     for period_end, value in rows:
+        # SQL-Filter oben schließt NULL für beide Spalten bereits aus.
+        assert period_end is not None
+        assert value is not None
         latest_by_period[period_end] = value
 
     return sorted(latest_by_period.items())

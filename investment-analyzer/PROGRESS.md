@@ -480,3 +480,42 @@ Alembic-Migration `news_items`; zugehörige Tests unter
 
 **Nächster Schritt:** Milestone 6 (Portfolio und Exporte) gemäß
 `PLAN.md` — siehe `NEXT_STEPS.md`.
+
+## Bugfix — Start schlug auf frischen Maschinen fehl (2026-09-26)
+
+**Status: behoben.**
+
+Nutzer meldete, dass sich der Investment-Analysator (und andere Projekte
+im Repo) nicht ordentlich starten ließen. Reproduziert mit frischer venv
+auf einer sauberen Maschine (kein vorhandenes `%USERPROFILE%\
+InvestmentAnalyzer`-Verzeichnis):
+
+- **Ursache:** `alembic/env.py` rief `_settings.resolved_database_url`
+  auf, ohne vorher `_settings.ensure_data_dirs()` aufzurufen. Beim
+  allerersten Start (frische venv, frische Maschine) existiert
+  `data_dir` noch nicht → SQLite bricht mit
+  `sqlite3.OperationalError: unable to open database file` ab →
+  `start.ps1`/`start.bat` melden „Datenbankmigration ist fehlgeschlagen"
+  und die Anwendung startet nie. `ui/bootstrap.py` ruft
+  `ensure_data_dirs()` zwar korrekt auf, aber Alembic läuft in
+  `start.ps1` VOR dem UI-Start.
+- **Fix:** `_settings.ensure_data_dirs()` in `alembic/env.py` direkt nach
+  dem Laden der Settings ergänzt (vor dem ersten Verbindungsaufbau).
+  Verifiziert: `rm -rf ~/InvestmentAnalyzer && alembic upgrade head`
+  läuft jetzt durch, `streamlit run ui/app.py` liefert HTTP 200.
+- Nebenbei behoben: zwei `mypy`-Fehler in `fundamentals/series.py`
+  (fehlende Nicht-`None`-Absicherung trotz bereits SQL-seitig
+  garantierter Nicht-`None`-Werte).
+- **Neu (Portabilität, siehe Anfrage „auf USB-Stick mitnehmen"):**
+  `.env.example` mit `IA_DATA_DIR` ergänzt — Datenbank/Profil/Logs
+  können damit wahlweise im Projektordner selbst liegen (`./data`)
+  statt unter `%USERPROFILE%`, ohne den in `MILESTONE_0.md` Punkt 12
+  festgehaltenen Standardwert zu ändern. Verifiziert: `IA_DATA_DIR=./data`
+  in `.env` führt zu `resolved_database_url` unterhalb des
+  Projektordners.
+- Alle 301 Tests weiterhin grün, `ruff`/`mypy` fehlerfrei.
+
+**Geänderte Dateien:** `alembic/env.py`, `src/investment_analyzer/
+fundamentals/series.py`, neu: `.env.example`, `.gitignore` ergänzt.
+
+**Nächster Schritt:** unverändert Milestone 6 (siehe oben).
