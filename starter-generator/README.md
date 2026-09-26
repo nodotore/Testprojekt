@@ -87,9 +87,20 @@ Pro Ordner wird in dieser Reihenfolge gesucht:
      `start.py`, `gui.py`, `<Ordnername>.py` (Streamlit wird erkannt)
    - ein Paket mit `__main__.py` (auch unter `src\`) → `python -m paket`
    - ein Einstiegspunkt aus `pyproject.toml` (`[project.scripts]`)
+   - ein einziges Paket (auch unter `src\`) mit `main.py`/`app.py`/`gui.py`/`cli.py`
+     → `python -m paket.main`
    - `app\main.py` bzw. `src\main.py` → `python -m app.main`
    - genau eine `.py`-Datei (ohne `test_…`, `scratch…`, `setup.py`)
 5. `index.html` (oder genau eine `.html`-Datei) → im Standardbrowser öffnen
+6. genau eine fertige `.exe` in `Programm\` oder `dist\` → diese starten
+
+Erwartet ein Batch-/PowerShell-Skript eine Datei (`%1` bzw. `$args[0]`,
+z. B. „Video auf diese Datei ziehen“), fragt die `Starten.exe` beim
+Doppelklick mit einem Dateiauswahl-Dialog danach. Dateien können auch
+direkt auf die `Starten.exe` gezogen werden; sie werden weitergereicht.
+
+Wird für einen Ordner keine Startart mehr erkannt, wird eine früher
+erzeugte `Starten.exe` dort entfernt.
 
 Liegt eine `.ico`-Datei im Projektordner, bekommt die EXE dieses Symbol.
 

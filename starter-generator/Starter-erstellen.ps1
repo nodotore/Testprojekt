@@ -159,6 +159,22 @@ function Find-PythonStart([string]$Dir) {
         }
     }
 
+    # Einziges Paket (Ordner mit __init__.py, auch unter src\) mit main.py/app.py/gui.py
+    # -> python -m paket.main
+    foreach ($base in @($Dir, (Join-Path $Dir 'src'))) {
+        if (-not (Test-Path -LiteralPath $base -PathType Container)) { continue }
+        $pkgs = @(Get-ChildItem -LiteralPath $base -Directory | Where-Object {
+            $_.Name -notmatch '^(tests?|docs?|build|dist)$' -and
+            (Test-Path -LiteralPath (Join-Path $_.FullName '__init__.py')) })
+        if ($pkgs.Count -eq 1) {
+            foreach ($file in 'main', 'app', 'gui', 'cli') {
+                if (Test-Path -LiteralPath (Join-Path $pkgs[0].FullName "$file.py")) {
+                    return @{ Mode = 'module'; Target = "$($pkgs[0].Name).$file" }
+                }
+            }
+        }
+    }
+
     # main.py/app.py in einem Unterordner app\ oder src\ -> python -m app.main
     foreach ($sub in 'app', 'src') {
         foreach ($file in 'main', 'app', '__main__') {
@@ -203,6 +219,17 @@ function Find-StartMethod([string]$Dir) {
     if (-not $f) { $f = Get-Single $Dir @('.html', '.htm') }
     if ($f) { return @{ Mode = 'open'; Target = $f } }
 
+    # Fertiges Programm in Programm\ oder dist\ (z. B. mit PyInstaller gebaut)
+    foreach ($sub in 'Programm', 'dist') {
+        $subDir = Join-Path $Dir $sub
+        if (-not (Test-Path -LiteralPath $subDir -PathType Container)) { continue }
+        $exes = @(Get-ChildItem -LiteralPath $subDir -Filter '*.exe' -File -Recurse -Depth 1 -ErrorAction SilentlyContinue |
+            Where-Object { $_.Name -ne $ExeName -and $_.Name -notmatch '^(unins|setup|install)' })
+        if ($exes.Count -eq 1) {
+            return @{ Mode = 'open'; Target = $exes[0].FullName.Substring($Dir.TrimEnd('\').Length + 1) }
+        }
+    }
+
     return $null
 }
 
@@ -216,8 +243,9 @@ function Get-SetupLevel([string]$Dir, [hashtable]$Method) {
     if ($Method.Mode -in 'ps1', 'bat') {
         $code = Get-ActiveCode (Join-Path $Dir $Method.Target)
         if ($code -notmatch 'venv') { return 'none' }
-        # Skript legt die Umgebung selbst an -> nur eine defekte entfernen.
-        if ($code -match '-m\s+venv|virtualenv|\buv\s+(venv|sync)') { return 'repair' }
+        # Mit requirements.txt/pyproject.toml: Umgebung samt Paketen sicherstellen
+        # (manche Skripte legen die .venv an, installieren aber nichts).
+        # Sonst nur eine defekte .venv entfernen, damit das Skript sie neu anlegt.
         if ($isPython) { return 'full' } else { return 'repair' }
     }
     return 'none'
@@ -232,6 +260,7 @@ function New-StarterExe([string]$Dir, [hashtable]$Method, [string]$ExePath) {
     $source = $source.Replace('@@TARGET@@', (ConvertTo-CSharpLiteral $Method.Target))
     $source = $source.Replace('@@TITLE@@', (ConvertTo-CSharpLiteral (Split-Path -Leaf $Dir)))
     $source = $source.Replace('@@SETUP@@', $Method.Setup)
+    $source = $source.Replace('@@ASKFILE@@', $(if ($Method.AskFile) { '1' } else { '0' }))
 
     $work = Join-Path ([IO.Path]::GetTempPath()) ('starter_' + [guid]::NewGuid().ToString('N'))
     New-Item -ItemType Directory -Path $work | Out-Null
@@ -319,7 +348,7 @@ $modeText = @{
     streamlit = 'Streamlit'
     module    = 'Python-Modul'
     entry     = 'Python-Einstieg'
-    open      = 'im Browser öffnen'
+    open      = 'öffnen'
 }
 
 Write-Host "Grundordner: $Root"
@@ -327,12 +356,19 @@ Write-Host ''
 
 $results = foreach ($project in Find-Projects $Root 1) {
     $method = $project.Method
-    if ($method) { $method.Setup = Get-SetupLevel $project.Dir $method }
+    if ($method) {
+        $method.Setup = Get-SetupLevel $project.Dir $method
+        # Skript erwartet eine Datei als Argument (Drag & Drop auf die .bat)?
+        if ($method.Mode -in 'bat', 'ps1') {
+            $code = Get-ActiveCode (Join-Path $project.Dir $method.Target)
+            $method.AskFile = $code -match '%~?1|\$args\[0\]'
+        }
+    }
     $exePath = Join-Path $project.Dir $ExeName
     $row = [pscustomobject]@{
         Projekt  = $project.Dir.Substring($Root.TrimEnd('\').Length).TrimStart('\', '/')
         Startart = if ($method) {
-            "$($modeText[$method.Mode]): $($method.Target)" + $(switch ($method.Setup) {
+            "$($modeText[$method.Mode]): $($method.Target)" + $(if ($method.AskFile) { ' (fragt nach Datei)' }) + $(switch ($method.Setup) {
                 'full' { ' (+ .venv einrichten)' } 'repair' { ' (+ defekte .venv reparieren)' } default { '' } })
         } else { '-' }
         Ergebnis = ''
@@ -340,6 +376,11 @@ $results = foreach ($project in Find-Projects $Root 1) {
 
     if (-not $method) {
         $row.Ergebnis = 'übersprungen (keine Startdatei erkannt)'
+        # Eine früher erzeugte EXE würde sonst mit veralteter Startart weiterlaufen.
+        if ((Test-Path -LiteralPath $exePath) -and (Get-Item -LiteralPath $exePath).Length -lt 64KB) {
+            if (-not $Vorschau) { Remove-Item -LiteralPath $exePath -Force }
+            $row.Ergebnis += ', alte EXE entfernt'
+        }
     } elseif ($Vorschau) {
         $row.Ergebnis = if (Test-Path -LiteralPath $exePath) { 'EXE vorhanden' } else { 'würde erstellt' }
     } elseif ((Test-Path -LiteralPath $exePath) -and -not $Force -and (Get-Item -LiteralPath $exePath).Length -ge 64KB) {

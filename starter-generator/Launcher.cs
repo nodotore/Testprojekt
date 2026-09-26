@@ -20,7 +20,9 @@ internal static class Launcher
     private const string Target = "@@TARGET@@";   // Datei, npm-Skript, Python-Modul bzw. "modul:funktion"
     private const string Title = "@@TITLE@@";     // Anzeigename des Projekts
     private const string Setup = "@@SETUP@@";     // Python-Umgebung: none | repair | full
+    private const string AskFile = "@@ASKFILE@@"; // "1": ohne Argument nach einer Datei fragen
 
+    [STAThread]
     private static int Main(string[] args)
     {
         string baseDir = AppDomain.CurrentDomain.BaseDirectory.TrimEnd('\\', '/');
@@ -37,6 +39,15 @@ internal static class Launcher
         // damit eine Fehlermeldung danach noch lesbar bleibt.
         Console.CancelKeyPress += delegate(object sender, ConsoleCancelEventArgs e) { e.Cancel = true; };
 
+        // Programme, die eine Datei erwarten (Datei auf die EXE ziehen):
+        // ohne Datei einen Auswahldialog zeigen.
+        if (AskFile == "1" && args.Length == 0)
+        {
+            string file = AskForFile();
+            if (file == null) return 0;
+            args = new string[] { file };
+        }
+
         if (Setup != "none" && !PreparePythonEnv(baseDir))
         {
             return Fail(1);
@@ -44,7 +55,7 @@ internal static class Launcher
 
         string fileName;
         string arguments;
-        if (!BuildCommand(baseDir, out fileName, out arguments))
+        if (!BuildCommand(baseDir, args, out fileName, out arguments))
         {
             return Fail(1);
         }
@@ -87,8 +98,12 @@ internal static class Launcher
         return 0;
     }
 
-    private static bool BuildCommand(string baseDir, out string fileName, out string arguments)
+    private static bool BuildCommand(string baseDir, string[] args, out string fileName, out string arguments)
     {
+        // Auf die EXE gezogene Dateien werden an das Programm weitergereicht.
+        string extra = "";
+        foreach (string a in args) extra += " " + Quote(a);
+
         string target = Path.Combine(baseDir, Target);
         fileName = null;
         arguments = null;
@@ -97,13 +112,13 @@ internal static class Launcher
         {
             case "ps1":
                 fileName = "powershell.exe";
-                arguments = "-NoProfile -ExecutionPolicy Bypass -File " + Quote(target);
+                arguments = "-NoProfile -ExecutionPolicy Bypass -File " + Quote(target) + extra;
                 return true;
 
             case "bat":
                 fileName = "cmd.exe";
                 // Aeussere Anfuehrungszeichen werden von cmd /c entfernt.
-                arguments = "/c \"" + Quote(target) + "\"";
+                arguments = "/c \"" + Quote(target) + extra + "\"";
                 return true;
 
             case "npm":
@@ -131,17 +146,19 @@ internal static class Launcher
                 fileName = python;
                 if (Mode == "module")
                 {
-                    arguments = "-m " + Target;
+                    arguments = "-m " + Target + extra;
                 }
                 else if (Mode == "entry")
                 {
                     string[] parts = Target.Split(':');
                     arguments = "-c \"import sys; from " + parts[0] + " import " + parts[1]
-                        + "; sys.exit(" + parts[1] + "())\"";
+                        + "; sys.exit(" + parts[1] + "())\"" + extra;
                 }
                 else
                 {
-                    arguments = (Mode == "streamlit" ? "-m streamlit run " : "") + Quote(target);
+                    arguments = Mode == "streamlit"
+                        ? "-m streamlit run " + Quote(target) + (extra.Length > 0 ? " --" + extra : "")
+                        : Quote(target) + extra;
                 }
                 return true;
         }
@@ -345,6 +362,17 @@ internal static class Launcher
             System.Windows.Forms.MessageBox.Show(
                 "Konnte \"" + target + "\" nicht oeffnen:\n" + ex.Message, Title);
             return 1;
+        }
+    }
+
+    private static string AskForFile()
+    {
+        using (var dialog = new System.Windows.Forms.OpenFileDialog())
+        {
+            dialog.Title = Title + " - Datei auswaehlen";
+            dialog.Filter = "Alle Dateien (*.*)|*.*";
+            if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK) return null;
+            return dialog.FileName;
         }
     }
 
