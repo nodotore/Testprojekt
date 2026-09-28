@@ -34,10 +34,12 @@ zehn Auftrag-§10-Oberflächenseiten sind gebaut („Start/Datenstatus",
 „Marktscreener", „Kandidaten-Rangliste", „Unternehmensdetail mit
 Quellenleiste", „Peer-Vergleich", „DCF- und Szenarioanalyse",
 „Nachrichten/Ereignisse", „Watchlist/Portfolio", „Backtest",
-„Einstellungen, Quellen und Prüfprotokoll", siehe ADR-34). Nächster
-nicht blockierender Schritt: Umstieg von `st.sidebar.radio` auf
-`st.navigation()`/`st.Page()` (siehe `NEXT_STEPS.md`). Details/offene
-Punkte: `PROGRESS.md`/`TODO.md`/`NEXT_STEPS.md`.
+„Einstellungen, Quellen und Prüfprotokoll", siehe ADR-34), navigiert seit
+ADR-35 über natives `st.navigation()`/`st.Page()` statt der ursprünglichen
+`st.sidebar.radio`-Übergangslösung (dateibasierte Seiten unter
+`ui/pages/`, Router-Logik in `app.py`, gemeinsamer Kontext in
+`ui/context.py`, Ersteinrichtung/Datenstatus in `ui/start.py`). Details/
+offene Punkte: `PROGRESS.md`/`TODO.md`/`NEXT_STEPS.md`.
 
 ## Nicht verhandelbare Leitplanken
 

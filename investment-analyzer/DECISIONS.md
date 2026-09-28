@@ -1515,6 +1515,92 @@ protokolliert, keine unerwarteten Konsolenfehler.
 nicht blockierender Schritt: Migration von `st.sidebar.radio` auf
 `st.navigation()`/`st.Page()` (siehe `NEXT_STEPS.md`).
 
+## ADR-35: Umstieg von `st.sidebar.radio` auf `st.navigation()`/`st.Page()`
+
+**Kontext:** Seit ADR-26 als „bei Gelegenheit"-Punkt vorgemerkt, mit ADR-34
+(alle zehn Auftrag-§10-Seiten gebaut) endgültig überfällig — die
+provisorische `st.sidebar.radio(...)`-Navigation aus ADR-12 sollte durch
+Streamlits natives Multipage-Mittel ersetzt werden, ohne den bestehenden,
+vollständig grünen Teststand (513 Tests) zu gefährden.
+
+**Entscheidung — dateibasierte Seiten statt Funktionsobjekte, wegen
+`AppTest.switch_page()`:** `st.Page()` akzeptiert sowohl eine Python-Datei
+als auch ein aufrufbares Funktionsobjekt. Geprüft und verworfen wurde die
+Funktionsobjekt-Variante: `streamlit.testing.v1.AppTest.switch_page()` —
+das einzige dokumentierte Mittel, um in `AppTest` zwischen `st.navigation()`-
+Seiten zu wechseln — verlangt zwingend einen Dateipfad relativ zum
+Hauptskript (`full_page_path.is_file()`-Prüfung im Quellcode) und wirft
+sonst einen `ValueError`. Ohne dateibasierte Seiten wären alle 20
+`at.sidebar.radio[0].set_value(...)`-Aufrufe in `tests/ui/test_app_smoke.py`
+nicht auf ein Äquivalent umstellbar gewesen. Entschieden: neues Verzeichnis
+`ui/pages/` mit zehn dünnen Seiten-Dateien (`start.py`,
+`marktscreener.py`, `kandidaten_rangliste.py`, `unternehmensdetail.py`,
+`peer_vergleich.py`, `dcf_szenarioanalyse.py`, `nachrichten_ereignisse.py`,
+`watchlist_portfolio.py`, `backtest.py`, `einstellungen.py`) — jede ruft
+ausschließlich `ui/context.py::get_context()` und die zugehörige
+`render_*`-Funktion auf, erzeugt selbst keine neuen Werte.
+
+**Entscheidung — `render_ersteinrichtungsdialog`/`render_datenstatus` aus
+`app.py` in ein neues `ui/start.py` ausgelagert:** `app.py` bleibt nach dem
+Umstieg reiner Router (`main()` prüft Migration + Profil, zeigt bis dahin
+den Ersteinrichtungsdialog, bindet danach `st.navigation()` ein). Streamlit
+führt das Hauptskript bei jedem Rerun erneut aus, bevor es die gewählte
+Seite via `navigation.run()` rendert — eine Seiten-Datei dürfte `app.py`
+daher niemals importieren, weil dessen Modul-Ebenen-Aufruf `main()` sonst
+ein zweites Mal in demselben Skriptlauf ausgeführt würde. Da
+`render_datenstatus()` (Start-Seite) und `render_ersteinrichtungsdialog()`
+(Router-Gate UND die „Profil bearbeiten"-Erweiterung auf der Start-Seite)
+aber von beiden Seiten benötigt werden, war eine Auslagerung in ein von
+`app.py` UND `ui/pages/start.py` importierbares Modul zwingend — dasselbe
+bereits mit `ui/components.py::render_disclaimer()` verwendete Muster
+(dessen Docstring genau diesen Zirkelimport-Grund nennt), hier auf die
+Start-Seite ausgeweitet.
+
+**Entscheidung — neues `ui/context.py` statt `get_context()` weiter in
+`app.py`:** Aus demselben Grund (keine Seiten-Datei darf `app.py`
+importieren) wurde der `@st.cache_resource`-gecachte `get_context()`-
+Wrapper um `bootstrap()` in ein eigenes Modul verschoben — bewusst NICHT
+in `ui/bootstrap.py` selbst, dessen Docstring explizit festhält, frei von
+Streamlit-Importen zu bleiben, damit es ohne laufende Streamlit-Runtime
+testbar bleibt. `ui/context.py` ergänzt zusätzlich `require_profile(ctx)`:
+lädt das Profil und prüft per `assert`, dass es vorhanden und akzeptiert
+ist — an dieser Stelle (innerhalb einer `st.navigation()`-Seite, die der
+Router erst nach demselben Gate erreichen lässt) ist ein fehlendes Profil
+ein Programmierfehler, kein Nutzerzustand zum freundlichen Abfangen.
+
+**Test-Umstellung:** Alle 20 `at.sidebar.radio[0].set_value("<Seite>").
+run(timeout=30)`-Aufrufe in `tests/ui/test_app_smoke.py` ersetzt durch
+`at.switch_page("pages/<datei>.py").run(timeout=30)` — sonst unverändert,
+da `AppTest` nach dem Seitenwechsel exakt dieselben Element-Bäume liefert
+(Widgets, Tabellen, Metriken der jeweiligen Seite). Eine Testfunktion
+(`test_app_marktscreener_seite_ist_ueber_sidebar_erreichbar`) entsprechend
+umbenannt.
+
+**Tests:** Keine neuen Tests nötig (reine Infrastruktur-Umstellung ohne
+neues fachliches Verhalten) — alle 513 bestehenden Tests bleiben grün nach
+Anpassung der 20 Navigations-Aufrufe. `ruff`/`mypy` fehlerfrei. Zusätzlich
+mit echtem Playwright-Browser gegen einen laufenden Streamlit-Prozess mit
+allen sechs vorhandenen Seed-Datensätzen gleichzeitig (5 Unternehmen, 4
+Quellen, 155 Datenpunkte) verifiziert: das native `st.navigation()`-
+Seitenmenü in der Sidebar (statt der bisherigen Radio-Buttons) markiert die
+aktive Seite korrekt, alle zehn Seiten rendern ohne Traceback und ohne
+Konsolenfehler; ein vollständiger Backtest-Lauf über 37 monatliche
+Rebalancing-Perioden lieferte identische Kennzahlen wie vor der Migration
+(Sharpe 3.11, NAV-Verlauf); der zustandsabhängige Master-Passwort-
+Einrichtungsfluss auf der Einstellungen-Seite (ADR-34) bleibt über einen
+Seitenwechsel hinweg korrekt erhalten — `ctx.secret_store` ist weiterhin
+gesetzt, nachdem zwischenzeitlich zur Backtest-Seite und zurück navigiert
+wurde, was bestätigt, dass der über `st.cache_resource` gecachte
+`AppContext` unverändert über den gesamten Serverprozess hinweg geteilt
+wird, unabhängig vom neuen Seiten-Datei-Mechanismus.
+
+**Bewusst NICHT geändert:** Icons für die `st.Page(...)`-Einträge (rein
+kosmetisch, nicht angefragt); die zuletzt hinzugekommene, mit „Einstellungen,
+Quellen und Prüfprot…" von Streamlits eigenem Navigationswidget
+abgeschnittene Sidebar-Beschriftung — Klick-Fläche und Funktion bleiben
+korrekt, nur die sichtbare Beschriftung ist gekürzt (Streamlit-natives
+Verhalten bei langen Seitentiteln, kein Programmfehler).
+
 ## Noch zu treffende Entscheidungen
 
 Keine blockierenden Entscheidungen mehr offen für Milestone 1–7 (alle

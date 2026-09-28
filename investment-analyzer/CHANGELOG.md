@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+- Navigation von `st.sidebar.radio` auf natives `st.navigation()`/
+  `st.Page()` umgestellt (siehe ADR-35) — letzter offen dokumentierter,
+  nicht blockierender UI-Ausbauschritt. Zehn dünne Seiten-Dateien unter
+  neuem `ui/pages/`, `render_ersteinrichtungsdialog`/`render_datenstatus`
+  nach neues `ui/start.py` ausgelagert (Zirkelimport-Vermeidung, da
+  Streamlit `app.py` bei jedem Rerun neu ausführt), `app.py` jetzt
+  reiner Router, neues `ui/context.py` für den gemeinsam gecachten
+  `AppContext`. Keine neuen Tests nötig — alle 513 bestehenden Tests
+  bleiben grün nach Anpassung der Navigations-Aufrufe (`sidebar.radio`
+  → `AppTest.switch_page()`), `ruff`/`mypy` fehlerfrei, mit echtem
+  Browser verifiziert (natives Navigationswidget, identischer
+  Backtest-Lauf, Secret-Store-Zustand bleibt über Seitenwechsel hinweg
+  korrekt erhalten).
+
 - Einstellungen, Quellen und Prüfprotokoll (Auftrag §10, Seite 10)
   umgesetzt — letzte der ursprünglich zehn fehlenden Oberflächenseiten
   (siehe ADR-34). **Damit sind alle zehn Auftrag-§10-Oberflächenseiten

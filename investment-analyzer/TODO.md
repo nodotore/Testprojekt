@@ -385,5 +385,19 @@ seit Milestone 1–7 fertig, nur die Bedienoberfläche fehlte.
       `mypy` fehlerfrei. Mit echtem Playwright-Browser inkl.
       vollständigem Einrichtungs-/Speichern-/Löschen-Roundtrip
       verifiziert.
-- [ ] Umstieg von `st.sidebar.radio` auf `st.navigation()`/`st.Page()`
-      (siehe ADR-26) — mit allen zehn Seiten jetzt überfällig.
+- [x] Umstieg von `st.sidebar.radio` auf `st.navigation()`/`st.Page()`
+      (siehe ADR-35): zehn dünne Seiten-Dateien unter neuem `ui/pages/`
+      (jede ruft nur `ui/context.py::get_context()` + die passende
+      `render_*`-Funktion auf), `render_ersteinrichtungsdialog`/
+      `render_datenstatus` aus `app.py` nach neues `ui/start.py`
+      ausgelagert (sonst Zirkelimport, da `app.py` bei jedem Rerun neu
+      ausgeführt wird), `app.py` selbst jetzt reiner Router. Grund für
+      dateibasierte statt funktionsbasierte `st.Page()`-Einträge:
+      `AppTest.switch_page()` verlangt zwingend einen Dateipfad. Keine
+      neuen Tests nötig — alle 513 bestehenden Tests bleiben grün nach
+      Anpassung der 20 Navigations-Aufrufe (`sidebar.radio` →
+      `switch_page`), `ruff`/`mypy` fehlerfrei. Mit echtem Playwright-
+      Browser gegen alle sechs vorhandenen Seed-Datensätze gleichzeitig
+      verifiziert (natives Navigationswidget, Backtest-Lauf mit
+      identischen Kennzahlen wie vor der Migration, Secret-Store-Zustand
+      bleibt über Seitenwechsel hinweg korrekt erhalten).

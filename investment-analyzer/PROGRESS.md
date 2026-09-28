@@ -1470,3 +1470,81 @@ Tests, neuer Seed-Helper `_seed_quellen_und_pruefprotokoll`).
 **Nächster Schritt:** Umstieg von `st.sidebar.radio` auf
 `st.navigation()`/`st.Page()` (siehe ADR-26, seit Langem vorgemerkt,
 jetzt mit allen zehn Seiten überfällig) — siehe `NEXT_STEPS.md`.
+
+## Nach Milestone 8 — Umstieg auf st.navigation()/st.Page() (Auftrag §10, alle Seiten)
+
+**Auftrag:** Letzten offen dokumentierten, nicht blockierenden
+Ausbauschritt der UI umsetzen: `st.sidebar.radio`-Navigation durch
+Streamlits natives Multipage-Mittel ersetzen (siehe ADR-35).
+
+**Umgesetzt:**
+
+- Neues Verzeichnis `ui/pages/` mit zehn dünnen Seiten-Dateien
+  (`start.py`, `marktscreener.py`, `kandidaten_rangliste.py`,
+  `unternehmensdetail.py`, `peer_vergleich.py`,
+  `dcf_szenarioanalyse.py`, `nachrichten_ereignisse.py`,
+  `watchlist_portfolio.py`, `backtest.py`, `einstellungen.py`) — jede
+  ruft ausschließlich `ui/context.py::get_context()` und die
+  zugehörige, bereits vorhandene `render_*`-Funktion auf. Dateibasiert
+  statt funktionsbasiert gewählt, weil `AppTest.switch_page()` (das
+  einzige Mittel, in `AppTest` zwischen `st.navigation()`-Seiten zu
+  wechseln) zwingend einen Dateipfad relativ zum Hauptskript verlangt.
+- `render_ersteinrichtungsdialog()` und `render_datenstatus()` aus
+  `app.py` in ein neues `ui/start.py` ausgelagert — Streamlit führt das
+  Hauptskript (`app.py`) bei jedem Rerun erneut aus, bevor es die
+  gewählte Seite rendert; eine Seiten-Datei dürfte `app.py` daher nie
+  importieren (dessen Modul-Ebenen-`main()`-Aufruf liefe sonst doppelt).
+  Beide Funktionen werden von `app.py` (Router-Gate) UND
+  `ui/pages/start.py` (Start-Seite) benötigt.
+- Neues `ui/context.py`: verschiebt den `@st.cache_resource`-gecachten
+  `get_context()`-Wrapper aus `app.py` hierher (aus demselben
+  Zirkelimport-Grund), bewusst NICHT in `ui/bootstrap.py` selbst
+  (dessen Docstring hält fest, frei von Streamlit-Importen zu bleiben).
+  Ergänzt `require_profile(ctx)`: lädt und validiert das Profil per
+  `assert` — an dieser Stelle ist ein fehlendes Profil ein
+  Programmierfehler, kein Nutzerzustand.
+- `app.py` ist jetzt reiner Router: prüft Migration + Profil, zeigt bis
+  dahin den Ersteinrichtungsdialog, bindet danach alle zehn Seiten über
+  `st.navigation(_PAGES)` + `navigation.run()` ein.
+- `tests/ui/test_app_smoke.py`: alle 20 `at.sidebar.radio[0].set_value(
+  "<Seite>").run(timeout=30)`-Aufrufe durch `at.switch_page(
+  "pages/<datei>.py").run(timeout=30)` ersetzt — sonst unverändert, da
+  `AppTest` nach dem Seitenwechsel dieselben Element-Bäume liefert.
+
+**Tests:** Keine neuen Tests nötig (reine Infrastruktur-Umstellung ohne
+neues fachliches Verhalten) — alle 513 bestehenden Tests bleiben grün.
+`ruff check .` und `mypy src` beide fehlerfrei (106 Quelldateien, vorher
+93 — die neuen Seiten-Dateien plus `context.py`/`start.py`).
+
+**Manuell mit echtem Browser verifiziert** (Playwright gegen einen
+laufenden Streamlit-Prozess mit allen sechs vorhandenen Seed-Datensätzen
+gleichzeitig — 5 Unternehmen, 4 Quellen, 155 Datenpunkte): das native
+`st.navigation()`-Seitenmenü in der Sidebar markiert die aktive Seite
+korrekt (ersetzt die bisherigen Radio-Buttons); alle zehn Seiten
+rendern ohne Traceback und ohne Konsolenfehler; ein vollständiger
+Backtest-Lauf über 37 monatliche Rebalancing-Perioden lieferte
+identische Kennzahlen wie vor der Migration (Sharpe 3.11, derselbe
+NAV-Verlauf); der zustandsabhängige Master-Passwort-Einrichtungsfluss
+auf der Einstellungen-Seite (ADR-34) bleibt über einen Seitenwechsel
+zur Backtest-Seite und zurück korrekt erhalten — bestätigt, dass der
+über `st.cache_resource` gecachte `AppContext` unverändert über den
+gesamten Serverprozess geteilt wird, unabhängig vom neuen
+Seiten-Datei-Mechanismus.
+
+**Bewusst nicht geändert:** Icons für die `st.Page(...)`-Einträge (rein
+kosmetisch); die Sidebar-Beschriftung der letzten Seite wird von
+Streamlits eigenem Navigationswidget zu „Einstellungen, Quellen und
+Prüfprot…" abgeschnitten — Klick-Fläche und Funktion bleiben korrekt,
+nur die sichtbare Beschriftung ist gekürzt (natives Streamlit-Verhalten
+bei langen Seitentiteln, kein Programmfehler).
+
+**Geänderte/neue Dateien:** neue `ui/context.py`, `ui/start.py`,
+`ui/pages/__init__.py` + zehn Seiten-Dateien; `ui/app.py` komplett neu
+als reiner Router; `tests/ui/test_app_smoke.py` (20 Navigations-Aufrufe
+angepasst, eine Testfunktion umbenannt).
+
+**Damit ist auch der letzte offen dokumentierte Ausbauschritt der
+UI-Oberfläche abgeschlossen.** Verbleibende offene Punkte (siehe
+`TODO.md`/`NEXT_STEPS.md`): Live-Verifikation mit echten Datenquellen,
+GDELT-/IR-RSS-Abrufweg für Nachrichten/Ereignisse, sowie die übrigen
+kleineren, nicht blockierenden Detailpunkte.

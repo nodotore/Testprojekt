@@ -189,9 +189,21 @@
       Auftrag-§10-Oberflächenseiten abgeschlossen.** 513 Tests grün,
       ruff/mypy fehlerfrei, mit echtem Browser (Playwright) inkl.
       vollständigem Einrichtungs-/Speichern-/Löschen-Roundtrip
-      verifiziert. Nächster Schritt: Umstieg von `st.sidebar.radio` auf
-      `st.navigation()`/`st.Page()` (siehe ADR-26, seit Langem
-      vorgemerkt, jetzt mit allen zehn Seiten überfällig).
+      verifiziert.
+    - ~~Umstieg von `st.sidebar.radio` auf `st.navigation()`/
+      `st.Page()`~~ — umgesetzt am 2026-09-28 (siehe `PROGRESS.md`/
+      ADR-35): zehn dünne Seiten-Dateien unter neuem `ui/pages/`,
+      `render_ersteinrichtungsdialog`/`render_datenstatus` nach neues
+      `ui/start.py` ausgelagert, `app.py` jetzt reiner Router. Keine
+      neuen Tests nötig — alle 513 bestehenden Tests bleiben grün nach
+      Anpassung der Navigations-Aufrufe (`sidebar.radio` →
+      `AppTest.switch_page()`), `ruff`/`mypy` fehlerfrei, mit echtem
+      Browser (Playwright) gegen alle sechs vorhandenen Seed-Datensätze
+      gleichzeitig verifiziert (natives Navigationswidget, Backtest-Lauf
+      mit identischen Kennzahlen, Secret-Store-Zustand bleibt über
+      Seitenwechsel hinweg korrekt erhalten). **Damit ist auch dieser
+      letzte offen dokumentierte Ausbauschritt der UI-Oberfläche
+      abgeschlossen.**
     - Weiterhin offen, nicht blockierend für die restlichen UI-Seiten:
       ein automatischer Abrufweg über GDELT/IR-RSS für die
       Nachrichten/Ereignisse-Seite — bislang in keiner Oberflächenseite

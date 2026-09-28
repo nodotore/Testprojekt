@@ -124,7 +124,7 @@ ausschließlich an SEC EDGAR übertragen, sonst nirgends.
 
 ## 4a. Der Marktscreener — Unternehmen hinzufügen und Daten abrufen
 
-Über die Seitenleiste („Seite" → „Marktscreener") erreichbar. Hier wird
+Über die Seitenleiste („Marktscreener") erreichbar. Hier wird
 ein Unternehmen erstmals zur Datenbank hinzugefügt:
 
 1. **Kennung wählen:** entweder die SEC-eigene **CIK** (zu finden über
@@ -152,7 +152,7 @@ Unternehmen (Name, Land, Börse, Branche, Kennungen).
 
 ## 4b. Die Kandidaten-Rangliste — alle erfassten Unternehmen im Vergleich
 
-Über die Seitenleiste („Seite" → „Kandidaten-Rangliste") erreichbar.
+Über die Seitenleiste („Kandidaten-Rangliste") erreichbar.
 Zeigt eine Tabelle aller bereits über den Marktscreener (Abschnitt 4a)
 erfassten Unternehmen, sortiert nach Gesamtscore (höchster Score
 zuerst):
@@ -178,7 +178,7 @@ zuerst):
 
 ## 4c. Unternehmensdetail mit Quellenleiste — der vollständige Bericht
 
-Über die Seitenleiste („Seite" → „Unternehmensdetail") erreichbar.
+Über die Seitenleiste („Unternehmensdetail") erreichbar.
 Zeigt für ein bereits über den Marktscreener (Abschnitt 4a) erfasstes
 Unternehmen den vollständigen Bericht:
 
@@ -215,7 +215,7 @@ Unternehmen den vollständigen Bericht:
 
 ## 4d. Der Peer-Vergleich — ein Unternehmen und seine Branchen-Peers
 
-Über die Seitenleiste („Seite" → „Peer-Vergleich") erreichbar. Zeigt
+Über die Seitenleiste („Peer-Vergleich") erreichbar. Zeigt
 ein ausgewähltes Unternehmen und seine Peers (andere erfasste
 Unternehmen mit demselben SIC-Branchencode) in einer Tabelle
 nebeneinander — Score, Klassifikation, Umsatzwachstum, Nettomarge,
@@ -236,7 +236,7 @@ ROE, Verschuldung, KGV und EV/EBITDA.
 
 ## 4e. Die DCF- und Szenarioanalyse — Bewertungsdetail und Sensitivität
 
-Über die Seitenleiste („Seite" → „DCF- und Szenarioanalyse")
+Über die Seitenleiste („DCF- und Szenarioanalyse")
 erreichbar. Ergänzt die verdichtete Bewertungszusammenfassung der
 Unternehmensdetail-Seite (Abschnitt 4c) um das vollständige
 DCF-Rechendetail:
@@ -260,7 +260,7 @@ DCF-Rechendetail:
 
 ## 4f. Nachrichten/Ereignisse — bereits gespeicherte Meldungen im Überblick
 
-Über die Seitenleiste („Seite" → „Nachrichten/Ereignisse") erreichbar.
+Über die Seitenleiste („Nachrichten/Ereignisse") erreichbar.
 Zeigt die für ein ausgewähltes Unternehmen bereits in der Datenbank
 gespeicherten Nachrichtenmeldungen, gruppiert nach Ereignis:
 
@@ -284,7 +284,7 @@ gespeicherten Nachrichtenmeldungen, gruppiert nach Ereignis:
 
 ## 4g. Watchlist/Portfolio — beobachtete und gehaltene Positionen
 
-Über die Seitenleiste („Seite" → „Watchlist/Portfolio") erreichbar,
+Über die Seitenleiste („Watchlist/Portfolio") erreichbar,
 zwei Reiter:
 
 **Watchlist** (beobachtete, nicht gehaltene Unternehmen):
@@ -317,7 +317,7 @@ zwei Reiter:
 
 ## 4h. Backtest — die Strategie gegen die eigene Vergangenheit testen
 
-Über die Seitenleiste („Seite" → „Backtest") erreichbar. Simuliert, wie
+Über die Seitenleiste („Backtest") erreichbar. Simuliert, wie
 sich die deterministische „Top-N nach Gesamtscore"-Strategie über
 einen gewählten Zeitraum entwickelt hätte:
 
@@ -346,7 +346,7 @@ einen gewählten Zeitraum entwickelt hätte:
 
 ## 4i. Einstellungen, Quellen und Prüfprotokoll — Schlüssel, Quellen, Audit-Log
 
-Über die Seitenleiste („Seite" → „Einstellungen, Quellen und
+Über die Seitenleiste („Einstellungen, Quellen und
 Prüfprotokoll") erreichbar, in drei Reitern:
 
 - **Schlüsselverwaltung:** Steht kein Windows Credential Manager

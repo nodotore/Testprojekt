@@ -402,7 +402,7 @@ def test_app_zeigt_datenstatus_mit_akzeptiertem_profil(tmp_path, monkeypatch) ->
     _reset_caches()
 
 
-def test_app_marktscreener_seite_ist_ueber_sidebar_erreichbar(tmp_path, monkeypatch) -> None:
+def test_app_marktscreener_seite_ist_ueber_navigation_erreichbar(tmp_path, monkeypatch) -> None:
     monkeypatch.setenv("IA_DATA_DIR", str(tmp_path))
     _reset_caches()
     _migrate_test_db(tmp_path)
@@ -415,7 +415,7 @@ def test_app_marktscreener_seite_ist_ueber_sidebar_erreichbar(tmp_path, monkeypa
     at.run(timeout=30)
     assert not at.exception, [str(e) for e in at.exception]
 
-    at.sidebar.radio[0].set_value("Marktscreener").run(timeout=30)
+    at.switch_page("pages/marktscreener.py").run(timeout=30)
 
     assert not at.exception, [str(e) for e in at.exception]
     header_texte = " ".join(h.value for h in at.header)
@@ -443,7 +443,7 @@ def test_app_marktscreener_zeigt_formular_mit_hinterlegter_kontakt_email(tmp_pat
 
     at = AppTest.from_file(APP_PATH)
     at.run(timeout=30)
-    at.sidebar.radio[0].set_value("Marktscreener").run(timeout=30)
+    at.switch_page("pages/marktscreener.py").run(timeout=30)
 
     assert not at.exception, [str(e) for e in at.exception]
     fehler = " ".join(e.value for e in at.error)
@@ -467,7 +467,7 @@ def test_app_kandidatenrangliste_ohne_unternehmen_zeigt_hinweis(tmp_path, monkey
 
     at = AppTest.from_file(APP_PATH)
     at.run(timeout=30)
-    at.sidebar.radio[0].set_value("Kandidaten-Rangliste").run(timeout=30)
+    at.switch_page("pages/kandidaten_rangliste.py").run(timeout=30)
 
     assert not at.exception, [str(e) for e in at.exception]
     header_texte = " ".join(h.value for h in at.header)
@@ -490,7 +490,7 @@ def test_app_kandidatenrangliste_zeigt_rangfolge_nach_score(tmp_path, monkeypatc
 
     at = AppTest.from_file(APP_PATH)
     at.run(timeout=30)
-    at.sidebar.radio[0].set_value("Kandidaten-Rangliste").run(timeout=30)
+    at.switch_page("pages/kandidaten_rangliste.py").run(timeout=30)
 
     assert not at.exception, [str(e) for e in at.exception]
     header_texte = " ".join(h.value for h in at.header)
@@ -518,7 +518,7 @@ def test_app_peervergleich_ohne_unternehmen_zeigt_hinweis(tmp_path, monkeypatch)
 
     at = AppTest.from_file(APP_PATH)
     at.run(timeout=30)
-    at.sidebar.radio[0].set_value("Peer-Vergleich").run(timeout=30)
+    at.switch_page("pages/peer_vergleich.py").run(timeout=30)
 
     assert not at.exception, [str(e) for e in at.exception]
     header_texte = " ".join(h.value for h in at.header)
@@ -541,7 +541,7 @@ def test_app_peervergleich_ohne_sic_code_zeigt_warnung(tmp_path, monkeypatch) ->
 
     at = AppTest.from_file(APP_PATH)
     at.run(timeout=30)
-    at.sidebar.radio[0].set_value("Peer-Vergleich").run(timeout=30)
+    at.switch_page("pages/peer_vergleich.py").run(timeout=30)
 
     assert not at.exception, [str(e) for e in at.exception]
     warnungen = " ".join(w.value for w in at.warning)
@@ -562,7 +562,7 @@ def test_app_peervergleich_zeigt_vergleichstabelle_mit_peer(tmp_path, monkeypatc
 
     at = AppTest.from_file(APP_PATH)
     at.run(timeout=30)
-    at.sidebar.radio[0].set_value("Peer-Vergleich").run(timeout=30)
+    at.switch_page("pages/peer_vergleich.py").run(timeout=30)
 
     assert not at.exception, [str(e) for e in at.exception]
     captions = " ".join(c.value for c in at.caption)
@@ -586,7 +586,7 @@ def test_app_dcfanalyse_ohne_unternehmen_zeigt_hinweis(tmp_path, monkeypatch) ->
 
     at = AppTest.from_file(APP_PATH)
     at.run(timeout=30)
-    at.sidebar.radio[0].set_value("DCF- und Szenarioanalyse").run(timeout=30)
+    at.switch_page("pages/dcf_szenarioanalyse.py").run(timeout=30)
 
     assert not at.exception, [str(e) for e in at.exception]
     header_texte = " ".join(h.value for h in at.header)
@@ -609,7 +609,7 @@ def test_app_dcfanalyse_zeigt_szenarien_und_sensitivitaet(tmp_path, monkeypatch)
 
     at = AppTest.from_file(APP_PATH)
     at.run(timeout=30)
-    at.sidebar.radio[0].set_value("DCF- und Szenarioanalyse").run(timeout=30)
+    at.switch_page("pages/dcf_szenarioanalyse.py").run(timeout=30)
 
     assert not at.exception, [str(e) for e in at.exception]
     header_texte = " ".join(h.value for h in at.header)
@@ -643,7 +643,7 @@ def test_app_nachrichten_ohne_meldungen_zeigt_hinweis(tmp_path, monkeypatch) -> 
 
     at = AppTest.from_file(APP_PATH)
     at.run(timeout=30)
-    at.sidebar.radio[0].set_value("Nachrichten/Ereignisse").run(timeout=30)
+    at.switch_page("pages/nachrichten_ereignisse.py").run(timeout=30)
 
     assert not at.exception, [str(e) for e in at.exception]
     header_texte = " ".join(h.value for h in at.header)
@@ -667,7 +667,7 @@ def test_app_nachrichten_zeigt_mehrquellenbestaetigten_cluster(tmp_path, monkeyp
 
     at = AppTest.from_file(APP_PATH)
     at.run(timeout=30)
-    at.sidebar.radio[0].set_value("Nachrichten/Ereignisse").run(timeout=30)
+    at.switch_page("pages/nachrichten_ereignisse.py").run(timeout=30)
 
     assert not at.exception, [str(e) for e in at.exception]
     body_texte = " ".join(w.value for w in at.markdown) + " ".join(w.value for w in at.text)
@@ -695,7 +695,7 @@ def test_app_watchlist_portfolio_ohne_eintraege_zeigt_hinweise(tmp_path, monkeyp
 
     at = AppTest.from_file(APP_PATH)
     at.run(timeout=30)
-    at.sidebar.radio[0].set_value("Watchlist/Portfolio").run(timeout=30)
+    at.switch_page("pages/watchlist_portfolio.py").run(timeout=30)
 
     assert not at.exception, [str(e) for e in at.exception]
     header_texte = " ".join(h.value for h in at.header)
@@ -719,7 +719,7 @@ def test_app_watchlist_portfolio_zeigt_position_und_konzentration(tmp_path, monk
 
     at = AppTest.from_file(APP_PATH)
     at.run(timeout=30)
-    at.sidebar.radio[0].set_value("Watchlist/Portfolio").run(timeout=30)
+    at.switch_page("pages/watchlist_portfolio.py").run(timeout=30)
 
     assert not at.exception, [str(e) for e in at.exception]
     metrik_werte = {m.label: m.value for m in at.metric}
@@ -748,7 +748,7 @@ def test_app_backtest_ohne_ausfuehrung_zeigt_hinweis(tmp_path, monkeypatch) -> N
 
     at = AppTest.from_file(APP_PATH)
     at.run(timeout=30)
-    at.sidebar.radio[0].set_value("Backtest").run(timeout=30)
+    at.switch_page("pages/backtest.py").run(timeout=30)
 
     assert not at.exception, [str(e) for e in at.exception]
     header_texte = " ".join(h.value for h in at.header)
@@ -771,7 +771,7 @@ def test_app_backtest_zeigt_kennzahlen_und_perioden(tmp_path, monkeypatch) -> No
 
     at = AppTest.from_file(APP_PATH)
     at.run(timeout=30)
-    at.sidebar.radio[0].set_value("Backtest").run(timeout=30)
+    at.switch_page("pages/backtest.py").run(timeout=30)
     assert not at.exception, [str(e) for e in at.exception]
 
     at.date_input[0].set_value(date(2024, 1, 1))
@@ -807,7 +807,7 @@ def test_app_einstellungen_ohne_daten_zeigt_leere_zustaende(tmp_path, monkeypatc
 
     at = AppTest.from_file(APP_PATH)
     at.run(timeout=30)
-    at.sidebar.radio[0].set_value("Einstellungen, Quellen und Prüfprotokoll").run(timeout=30)
+    at.switch_page("pages/einstellungen.py").run(timeout=30)
 
     assert not at.exception, [str(e) for e in at.exception]
     header_texte = " ".join(h.value for h in at.header)
@@ -838,7 +838,7 @@ def test_app_einstellungen_zeigt_quellen_und_pruefprotokoll(tmp_path, monkeypatc
 
     at = AppTest.from_file(APP_PATH)
     at.run(timeout=30)
-    at.sidebar.radio[0].set_value("Einstellungen, Quellen und Prüfprotokoll").run(timeout=30)
+    at.switch_page("pages/einstellungen.py").run(timeout=30)
     assert not at.exception, [str(e) for e in at.exception]
 
     assert len(at.dataframe) == 2
@@ -871,7 +871,7 @@ def test_app_einstellungen_richtet_secret_store_ein_und_setzt_schluessel(tmp_pat
 
     at = AppTest.from_file(APP_PATH)
     at.run(timeout=30)
-    at.sidebar.radio[0].set_value("Einstellungen, Quellen und Prüfprotokoll").run(timeout=30)
+    at.switch_page("pages/einstellungen.py").run(timeout=30)
     assert not at.exception, [str(e) for e in at.exception]
 
     # ``st.rerun()`` im Formular-Handler wird innerhalb desselben ``.run()``
@@ -913,7 +913,7 @@ def test_app_unternehmensdetail_ohne_unternehmen_zeigt_hinweis(tmp_path, monkeyp
 
     at = AppTest.from_file(APP_PATH)
     at.run(timeout=30)
-    at.sidebar.radio[0].set_value("Unternehmensdetail").run(timeout=30)
+    at.switch_page("pages/unternehmensdetail.py").run(timeout=30)
 
     assert not at.exception, [str(e) for e in at.exception]
     header_texte = " ".join(h.value for h in at.header)
@@ -936,7 +936,7 @@ def test_app_unternehmensdetail_zeigt_bericht_fuer_erfasstes_unternehmen(tmp_pat
 
     at = AppTest.from_file(APP_PATH)
     at.run(timeout=30)
-    at.sidebar.radio[0].set_value("Unternehmensdetail").run(timeout=30)
+    at.switch_page("pages/unternehmensdetail.py").run(timeout=30)
 
     assert not at.exception, [str(e) for e in at.exception]
     header_texte = " ".join(h.value for h in at.header)
