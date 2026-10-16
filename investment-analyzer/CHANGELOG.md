@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- Echten, bis dahin unentdeckten mypy-Typfehler in
+  `fundamentals/series.py::get_series()` behoben (fiel bei einer
+  Frisch-Verifikation mit neuerem mypy 2.4.0 auf, unabhängig vom
+  Navigations-Umstieg) — zwei `assert ... is not None` ergänzt, um
+  mypy sichtbar zu machen, was die SQL-`WHERE`-Klausel bereits zur
+  Laufzeit garantiert (dasselbe Muster wie bereits in
+  `get_latest_annual_datapoint()` in derselben Datei). Keine
+  Verhaltensänderung, alle 513 Tests weiterhin grün.
+
 - Navigation von `st.sidebar.radio` auf natives `st.navigation()`/
   `st.Page()` umgestellt (siehe ADR-35) — letzter offen dokumentierter,
   nicht blockierender UI-Ausbauschritt. Zehn dünne Seiten-Dateien unter

@@ -1548,3 +1548,34 @@ UI-Oberfläche abgeschlossen.** Verbleibende offene Punkte (siehe
 `TODO.md`/`NEXT_STEPS.md`): Live-Verifikation mit echten Datenquellen,
 GDELT-/IR-RSS-Abrufweg für Nachrichten/Ereignisse, sowie die übrigen
 kleineren, nicht blockierenden Detailpunkte.
+
+## Nach Milestone 8 — mypy-Fund in fundamentals/series.py behoben (Typ-Narrowing, unabhängig vom Navigations-Umstieg)
+
+**Kontext:** Bei einer erneuten, von Grund auf frischen Verifikation des
+Navigations-Umstiegs (neuer Container, `.venv` komplett neu aufgebaut)
+installierte sich automatisch ein neueres `mypy` (2.4.0 statt der zuvor
+installierten Version — `pyproject.toml` pinnt nur `mypy>=1.11`, keine
+Obergrenze). Das strengere `mypy` fand zwei echte, bis dahin
+unentdeckte Typfehler in `fundamentals/series.py::get_series()` — einer
+Datei, die seit Milestone 4 nicht mehr geändert wurde und mit dem
+Navigations-Umstieg nichts zu tun hat.
+
+**Fund:** `get_series()` filtert per SQL-`WHERE` bereits
+`period_end IS NOT NULL` und `value_normalized IS NOT NULL`, bevor die
+Zeilen in ein `dict[date, float]` geschrieben werden — zur Laufzeit
+also garantiert nie `None`. SQLAlchemys Spaltentypen (`Mapped[date |
+None]`/`Mapped[float | None]`) lassen sich daraus aber nicht ableiten,
+sodass mypy `period_end`/`value` weiterhin als `X | None` sieht.
+
+**Behoben:** zwei `assert ... is not None`-Zeilen vor dem
+Dictionary-Zugriff ergänzt — exakt dasselbe, bereits in derselben Datei
+verwendete Muster (`get_latest_annual_datapoint()`, Zeile 160:
+`assert row.period_end is not None`) für denselben
+WHERE-Klausel-Garantie-Fall. Keine Verhaltensänderung: die Assertions
+greifen nie (von der SQL-Abfrage bereits ausgeschlossen), machen die
+Garantie aber auch für mypy sichtbar.
+
+**Tests:** Alle 52 `tests/fundamentals/`-Tests weiterhin grün (bestätigt,
+dass die Assertions nie auslösen), vollständige Suite weiterhin 513
+Tests grün, `ruff`/`mypy` jetzt wieder vollständig fehlerfrei (auch mit
+mypy 2.4.0).
