@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import UTC, date, datetime
 from pathlib import Path
 
+import pytest
 import streamlit as st
 from streamlit.testing.v1 import AppTest
 
@@ -372,6 +373,45 @@ def test_app_zeigt_ersteinrichtung_ohne_gespeichertes_profil(tmp_path, monkeypat
 
     warnungen = " ".join(w.value for w in at.warning)
     assert "keine Anlageberatung" in warnungen
+
+    _reset_caches()
+
+
+def test_app_ohne_profil_sind_die_zehn_seiten_nicht_erreichbar(tmp_path, monkeypatch) -> None:
+    """Regressionstest für einen echten, live gefundenen Fehler (siehe ADR-36):
+
+    Rief ``app.py`` ``st.navigation()`` nur NACH bestandener Profilprüfung
+    auf, blieb Streamlits alte, ordnerbasierte „automatische
+    pages/-Erkennung" für jede Session ohne Profil aktiv — jede Datei unter
+    ``ui/pages/`` erschien roh benannt UND anklickbar in der Seitenleiste,
+    obwohl die einzelnen Seiten-Dateien ein bereits akzeptiertes Profil
+    voraussetzen (``require_profile()`` wirft dort einen
+    ``AssertionError``). ``AppTest.switch_page()`` lehnt eine nicht
+    registrierte Seite mit ``ValueError`` ab — das ist hier die prüfbare
+    Bedingung: Ohne Profil darf ausschließlich ``pages/ersteinrichtung.py``
+    registriert sein, keine der zehn eigentlichen Seiten."""
+
+    monkeypatch.setenv("IA_DATA_DIR", str(tmp_path))
+    _reset_caches()
+    _migrate_test_db(tmp_path)
+
+    at = AppTest.from_file(APP_PATH)
+    at.run(timeout=30)
+    assert not at.exception, [str(e) for e in at.exception]
+
+    for seite in (
+        "pages/marktscreener.py",
+        "pages/kandidaten_rangliste.py",
+        "pages/unternehmensdetail.py",
+        "pages/peer_vergleich.py",
+        "pages/dcf_szenarioanalyse.py",
+        "pages/nachrichten_ereignisse.py",
+        "pages/watchlist_portfolio.py",
+        "pages/backtest.py",
+        "pages/einstellungen.py",
+    ):
+        with pytest.raises(ValueError):
+            at.switch_page(seite)
 
     _reset_caches()
 

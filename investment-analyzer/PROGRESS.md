@@ -1579,3 +1579,48 @@ Garantie aber auch für mypy sichtbar.
 dass die Assertions nie auslösen), vollständige Suite weiterhin 513
 Tests grün, `ruff`/`mypy` jetzt wieder vollständig fehlerfrei (auch mit
 mypy 2.4.0).
+
+## Nach Milestone 8 — echter Live-Fund beim allerersten Programmstart behoben (siehe ADR-36)
+
+**Kontext:** Auf Nutzerwunsch wurde das Programm einmal ganz genuin neu
+gestartet — frisch migrierter, produktiver Standard-Datenpfad
+(`~/InvestmentAnalyzer`, kein `IA_DATA_DIR`-Override, kein vorab
+angelegtes Profil). Genau dieser Zustand war in keinem bisherigen Test
+oder Live-Check dieses Projekts abgedeckt: jeder frühere `AppTest`-
+und Playwright-Lauf legte vorab bereits ein akzeptiertes Profil an.
+
+**Fund:** Die Seitenleiste zeigte neben dem Ersteinrichtungsdialog
+zusätzlich alle zehn `ui/pages/*.py`-Dateien roh benannt (z. B.
+„dcf_szenarioanalyse") UND anklickbar — ein Klick führte zu einem
+rohen `AssertionError`-Absturz. Ursache: `st.navigation()` wurde in
+`app.py::main()` nur NACH bestandener Profilprüfung aufgerufen;
+Streamlit deaktiviert seine alte, ordnerbasierte automatische
+`pages/`-Erkennung aber erst dauerhaft, sobald `st.navigation()`
+tatsächlich in einem Skriptlauf ausgeführt wurde — ohne Profil blieb
+sie also aktiv.
+
+**Behoben:** `app.py` wählt jetzt zwischen drei Seitenlisten
+(DB-Fehler, Ersteinrichtung — neue Datei `ui/pages/ersteinrichtung.py`
+—, oder alle zehn Seiten) und ruft `st.navigation(...)` in JEDEM Zweig
+auf. Bei nur einem Listeneintrag blendet Streamlit die Seitenleiste
+automatisch aus — der Ersteinrichtungsdialog sieht damit optisch
+unverändert aus, die automatische Ordner-Erkennung bleibt aber von
+Anfang an deaktiviert.
+
+**Regressionstest:** `AppTest.switch_page()` lehnt eine nicht
+registrierte Seite mit `ValueError` ab. Neuer Test
+`test_app_ohne_profil_sind_die_zehn_seiten_nicht_erreichbar` prüft das
+für alle zehn Seiten. Vor dem Schreiben doppelt empirisch verifiziert:
+gegen den alten (fehlerhaften) Code schlägt der Aufruf NICHT fehl
+(Fund bestätigt), gegen den reparierten Code schlägt er mit
+`ValueError` fehl (Fix bestätigt).
+
+**Tests:** 1 neuer Test (insgesamt 514), `ruff`/`mypy` fehlerfrei.
+Zusätzlich mit echtem Playwright-Browser gegen den produktiven
+Standardpfad verifiziert: Ersteinrichtung ohne Seitenleiste, nach
+Formular-Absenden alle zehn Seiten korrekt benannt, keine
+Konsolenfehler.
+
+**Geänderte/neue Dateien:** `ui/app.py` (drei Seitenlisten statt einer
+direkten Weiche), neue `ui/pages/ersteinrichtung.py`,
+`tests/ui/test_app_smoke.py` (ein neuer Test, `pytest`-Import ergänzt).

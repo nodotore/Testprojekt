@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+- Echten Absturz beim allerersten Programmstart (ohne vorhandenes
+  Profil) behoben, live beim genuinen Erstnutzer-Test gefunden (siehe
+  ADR-36): `st.navigation()` wurde in `app.py` nur nach bestandener
+  Profilprüfung aufgerufen, wodurch Streamlits alte, ordnerbasierte
+  automatische `pages/`-Erkennung bis zur ersten Profilanlage aktiv
+  blieb — alle zehn Seiten erschienen roh benannt UND anklickbar in
+  der Seitenleiste, ein Klick führte zu einem `AssertionError`. Jetzt
+  ruft `app.py` `st.navigation()` in jedem der drei möglichen Zustände
+  auf (DB-Fehler/Ersteinrichtung/alle zehn Seiten). Neuer
+  Regressionstest, der gegen den alten Code nachweislich fehlschlägt
+  und gegen den neuen Code grün ist. 1 neuer Test (insgesamt 514),
+  `ruff`/`mypy` fehlerfrei, mit echtem Browser gegen den produktiven
+  Standard-Datenpfad verifiziert.
+
 - Echten, bis dahin unentdeckten mypy-Typfehler in
   `fundamentals/series.py::get_series()` behoben (fiel bei einer
   Frisch-Verifikation mit neuerem mypy 2.4.0 auf, unabhängig vom

@@ -1601,6 +1601,79 @@ abgeschnittene Sidebar-Beschriftung — Klick-Fläche und Funktion bleiben
 korrekt, nur die sichtbare Beschriftung ist gekürzt (Streamlit-natives
 Verhalten bei langen Seitentiteln, kein Programmfehler).
 
+## ADR-36: `st.navigation()` muss in JEDEM Zweig von `main()` aufgerufen werden — echter Live-Fund beim allerersten Programmstart
+
+**Kontext:** Ein echter, in ADR-35 nicht aufgedeckter Fehler, gefunden
+beim allerersten Start des Programms gegen ein frisches, migriertes,
+aber noch profilloses Verzeichnis (`~/InvestmentAnalyzer`, der
+produktive Standardpfad, siehe `config/settings.py::default_data_dir`)
+— genau der Zustand, den jeder reale Erstnutzer durchläuft, aber in
+keinem der in ADR-35 beschriebenen Tests oder Live-Checks abgedeckt
+war: jeder dortige `AppTest`/Playwright-Lauf legte vorab bereits ein
+akzeptiertes Profil an, bevor die Seite aufgerufen wurde.
+
+**Der Fehler:** `app.py::main()` rief `st.navigation(_PAGES)` nur auf,
+NACHDEM die Profilprüfung bestanden war; vorher zeigte es den
+Ersteinrichtungsdialog per direktem Funktionsaufruf und `return`. Ohne
+Profil wurde `st.navigation()` in diesem Skriptlauf also nie
+aufgerufen. Laut Streamlit-Dokumentation aktiviert sich die alte,
+ordnerbasierte „automatische `pages/`-Erkennung" (jede `.py`-Datei
+unter einem `pages/`-Ordner neben dem Hauptskript wird automatisch als
+eigene, nach Dateiname roh benannte Seite gelistet) erst dauerhaft ab,
+sobald IRGENDEINE Session in diesem Serverprozess `st.navigation()`
+tatsächlich ausgeführt hat. Resultat: Vor der ersten erfolgreichen
+Profilanlage zeigte die Seitenleiste zusätzlich zum Ersteinrichtungs-
+Formular ALLE zehn `ui/pages/*.py`-Dateien roh benannt (z. B.
+„dcf_szenarioanalyse", „marktscreener") — UND diese waren tatsächlich
+anklickbar. Ein Klick führte zu einem rohen `AssertionError`-Absturz,
+da jede Seiten-Datei `ui/context.py::require_profile(ctx)` aufruft,
+was ein bereits akzeptiertes Profil voraussetzt (siehe ADR-35) — zur
+Laufzeit beim allerersten Start aber garantiert noch nicht vorhanden
+ist. Live mit Playwright gegen den produktiven Standardpfad nachweisbar
+reproduziert (Screenshot des rohen Tracebacks) und danach behoben.
+
+**Entscheidung — `st.navigation()` in allen drei möglichen Zuständen von
+`main()` aufrufen, nie bedingt überspringen:** `app.py` wählt jetzt
+zwischen drei Seitenlisten — `_DB_FEHLER_PAGES` (Migration fehlt, eine
+einzelne funktionsbasierte `st.Page(...)`-Fehlerseite),
+`_ERSTEINRICHTUNG_PAGES` (neue Datei `ui/pages/ersteinrichtung.py`,
+übernimmt den bisherigen direkten Funktionsaufruf) und `_PAGES` (alle
+zehn Seiten, wie bisher) — ruft aber in JEDEM der drei Zweige
+`st.navigation(<Liste>).run()` auf. Nebeneffekt genau wie gewünscht:
+Hat eine Liste nur einen Eintrag, blendet Streamlit die Seitenleiste
+automatisch aus (dokumentiertes Verhalten), sodass der
+Ersteinrichtungsdialog weiterhin ohne sichtbares Seitenmenü erscheint
+— optisch identisch zum ursprünglichen, vor ADR-35 bestehenden
+Verhalten, jetzt aber ohne die Sicherheitslücke der automatischen
+Ordner-Erkennung.
+
+**Regressionstest:** `AppTest.switch_page()` lehnt eine nicht
+registrierte Seite mit `ValueError` ab, sobald `st.navigation()`
+aufgerufen wurde — das macht den Fehlerzustand direkt prüfbar. Neuer
+Test `test_app_ohne_profil_sind_die_zehn_seiten_nicht_erreichbar`
+(`tests/ui/test_app_smoke.py`) prüft für alle zehn Seiten, dass
+`switch_page(...)` ohne Profil mit `ValueError` fehlschlägt. Vor dem
+Schreiben des Tests empirisch doppelt verifiziert: gegen den
+unveränderten (fehlerhaften) `app.py`-Stand aus dem vorherigen Commit
+schlägt `switch_page("pages/marktscreener.py")` NICHT fehl (bestätigt
+den Fund), gegen den reparierten Stand schlägt er mit `ValueError` fehl
+(bestätigt den Fix) — der Test unterscheidet also tatsächlich
+zwischen beiden Zuständen, nicht nur zufällig grün.
+
+**Tests:** 1 neuer Test (insgesamt 514), `ruff`/`mypy` fehlerfrei.
+Zusätzlich mit echtem Playwright-Browser gegen den produktiven
+Standard-Datenpfad (`~/InvestmentAnalyzer`, kein `IA_DATA_DIR`-
+Override) verifiziert: Ersteinrichtung zeigt jetzt korrekt KEINE
+Seitenleiste; nach Absenden des Formulars erscheinen alle zehn Seiten
+korrekt benannt (nicht die rohen Dateinamen); keine unerwarteten
+Konsolenfehler.
+
+**Lehre für künftige Live-Verifikationen:** Mindestens einmal je
+UI-Architekturänderung den echten Erstnutzer-Zustand testen (kein
+vorab angelegtes Profil, Standard-Datenpfad statt `IA_DATA_DIR`-
+Override) — nicht nur den bereits eingerichteten Zustand, der in allen
+bisherigen Seiten-Tests dieses Projekts die Norm war.
+
 ## Noch zu treffende Entscheidungen
 
 Keine blockierenden Entscheidungen mehr offen für Milestone 1–7 (alle
