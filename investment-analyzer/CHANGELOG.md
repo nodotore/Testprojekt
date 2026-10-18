@@ -9,12 +9,14 @@
   automatische `pages/`-Erkennung bis zur ersten Profilanlage aktiv
   blieb — alle zehn Seiten erschienen roh benannt UND anklickbar in
   der Seitenleiste, ein Klick führte zu einem `AssertionError`. Jetzt
-  ruft `app.py` `st.navigation()` in jedem der drei möglichen Zustände
-  auf (DB-Fehler/Ersteinrichtung/alle zehn Seiten). Neuer
-  Regressionstest, der gegen den alten Code nachweislich fehlschlägt
-  und gegen den neuen Code grün ist. 1 neuer Test (insgesamt 514),
-  `ruff`/`mypy` fehlerfrei, mit echtem Browser gegen den produktiven
-  Standard-Datenpfad verifiziert.
+  wählt `app.py` die passende Seitenliste (DB-Fehler/Ersteinrichtung/
+  alle zehn Seiten) über eine reine Funktion `_select_pages(ctx)` und
+  ruft `st.navigation(...)` nur noch an einer einzigen Stelle auf —
+  so kann ein künftiger weiterer Zustand diesen Aufruf strukturell
+  nicht mehr vergessen. Neuer Regressionstest, der gegen den alten
+  Code nachweislich fehlschlägt und gegen den neuen Code grün ist.
+  1 neuer Test (insgesamt 514), `ruff`/`mypy` fehlerfrei, mit echtem
+  Browser gegen den produktiven Standard-Datenpfad verifiziert.
 
 - Echten, bis dahin unentdeckten mypy-Typfehler in
   `fundamentals/series.py::get_series()` behoben (fiel bei einer

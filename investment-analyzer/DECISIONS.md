@@ -1638,14 +1638,31 @@ zwischen drei Seitenlisten — `_DB_FEHLER_PAGES` (Migration fehlt, eine
 einzelne funktionsbasierte `st.Page(...)`-Fehlerseite),
 `_ERSTEINRICHTUNG_PAGES` (neue Datei `ui/pages/ersteinrichtung.py`,
 übernimmt den bisherigen direkten Funktionsaufruf) und `_PAGES` (alle
-zehn Seiten, wie bisher) — ruft aber in JEDEM der drei Zweige
-`st.navigation(<Liste>).run()` auf. Nebeneffekt genau wie gewünscht:
-Hat eine Liste nur einen Eintrag, blendet Streamlit die Seitenleiste
-automatisch aus (dokumentiertes Verhalten), sodass der
-Ersteinrichtungsdialog weiterhin ohne sichtbares Seitenmenü erscheint
-— optisch identisch zum ursprünglichen, vor ADR-35 bestehenden
-Verhalten, jetzt aber ohne die Sicherheitslücke der automatischen
-Ordner-Erkennung.
+zehn Seiten, wie bisher). Nebeneffekt genau wie gewünscht: Hat eine
+Liste nur einen Eintrag, blendet Streamlit die Seitenleiste automatisch
+aus (dokumentiertes Verhalten), sodass der Ersteinrichtungsdialog
+weiterhin ohne sichtbares Seitenmenü erscheint — optisch identisch zum
+ursprünglichen, vor ADR-35 bestehenden Verhalten, jetzt aber ohne die
+Sicherheitslücke der automatischen Ordner-Erkennung.
+
+**Überarbeitung nach erster Fassung — ein einziger `st.navigation()`-
+Aufrufpunkt statt drei:** Der erste Fix rief `st.navigation(<Liste>).run()`
+noch in jedem der drei `if`/`elif`-Zweige separat auf (mit je einem
+`return` danach). Bei einer nochmaligen Durchsicht (ausgelöst durch die
+CLAUDE.md-Pflichtlektüre vor der nächsten Änderung, siehe
+„Vor jeder Arbeitssitzung lesen") fiel auf: genau diese Drei-Aufrufstellen-
+Form ist strukturell dieselbe Fehlerklasse, die dieser ADR gerade behebt
+— ein künftiger vierter Zustand (z. B. ein weiterer Gate-Fall) könnte
+versehentlich ergänzt werden, ohne an dieser Stelle auch
+`st.navigation()` aufzurufen, und der Fehler aus diesem ADR käme auf
+andere Weise zurück. Umgebaut auf eine neue, reine Funktion
+`_select_pages(ctx) -> list[st.Page]`, die nur noch die passende Liste
+zurückgibt; `main()` ruft `st.navigation(_select_pages(ctx)).run()`
+jetzt an genau EINER Stelle auf. Dadurch ist „`st.navigation()` läuft
+immer" strukturell garantiert, nicht mehr nur durch Disziplin an drei
+Stellen sichergestellt. Keine funktionale Änderung — alle 514 Tests
+(inkl. des neuen Regressionstests) bleiben unverändert grün, `ruff`/
+`mypy` weiterhin fehlerfrei.
 
 **Regressionstest:** `AppTest.switch_page()` lehnt eine nicht
 registrierte Seite mit `ValueError` ab, sobald `st.navigation()`

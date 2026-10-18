@@ -30,7 +30,7 @@ from __future__ import annotations
 
 import streamlit as st
 
-from investment_analyzer.ui.bootstrap import check_database_ready
+from investment_analyzer.ui.bootstrap import AppContext, check_database_ready
 from investment_analyzer.ui.context import get_context
 
 _PAGES = [
@@ -61,22 +61,26 @@ def _render_db_fehler() -> None:
 _DB_FEHLER_PAGES = [st.Page(_render_db_fehler, title="Fehler", default=True)]
 
 
+def _select_pages(ctx: AppContext) -> list[st.Page]:
+    if not check_database_ready(ctx.engine):
+        return _DB_FEHLER_PAGES
+
+    profil = ctx.profile_store.load_or_none()
+    if profil is None or not profil.haftungsausschluss_akzeptiert:
+        return _ERSTEINRICHTUNG_PAGES
+
+    return _PAGES
+
+
 def main() -> None:
     st.set_page_config(page_title="Investment-Analysator", page_icon="📊", layout="wide")
     st.title("Investment-Analysator")
 
     ctx = get_context()
-
-    if not check_database_ready(ctx.engine):
-        st.navigation(_DB_FEHLER_PAGES).run()
-        return
-
-    profil = ctx.profile_store.load_or_none()
-    if profil is None or not profil.haftungsausschluss_akzeptiert:
-        st.navigation(_ERSTEINRICHTUNG_PAGES).run()
-        return
-
-    st.navigation(_PAGES).run()
+    # Ein einziger Aufrufpunkt, bewusst nicht je Zweig dupliziert (siehe
+    # ADR-36): ein künftiger vierter Zustand kann so nicht versehentlich
+    # vergessen, st.navigation() aufzurufen.
+    st.navigation(_select_pages(ctx)).run()
 
 
 main()

@@ -1624,3 +1624,15 @@ Konsolenfehler.
 **Geänderte/neue Dateien:** `ui/app.py` (drei Seitenlisten statt einer
 direkten Weiche), neue `ui/pages/ersteinrichtung.py`,
 `tests/ui/test_app_smoke.py` (ein neuer Test, `pytest`-Import ergänzt).
+
+**Nachträgliche Überarbeitung (auf Nutzerwunsch, CLAUDE.md-Pflichtlektüre
+vor der nächsten Änderung durchlaufen, siehe ADR-36):** Der erste Fix
+rief `st.navigation(<Liste>).run()` noch an drei separaten Stellen auf
+(je einem `if`/`elif`-Zweig mit eigenem `return`) — genau diese Form ist
+strukturell dieselbe Fehlerklasse, die gerade erst behoben wurde: ein
+künftiger vierter Zustand könnte versehentlich ergänzt werden, ohne
+dort auch `st.navigation()` aufzurufen. Umgebaut auf eine reine
+Funktion `_select_pages(ctx) -> list[st.Page]` plus genau EINEN
+`st.navigation(_select_pages(ctx)).run()`-Aufruf in `main()`. Keine
+funktionale Änderung, alle 514 Tests weiterhin grün, `ruff`/`mypy`
+fehlerfrei.
