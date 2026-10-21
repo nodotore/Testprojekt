@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Krypto-Tracker</title>
+<style>
+  :root { --bg:#fff; --fg:#1b1f24; --muted:#5b6570; --line:#d8dde3; --accent:#1f6feb; --ok:#1a7f37; --bad:#b42318; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#14181d; --fg:#e6e9ed; --muted:#98a2ad; --line:#2d343c; --accent:#58a6ff; --ok:#3fb950; --bad:#f85149; } }
+  body { margin:0; padding:16px; background:var(--bg); color:var(--fg); font:15px/1.5 system-ui, sans-serif; max-width:1100px; margin-inline:auto; }
+  h1 { font-size:1.4rem; } h2 { font-size:1.1rem; margin-top:2rem; }
+  table { border-collapse:collapse; width:100%; display:block; overflow-x:auto; }
+  th, td { padding:6px 10px; border-bottom:1px solid var(--line); text-align:left; white-space:nowrap; }
+  .r { text-align:right; }
+  form { display:grid; grid-template-columns:repeat(auto-fit, minmax(140px, 1fr)); gap:8px; align-items:end; }
+  label { display:flex; flex-direction:column; font-size:.85rem; color:var(--muted); }
+  input, select, button { font:inherit; padding:6px 8px; border:1px solid var(--line); border-radius:6px; background:var(--bg); color:var(--fg); }
+  button, .btn { cursor:pointer; background:var(--accent); color:#fff; border-color:var(--accent); }
+  .btn { padding:6px 10px; border-radius:6px; display:inline-block; }
+  .bar { display:flex; flex-wrap:wrap; gap:8px; margin:12px 0; }
+  .ok { color:var(--ok); } .bad { color:var(--bad); }
+  dl { display:grid; grid-template-columns:1fr auto; gap:4px 16px; max-width:520px; } dd { margin:0; text-align:right; font-weight:600; }
+  .note { color:var(--muted); font-size:.85rem; }
+  td button { background:none; color:var(--bad); border:none; }
+</style>
+</head>
+<body>
+<h1>Krypto-Tracker</h1>
+<p class="note">Alle Daten bleiben in diesem Browser. Vereinfachte Berechnung nach §23/§22 EStG, keine Steuerberatung.</p>
+<p id="status" role="status"></p>
+
+<h2>Importieren</h2>
+<div class="bar">
+  <label class="btn">CSV importieren<input id="imp-generic" type="file" accept=".csv" hidden></label>
+  <label class="btn">Ledger Live (CSV)<input id="imp-ledger" type="file" accept=".csv" hidden></label>
+  <label class="btn">Backup einlesen<input id="imp-backup" type="file" accept=".json" hidden></label>
+  <button id="dl-template" type="button">CSV-Vorlage</button>
+</div>
+
+<h2>Transaktion hinzufügen</h2>
+<form id="add-form">
+  <label>Datum<input name="date" type="datetime-local" required></label>
+  <label>Typ<select id="type" name="type"></select></label>
+  <label>Asset<input name="asset" placeholder="BTC" required></label>
+  <label>Menge<input name="amount" type="number" step="any" min="0" required></label>
+  <label>Wert in EUR<input name="eurValue" type="number" step="any" min="0"></label>
+  <label>Gebühr EUR<input name="feeEur" type="number" step="any" min="0"></label>
+  <label>Notiz<input name="note"></label>
+  <button type="submit">Speichern</button>
+</form>
+
+<h2>Bestände (FIFO)</h2>
+<table><thead><tr><th>Asset</th><th class="r">Menge</th><th class="r">Kostenbasis</th></tr></thead><tbody id="holdings"></tbody></table>
+<ul id="warnings" class="bad"></ul>
+
+<h2>Steuerbericht</h2>
+<div class="bar"><label>Jahr<select id="year"></select></label><button id="dl-report" type="button">Bericht als CSV</button></div>
+<div id="report"></div>
+
+<h2>Transaktionen</h2>
+<table><thead><tr><th>Datum</th><th>Typ</th><th>Asset</th><th class="r">Menge</th><th class="r">Wert</th><th>Quelle</th><th>Notiz</th><th></th></tr></thead><tbody id="tx-body"></tbody></table>
+<div class="bar"><button id="dl-backup" type="button">Backup herunterladen</button></div>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>

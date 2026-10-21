@@ -44,7 +44,13 @@ Statische PWA (HTML/CSS/JS), alle Daten bleiben im Browser (IndexedDB). Kein Ser
 - Börsen-CSV-Formate ändern sich. Parser brauchen Beispieldateien zum Testen.
 - Kurs-APIs haben Ratenlimits. Cache und Fallback sind nötig.
 
-## Offene Fragen
-1. Steuerland und Regelwerk (Deutschland §23 EStG?) als Startpunkt?
-2. Welche Börsen und Wallets sollen zuerst importiert werden?
-3. Sollen Kursdaten live geladen werden oder reicht manuelle Eingabe für den Anfang?
+## Entscheidungen
+- Steuerland: Deutschland (§23 EStG, Haltefrist 1 Jahr, Freigrenze 600 € bis 2023 / 1.000 € ab 2024; §22 Nr. 3 Freigrenze 256 €).
+- Quellen: Ledger (Ledger Live CSV) und 21bitcoin.
+- Kurse: vorerst manueller EUR-Wert je Transaktion (Live-Kurse später).
+- Speicher: localStorage statt IndexedDB für den MVP.
+
+## Stand
+- Umgesetzt (`cointracker/`): Ledger, generischer CSV-Import, Ledger-Live-Import, FIFO mit Haltefrist, Jahresbericht, Backup, 11 Tests (`node --test tests/tax.test.mjs`).
+- Offen: 21bitcoin-Import (Beispiel-Export nötig, Format wird nicht geraten), Wallet-genaue FIFO, Live-Kurse, Diagramme, PWA/Offline.
+- Ledger-Live-Import: IN/OUT werden als Übertragungen importiert. Zahlungen an Dritte müssen manuell als Verkauf erfasst werden.
