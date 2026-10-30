@@ -7,8 +7,8 @@
 <style>
   :root {
     --bg: #0b0b0c;
-    --mat: #f4f1ea;       /* Passepartout */
-    --frame: #1c1c1e;     /* Rahmenfarbe */
+    --mat: #141414;       /* Passepartout (dunkel: OLED-schonend) */
+    --frame: #2a2a2c;     /* Rahmenfarbe */
     --frame-w: 1.2vmin;
     --mat-w: 6vmin;
     --fade: 1.5s;
@@ -20,6 +20,7 @@
     background: var(--frame);
     padding: var(--frame-w);
     box-shadow: 0 0 6vmin rgba(0,0,0,.8);
+    transition: transform 20s linear;
   }
   .mat {
     width: 100%; height: 100%;
@@ -36,7 +37,7 @@
   .clock {
     position: fixed; right: 5vmin; bottom: 4.2vmin;
     font: 300 3vmin/1 system-ui, sans-serif; letter-spacing: .1em;
-    color: rgba(255,255,255,.55); display: none;
+    color: rgba(255,255,255,.4); display: none; transition: transform 20s linear;
   }
   body.clock-on .clock { display: block; }
   .hint {
@@ -105,6 +106,15 @@
     clock.textContent = d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
   }
   tick(); setInterval(tick, 10000);
+
+  /* OLED-Schutz: Rahmen und Uhr wandern alle 20 s um wenige Pixel */
+  var frameEl = document.querySelector('.frame');
+  function shift() {
+    var r = function (m) { return Math.round((Math.random() * 2 - 1) * m); };
+    frameEl.style.transform = 'translate(' + r(12) + 'px,' + r(12) + 'px)';
+    clock.style.transform = 'translate(' + r(40) + 'px,' + r(30) + 'px)';
+  }
+  shift(); setInterval(shift, 20000);
 })();
 </script>
 </body>
