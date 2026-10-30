@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TV Frame</title>
+<style>
+  :root {
+    --bg: #0b0b0c;
+    --mat: #141414;       /* Passepartout (dunkel: OLED-schonend) */
+    --frame: #2a2a2c;     /* Rahmenfarbe */
+    --frame-w: 1.2vmin;
+    --mat-w: 6vmin;
+    --fade: 1.5s;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; background: var(--bg); overflow: hidden; cursor: none; }
+  .frame {
+    position: fixed; inset: 3vmin;
+    background: var(--frame);
+    padding: var(--frame-w);
+    box-shadow: 0 0 6vmin rgba(0,0,0,.8);
+    transition: transform 20s linear;
+  }
+  .mat {
+    width: 100%; height: 100%;
+    background: var(--mat);
+    padding: var(--mat-w);
+    box-shadow: inset 0 0 1.2vmin rgba(0,0,0,.25);
+  }
+  .stage { position: relative; width: 100%; height: 100%; background: #000; overflow: hidden; }
+  .stage img {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    object-fit: contain; opacity: 0; transition: opacity var(--fade) ease;
+  }
+  .stage img.on { opacity: 1; }
+  .clock {
+    position: fixed; right: 5vmin; bottom: 4.2vmin;
+    font: 300 3vmin/1 system-ui, sans-serif; letter-spacing: .1em;
+    color: rgba(255,255,255,.4); display: none; transition: transform 20s linear;
+  }
+  body.clock-on .clock { display: block; }
+  .hint {
+    position: fixed; left: 50%; top: 50%; transform: translate(-50%,-50%);
+    color: #666; font: 2.5vmin system-ui, sans-serif; text-align: center;
+  }
+</style>
+</head>
+<body>
+<div class="frame"><div class="mat"><div class="stage" id="stage"></div></div></div>
+<div class="clock" id="clock"></div>
+<div class="hint" id="hint" hidden>Keine Bilder gefunden.<br>Bilder in <code>tv-frame/</code> legen und in <code>tv-frame/images.json</code> eintragen.</div>
+
+<script>
+/* Bedienung (Fernbedienung): Pfeile = vor/zurück, Enter/OK = Pause, C = Uhr, F = Vollbild
+   URL-Parameter: ?interval=30 (Sekunden)  ?clock=1  ?mat=000000 (Passepartout-Farbe) */
+(function () {
+  var params = new URLSearchParams(location.search);
+  var interval = (parseInt(params.get('interval'), 10) || 30) * 1000;
+  if (params.get('clock') === '1') document.body.classList.add('clock-on');
+  if (params.get('mat')) document.documentElement.style.setProperty('--mat', '#' + params.get('mat'));
+
+  var stage = document.getElementById('stage');
+  var hint = document.getElementById('hint');
+  var clock = document.getElementById('clock');
+  var images = [], idx = -1, timer = null, paused = false, current = null;
+
+  function show(i) {
+    if (!images.length) return;
+    idx = (i + images.length) % images.length;
+    var img = new Image();
+    img.onload = function () {
+      stage.appendChild(img);
+      requestAnimationFrame(function () { img.classList.add('on'); });
+      if (current) { var old = current; old.classList.remove('on'); setTimeout(function () { old.remove(); }, 2000); }
+      current = img;
+    };
+    img.src = images[idx];
+  }
+  function schedule() {
+    clearInterval(timer);
+    if (!paused) timer = setInterval(function () { show(idx + 1); }, interval);
+  }
+
+  fetch('tv-frame/images.json').then(function (r) { return r.json(); }).then(function (list) {
+    images = list.map(function (n) { return 'tv-frame/' + n; });
+    if (!images.length) { hint.hidden = false; return; }
+    show(0); schedule();
+  }).catch(function () { hint.hidden = false; });
+
+  document.addEventListener('keydown', function (e) {
+    switch (e.key) {
+      case 'ArrowRight': show(idx + 1); schedule(); break;
+      case 'ArrowLeft':  show(idx - 1); schedule(); break;
+      case 'Enter': case ' ': paused = !paused; schedule(); break;
+      case 'c': case 'C': document.body.classList.toggle('clock-on'); break;
+      case 'f': case 'F':
+        if (document.fullscreenElement) document.exitFullscreen();
+        else if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen();
+        break;
+    }
+  });
+
+  function tick() {
+    var d = new Date();
+    clock.textContent = d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+  }
+  tick(); setInterval(tick, 10000);
+
+  /* OLED-Schutz: Rahmen und Uhr wandern alle 20 s um wenige Pixel */
+  var frameEl = document.querySelector('.frame');
+  function shift() {
+    var r = function (m) { return Math.round((Math.random() * 2 - 1) * m); };
+    frameEl.style.transform = 'translate(' + r(12) + 'px,' + r(12) + 'px)';
+    clock.style.transform = 'translate(' + r(40) + 'px,' + r(30) + 'px)';
+  }
+  shift(); setInterval(shift, 20000);
+})();
+</script>
+</body>
+</html>

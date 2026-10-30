@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TV Home</title>
+<style>
+  :root { --dim: .25; --accent: #5aa9ff; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; overflow: hidden; background: #000; color: #fff;
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  #bg { position: fixed; inset: 0; background: #0d1117 center / cover no-repeat; }
+  #bg::after { content: ""; position: absolute; inset: 0; background: #000; opacity: var(--dim); }
+  #board { position: fixed; inset: 0; }
+
+  .tile { position: absolute; transform: translate(-50%, -50%); width: calc(var(--s) * 1vmin);
+    display: flex; flex-direction: column; align-items: center; gap: .8vmin;
+    color: #fff; text-decoration: none; outline: none; touch-action: none; }
+  .tile .ico { width: calc(var(--s) * 1vmin); height: calc(var(--s) * 1vmin); border-radius: 22%;
+    background: rgba(255,255,255,.14); backdrop-filter: blur(8px);
+    display: flex; align-items: center; justify-content: center;
+    font-size: calc(var(--s) * .55vmin); overflow: hidden;
+    transition: transform .15s, box-shadow .15s; }
+  .tile .ico img { width: 100%; height: 100%; object-fit: cover; }
+  .tile .lbl { font-size: 2vmin; text-shadow: 0 1px 6px rgba(0,0,0,.8); white-space: nowrap; }
+  body.nolabels .tile .lbl { display: none; }
+  .tile:focus .ico, .tile:hover .ico { transform: scale(1.12); box-shadow: 0 0 0 .5vmin var(--accent); }
+  body.edit .tile { cursor: grab; }
+  body.edit .tile .ico { box-shadow: 0 0 0 .3vmin rgba(255,255,255,.5); }
+  body.edit .tile.sel .ico { box-shadow: 0 0 0 .6vmin var(--accent); }
+
+  #clock { position: fixed; left: 4vmin; top: 3vmin; font-weight: 200; font-size: 9vmin;
+    text-shadow: 0 2px 12px rgba(0,0,0,.6); line-height: 1; }
+  #clock small { display: block; font-size: 2.6vmin; font-weight: 300; opacity: .8; margin-top: 1vmin; }
+  body.noclock #clock { display: none; }
+
+  #gear { position: fixed; right: 2vmin; bottom: 2vmin; width: 6vmin; height: 6vmin; border-radius: 50%;
+    border: 0; background: rgba(255,255,255,.12); color: #fff; font-size: 3vmin; cursor: pointer; opacity: .35; }
+  #gear:hover, #gear:focus { opacity: 1; outline: none; box-shadow: 0 0 0 .4vmin var(--accent); }
+
+  #panel { position: fixed; top: 0; right: 0; bottom: 0; width: min(46vmin, 90vw); padding: 2.5vmin;
+    background: rgba(18,20,26,.94); backdrop-filter: blur(14px); overflow-y: auto; display: none;
+    font-size: 2vmin; }
+  body.edit #panel { display: block; }
+  #panel h2 { font-size: 2.4vmin; margin: 2vmin 0 1vmin; font-weight: 600; }
+  #panel h2:first-child { margin-top: 0; }
+  #panel label { display: block; margin: 1.2vmin 0 .4vmin; opacity: .75; }
+  #panel input[type=text], #panel input[type=url] { width: 100%; padding: 1.1vmin; border-radius: 1vmin;
+    border: 1px solid #3a3f4b; background: #0d1117; color: #fff; font-size: 2vmin; }
+  #panel input[type=range] { width: 100%; }
+  #panel .row { display: flex; gap: 1vmin; flex-wrap: wrap; margin-top: 1vmin; }
+  #panel .chk { display: flex; align-items: center; gap: 1vmin; margin: 1vmin 0; opacity: 1; }
+  button.b { padding: 1.1vmin 1.8vmin; border-radius: 1vmin; border: 0; background: #2b3140; color: #fff;
+    font-size: 2vmin; cursor: pointer; }
+  button.b:hover, button.b:focus { background: var(--accent); outline: none; color: #000; }
+  button.danger:hover, button.danger:focus { background: #ff5a5a; }
+  #tileForm[hidden] { display: none; }
+  #hint { position: fixed; left: 50%; bottom: 2vmin; transform: translateX(-50%); font-size: 1.8vmin;
+    opacity: .6; display: none; }
+  body.edit #hint { display: block; }
+</style>
+</head>
+<body>
+<div id="bg"></div>
+<div id="clock"></div>
+<div id="board"></div>
+<button id="gear" title="Anpassen (E)" aria-label="Anpassen">⚙</button>
+<div id="hint">Icons per Maus/Zeiger verschieben · Icon anklicken zum Bearbeiten · E zum Beenden</div>
+
+<aside id="panel">
+  <h2>Hintergrund</h2>
+  <div class="row">
+    <button class="b" id="bgUpload">Bild wählen…</button>
+    <button class="b" id="bgClear">Entfernen</button>
+  </div>
+  <label for="bgUrl">…oder Bild-Adresse (URL)</label>
+  <input type="url" id="bgUrl" placeholder="https://…/bild.jpg">
+  <label for="dim">Abdunkeln</label>
+  <input type="range" id="dim" min="0" max="80" value="25">
+
+  <h2>Anzeige</h2>
+  <label class="chk"><input type="checkbox" id="optClock"> Uhr anzeigen</label>
+  <label class="chk"><input type="checkbox" id="optLabels"> Beschriftungen anzeigen</label>
+
+  <h2>Icons</h2>
+  <div class="row"><button class="b" id="addTile">+ Icon hinzufügen</button></div>
+  <div id="tileForm" hidden>
+    <label for="fLabel">Name</label><input type="text" id="fLabel">
+    <label for="fIcon">Symbol (Emoji) oder Bild-Adresse</label><input type="text" id="fIcon">
+    <div class="row"><button class="b" id="fIconUpload">Symbol-Bild wählen…</button></div>
+    <label for="fUrl">Ziel-Adresse (URL)</label><input type="url" id="fUrl" placeholder="https://…">
+    <label for="fSize">Größe</label><input type="range" id="fSize" min="6" max="22" value="12">
+    <div class="row"><button class="b danger" id="fDel">Icon löschen</button></div>
+  </div>
+
+  <h2>Sicherung</h2>
+  <div class="row">
+    <button class="b" id="exp">Exportieren</button>
+    <button class="b" id="imp">Importieren</button>
+    <button class="b danger" id="reset">Zurücksetzen</button>
+  </div>
+  <div class="row"><button class="b" id="done">Fertig</button></div>
+</aside>
+<input type="file" id="file" accept="image/*" hidden>
+
+<script>
+(function () {
+  var KEY = 'tvhome.v1';
+  var DEFAULTS = {
+    bg: '', dim: 25, clock: true, labels: true,
+    tiles: [
+      { id: 't1', icon: '▶️', label: 'YouTube',     url: 'https://www.youtube.com/tv',   x: 20, y: 55, size: 12 },
+      { id: 't2', icon: '🎬', label: 'Netflix',     url: 'https://www.netflix.com',      x: 35, y: 55, size: 12 },
+      { id: 't3', icon: '🏰', label: 'Disney+',     url: 'https://www.disneyplus.com',   x: 50, y: 55, size: 12 },
+      { id: 't4', icon: '📦', label: 'Prime Video', url: 'https://www.primevideo.com',   x: 65, y: 55, size: 12 },
+      { id: 't5', icon: '🌤️', label: 'Wetter',      url: 'https://www.wetter.com',       x: 80, y: 55, size: 12 }
+    ]
+  };
+
+  var state = load();
+  var sel = null, pendingFile = null;
+  var $ = function (id) { return document.getElementById(id); };
+  var board = $('board'), fileIn = $('file');
+
+  function load() {
+    try { var s = JSON.parse(localStorage.getItem(KEY)); if (s && s.tiles) return s; } catch (e) {}
+    return JSON.parse(JSON.stringify(DEFAULTS));
+  }
+  function save() {
+    try { localStorage.setItem(KEY, JSON.stringify(state)); }
+    catch (e) { alert('Speichern nicht möglich (Speicher voll?). Nutze ein kleineres Bild oder eine Bild-Adresse.'); }
+  }
+  function isImg(s) { return /^(https?:|data:image)/.test(s || ''); }
+
+  /* ---------- Darstellung ---------- */
+  function apply() {
+    $('bg').style.backgroundImage = state.bg ? 'url("' + state.bg + '")' : '';
+    document.documentElement.style.setProperty('--dim', state.dim / 100);
+    document.body.classList.toggle('noclock', !state.clock);
+    document.body.classList.toggle('nolabels', !state.labels);
+    board.innerHTML = '';
+    state.tiles.forEach(function (t) {
+      var a = document.createElement('a');
+      a.className = 'tile' + (sel === t.id ? ' sel' : '');
+      a.dataset.id = t.id;
+      a.href = t.url || '#';
+      a.style.left = t.x + '%'; a.style.top = t.y + '%'; a.style.setProperty('--s', t.size);
+      var ico = document.createElement('div'); ico.className = 'ico';
+      if (isImg(t.icon)) { var im = document.createElement('img'); im.src = t.icon; im.alt = ''; ico.appendChild(im); }
+      else ico.textContent = t.icon || '⭐';
+      var l = document.createElement('div'); l.className = 'lbl'; l.textContent = t.label;
+      a.appendChild(ico); a.appendChild(l); board.appendChild(a);
+    });
+  }
+  function syncPanel() {
+    $('dim').value = state.dim; $('optClock').checked = state.clock; $('optLabels').checked = state.labels;
+    $('bgUrl').value = /^data:/.test(state.bg) ? '' : state.bg;
+    var t = cur(); $('tileForm').hidden = !t;
+    if (t) { $('fLabel').value = t.label; $('fIcon').value = /^data:/.test(t.icon) ? '' : t.icon;
+      $('fUrl').value = t.url; $('fSize').value = t.size; }
+  }
+  function cur() { return state.tiles.filter(function (t) { return t.id === sel; })[0]; }
+  function refresh() { apply(); syncPanel(); }
+
+  function tick() {
+    var d = new Date();
+    $('clock').innerHTML = d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) +
+      '<small>' + d.toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' }) + '</small>';
+  }
+
+  /* ---------- Bearbeiten-Modus ---------- */
+  function setEdit(on) {
+    document.body.classList.toggle('edit', on);
+    if (!on) { sel = null; save(); }
+    refresh();
+  }
+  $('gear').onclick = function () { setEdit(!document.body.classList.contains('edit')); };
+  $('done').onclick = function () { setEdit(false); };
+  document.addEventListener('keydown', function (e) {
+    var tag = (e.target.tagName || '').toLowerCase();
+    if (tag === 'input') return;
+    if (e.key === 'e' || e.key === 'E') setEdit(!document.body.classList.contains('edit'));
+    else if (e.key.indexOf('Arrow') === 0 && !document.body.classList.contains('edit')) spatial(e);
+  });
+
+  /* Pfeiltasten-Navigation (Fernbedienung): nächstes Icon in Richtung */
+  function spatial(e) {
+    var tiles = [].slice.call(document.querySelectorAll('.tile'));
+    if (!tiles.length) return;
+    var f = document.activeElement;
+    if (!f || !f.classList.contains('tile')) { tiles[0].focus(); e.preventDefault(); return; }
+    var c = f.getBoundingClientRect(), cx = c.left + c.width / 2, cy = c.top + c.height / 2, best = null, bd = 1e9;
+    tiles.forEach(function (t) {
+      if (t === f) return;
+      var r = t.getBoundingClientRect(), dx = r.left + r.width / 2 - cx, dy = r.top + r.height / 2 - cy, ok;
+      switch (e.key) { case 'ArrowRight': ok = dx > 5; break; case 'ArrowLeft': ok = dx < -5; break;
+        case 'ArrowDown': ok = dy > 5; break; default: ok = dy < -5; }
+      if (!ok) return;
+      var main = (e.key === 'ArrowLeft' || e.key === 'ArrowRight') ? Math.abs(dx) : Math.abs(dy);
+      var cross = (e.key === 'ArrowLeft' || e.key === 'ArrowRight') ? Math.abs(dy) : Math.abs(dx);
+      var d = main + cross * 2; if (d < bd) { bd = d; best = t; }
+    });
+    if (best) best.focus(); e.preventDefault();
+  }
+
+  /* Drag & Drop + Auswahl */
+  var drag = null;
+  board.addEventListener('click', function (e) {
+    if (document.body.classList.contains('edit') && e.target.closest('.tile')) e.preventDefault();
+  });
+  board.addEventListener('pointerdown', function (e) {
+    if (!document.body.classList.contains('edit')) return;
+    var el = e.target.closest('.tile'); if (!el) return;
+    e.preventDefault();
+    sel = el.dataset.id; drag = { id: sel, moved: false };
+    el.setPointerCapture(e.pointerId);
+    [].forEach.call(document.querySelectorAll('.tile'), function (n) { n.classList.toggle('sel', n === el); });
+    syncPanel();
+  });
+  board.addEventListener('pointermove', function (e) {
+    if (!drag) return;
+    var t = cur(); if (!t) return; drag.moved = true;
+    t.x = Math.max(2, Math.min(98, e.clientX / innerWidth * 100));
+    t.y = Math.max(3, Math.min(97, e.clientY / innerHeight * 100));
+    var el = board.querySelector('[data-id="' + t.id + '"]');
+    el.style.left = t.x + '%'; el.style.top = t.y + '%';
+  });
+  board.addEventListener('pointerup', function () { if (drag && drag.moved) save(); drag = null; });
+
+  /* Panel-Eingaben */
+  $('dim').oninput = function () { state.dim = +this.value; document.documentElement.style.setProperty('--dim', state.dim / 100); save(); };
+  $('optClock').onchange = function () { state.clock = this.checked; apply(); save(); };
+  $('optLabels').onchange = function () { state.labels = this.checked; apply(); save(); };
+  $('bgUrl').onchange = function () { state.bg = this.value.trim(); apply(); save(); };
+  $('bgClear').onclick = function () { state.bg = ''; refresh(); save(); };
+  $('addTile').onclick = function () {
+    var t = { id: 't' + Date.now(), icon: '⭐', label: 'Neu', url: 'https://', x: 50, y: 30, size: 12 };
+    state.tiles.push(t); sel = t.id; refresh(); save();
+  };
+  function bind(id, prop, ev) {
+    $(id).addEventListener(ev || 'input', function () {
+      var t = cur(); if (!t) return;
+      t[prop] = prop === 'size' ? +this.value : this.value; apply(); save();
+    });
+  }
+  bind('fLabel', 'label'); bind('fIcon', 'icon'); bind('fUrl', 'url'); bind('fSize', 'size');
+  $('fDel').onclick = function () {
+    state.tiles = state.tiles.filter(function (t) { return t.id !== sel; }); sel = null; refresh(); save();
+  };
+
+  /* Bilder laden und verkleinern (spart Speicher) */
+  function pickImage(maxPx, cb) {
+    pendingFile = cb; fileIn.accept = 'image/*'; fileIn.dataset.max = maxPx; fileIn.value = ''; fileIn.click();
+  }
+  fileIn.onchange = function () {
+    var f = fileIn.files[0]; if (!f) return;
+    if (!pendingFile) return importJson(f);
+    var max = +fileIn.dataset.max, cb = pendingFile, fr = new FileReader();
+    fr.onload = function () {
+      var img = new Image();
+      img.onload = function () {
+        var k = Math.min(1, max / Math.max(img.width, img.height)), c = document.createElement('canvas');
+        c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+        c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+        cb(c.toDataURL('image/jpeg', .85));
+      };
+      img.src = fr.result;
+    };
+    fr.readAsDataURL(f);
+  };
+  $('bgUpload').onclick = function () { pickImage(1920, function (d) { state.bg = d; refresh(); save(); }); };
+  $('fIconUpload').onclick = function () {
+    pickImage(256, function (d) { var t = cur(); if (t) { t.icon = d; refresh(); save(); } });
+  };
+
+  /* Sicherung */
+  $('exp').onclick = function () {
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([JSON.stringify(state)], { type: 'application/json' }));
+    a.download = 'tv-home.json'; a.click();
+  };
+  $('imp').onclick = function () {
+    pendingFile = null; fileIn.accept = 'application/json'; fileIn.value = ''; fileIn.click();
+  };
+  function importJson(f) {
+    var fr = new FileReader();
+    fr.onload = function () {
+      try { var s = JSON.parse(fr.result); if (!s.tiles) throw 0; state = s; refresh(); save(); }
+      catch (e) { alert('Datei ist keine gültige Sicherung.'); }
+    };
+    fr.readAsText(f);
+  }
+  $('reset').onclick = function () {
+    if (confirm('Alles auf Standard zurücksetzen?')) { state = JSON.parse(JSON.stringify(DEFAULTS)); sel = null; refresh(); save(); }
+  };
+
+  refresh(); tick(); setInterval(tick, 10000);
+})();
+</script>
+</body>
+</html>
