@@ -115,6 +115,17 @@
     clock.style.transform = 'translate(' + r(40) + 'px,' + r(30) + 'px)';
   }
   shift(); setInterval(shift, 20000);
+
+  /* Standby verhindern: Tizen-TV-App (Privileg "power") bzw. Wake Lock im Browser */
+  function keepAwake() {
+    try { if (window.tizen && tizen.power) tizen.power.request('SCREEN', 'SCREEN_NORMAL'); } catch (e) {}
+    try {
+      if (navigator.wakeLock) navigator.wakeLock.request('screen').catch(function () {});
+    } catch (e) {}
+  }
+  keepAwake();
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) keepAwake(); });
+  setInterval(keepAwake, 5 * 60 * 1000);
 })();
 </script>
 </body>

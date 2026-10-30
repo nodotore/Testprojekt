@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<widget xmlns="http://www.w3.org/ns/widgets" xmlns:tizen="http://tizen.org/ns/widgets"
+        id="https://nodotore.github.io/Testprojekt/frame/" version="1.0.0" viewmodes="maximized">
+  <tizen:application id="NodoTvFr1.TVFrame" package="NodoTvFr1" required_version="6.0"/>
+  <!-- Lädt den Kunstgalerie von GitHub Pages: Änderungen am Repo erscheinen ohne Neuinstallation. -->
+  <content src="https://nodotore.github.io/Testprojekt/tv-frame.html"/>
+  <feature name="http://tizen.org/feature/screen.size.all"/>
+  <icon src="icon.png"/>
+  <name>TV Frame</name>
+  <tizen:profile name="tv"/>
+  <tizen:setting screen-orientation="landscape" context-menu="disable" background-support="disable" encryption="disable" install-location="auto"/>
+  <access origin="*" subpage="true"/>
+  <tizen:privilege name="http://tizen.org/privilege/internet"/>
+  <tizen:privilege name="http://tizen.org/privilege/power"/>
+</widget>
